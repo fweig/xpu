@@ -1,5 +1,7 @@
 #pragma once
 
+#include "gpu.h"
+
 #ifdef __NVCC__
 #include "backend/cuda/kernel.h"
 #else // CPU

@@ -1,1 +1,1 @@
-KERNEL_DECL(vectorAdd, float *, float *, float *)
+KERNEL_DECL(vectorAdd, const float *, const float *, float *)

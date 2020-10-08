@@ -12,8 +12,6 @@ int main() {
     // gpu::setDevice()
     gpu::initialize(GPUBackendType::CPU);
 
-    ditto::initialize(ditto:Backend::CPU);
-
     std::vector<float> hx(100);
     std::fill(hx.begin(), hx.end(), 16);
     std::vector<float> hy(100);

@@ -1,4 +1,4 @@
-#include "kernel.h"
+#include <xpu/kernel.h>
 
 #include "TestKernels.h"
 

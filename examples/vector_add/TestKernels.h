@@ -1,6 +1,6 @@
 #pragma once
 
-#include "gpu.h"
+#include <xpu/gpu.h>
 
 class TestKernels {
 

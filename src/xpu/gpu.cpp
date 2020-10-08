@@ -24,7 +24,8 @@ namespace gpu {
     }
 
     void free(void *ptr) {
-        // TODO: implement
+        // TODO: check for errors
+        theBackend->free(ptr);
     }
 
     void memcpy(void *dst, const void *src, size_t bytes) {

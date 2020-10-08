@@ -12,6 +12,10 @@ GPUError CPUBackend::deviceMalloc(void ** ptr, size_t bytes) {
     return 0;
 }
 
+GPUError CPUBackend::free(void *ptr) {
+    std::free(ptr);
+}
+
 GPUError CPUBackend::memcpy(void *dst, const void *src, size_t bytes) {
     std::memcpy(dst, src, bytes);
     return 0;

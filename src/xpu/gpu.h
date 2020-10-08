@@ -38,6 +38,11 @@ void *malloc(size_t);
 void free(void *);
 void memcpy(void *, const void *, size_t);
 
+template<typename T>
+T *alloc(size_t N) {
+    return static_cast<T *>(malloc(sizeof(T) * N));
+}
+
 template<typename KernelCls, typename... Args1, typename... Args2>
 void runKernel(GPUError (KernelCls::*ptr)(internal::KernelTag, GPUKernelParams, Args2...), GPUKernelParams params, Args1&&... args) {
     (KernelCls::instance().*ptr)(internal::_kerneltag, params, std::forward<Args1>(args)...);

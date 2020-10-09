@@ -1,7 +1,9 @@
 #pragma once
 
 #include <cstddef>
+#include <iostream>
 #include <utility>
+#include <type_traits>
 
 enum class GPUBackendType {
     CPU,
@@ -25,13 +27,13 @@ using GPUError = int;
 
 namespace gpu {
 
-namespace internal {
+template<class K>
+struct is_kernel : std::false_type {};
 
-struct KernelTag {
-    constexpr KernelTag(int, int) {}
+template<class L>
+struct Kernel {
+    using Library = L;
 };
-constexpr KernelTag _kerneltag{0, 0};
-}
 
 void initialize(GPUBackendType);
 void *malloc(size_t);
@@ -43,9 +45,13 @@ T *alloc(size_t N) {
     return static_cast<T *>(malloc(sizeof(T) * N));
 }
 
-template<typename KernelCls, typename... Args1, typename... Args2>
-void runKernel(GPUError (KernelCls::*ptr)(internal::KernelTag, GPUKernelParams, Args2...), GPUKernelParams params, Args1&&... args) {
-    (KernelCls::instance().*ptr)(internal::_kerneltag, params, std::forward<Args1>(args)...);
+template<typename Kernel, typename Enable = typename std::enable_if<is_kernel<Kernel>::value>::type>
+const char *getName();
+
+template<typename Kernel, typename Enable = typename std::enable_if<is_kernel<Kernel>::value>::type, typename... Args>
+void runKernel(GPUKernelParams params, Args&&... args) {
+    std::cout << "Running kernel " << getName<Kernel>() << std::endl;
+    Kernel::dispatch(Kernel::Library::instance(), params, std::forward<Args>(args)...);
 }
 
 }

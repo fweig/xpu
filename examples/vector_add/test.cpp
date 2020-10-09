@@ -24,7 +24,7 @@ int main() {
 
     gpu::memcpy(dx, hx.data(), 100 * sizeof(float));
     gpu::memcpy(dy, hy.data(), 100 * sizeof(float));
-    gpu::runKernel(&TestKernels::vectorAdd, GPUKernelParams{.range={100, 0, 0}}, dx, dy, dz);
+    gpu::runKernel<TestKernels::vectorAdd>(GPUKernelParams{.range={100, 0, 0}}, dx, dy, dz);
     gpu::memcpy(hz.data(), dz, 100 * sizeof(float));
 
     gpu::free(dx);

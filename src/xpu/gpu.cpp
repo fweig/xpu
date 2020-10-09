@@ -6,10 +6,6 @@
 
 #include <memory>
 
-namespace gpu {
-    class BackendLoader;
-}
-
 static std::unique_ptr<GPUBackend> theCPUBackend;
 static std::unique_ptr<LibObj<GPUBackend>> theCUDABackend;
 static GPUBackend *activeBackendInst = nullptr;

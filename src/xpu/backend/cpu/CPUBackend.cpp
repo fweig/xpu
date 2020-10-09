@@ -21,8 +21,10 @@ GPUError CPUBackend::memcpy(void *dst, const void *src, size_t bytes) {
     return 0;
 }
 
-extern "C" {
-    GPUBackend *createBackend() {
-        return new CPUBackend{};
-    }
+extern "C" GPUBackend *create() {
+    return new CPUBackend{};
+}
+
+extern "C" void destroy(GPUBackend *b) {
+    delete b;
 }

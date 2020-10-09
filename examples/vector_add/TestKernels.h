@@ -13,25 +13,20 @@ public:
             } \
         }; \
         virtual GPUError run_ ## name(GPUKernelParams, ## __VA_ARGS__) = 0;
-    #include "testKernels.h"
+    #include "kernels.h"
     #undef KERNEL_DECL
 
 private:
     template<typename, typename, typename...Args>
     friend void gpu::runKernel(GPUKernelParams, Args&&...);
 
-    static TestKernels &instance();
-};
-
-class CPUTestKernels : public TestKernels {
-    #define KERNEL_DECL(name, ...) \
-        GPUError run_ ## name(GPUKernelParams, ## __VA_ARGS__) override;
-    #include "testKernels.h"
-    #undef KERNEL_DECL
+    static TestKernels &instance(GPUBackendType type);
 };
 
 #define KERNEL_DECL(name, ...) \
     template<> \
     struct gpu::is_kernel<TestKernels::name> : std::true_type {};
-#include "testKernels.h"
+#include "kernels.h"
 #undef KERNEL_DECL
+
+#include "TestKernelsCPU.h"

@@ -2,7 +2,7 @@
 
 #include "gpu.h"
 
-#ifdef __NVCC__
+#if defined(__NVCC__)
 #include "backend/cuda/kernel.h"
 #else // CPU
 #include "backend/cpu/kernel.h"

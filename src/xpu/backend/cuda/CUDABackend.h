@@ -2,7 +2,7 @@
 
 #include "../../GPUBackend.h"
 
-class CPUBackend : public GPUBackend {
+class CUDABackend : public GPUBackend {
 
 public:
     GPUError setup() override;

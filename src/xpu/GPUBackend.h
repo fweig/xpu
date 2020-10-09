@@ -1,8 +1,8 @@
 #pragma once
 
-#include <cstddef>
+#include "gpu.h"
 
-using GPUError = int;
+#include <cstddef>
 
 class GPUBackend {
 

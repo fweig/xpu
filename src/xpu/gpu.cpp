@@ -1,37 +1,58 @@
 #include "gpu.h"
 
 #include "GPUBackend.h"
-
-// TODO: load from dyn lib
+#include "dl_utils.h"
 #include "backend/cpu/CPUBackend.h"
 
 #include <memory>
 
-static std::unique_ptr<GPUBackend> theBackend;
+namespace gpu {
+    class BackendLoader;
+}
+
+static std::unique_ptr<GPUBackend> theCPUBackend;
+static std::unique_ptr<LibObj<GPUBackend>> theCUDABackend;
+static GPUBackend *activeBackendInst = nullptr;
+
+static GPUBackendType activeBackendType; 
 
 namespace gpu {
-
     void initialize(GPUBackendType t) {
-        theBackend = std::unique_ptr<GPUBackend>(new CPUBackend{});
-        theBackend->setup();
+        theCPUBackend = std::unique_ptr<GPUBackend>(new CPUBackend{});
+        theCPUBackend->setup();
+        switch (t){
+        case GPUBackendType::CPU:
+            activeBackendInst = theCPUBackend.get();
+            break;
+        case GPUBackendType::CUDA:       
+            theCUDABackend.reset(new LibObj<GPUBackend>("./build/libXPUBackendCUDA.so"));
+            theCUDABackend->obj->setup();
+            activeBackendInst = theCUDABackend->obj;
+        }
+         activeBackendType = t;
     }
 
     void *malloc(size_t bytes) {
-        void *ptr;
+        void *ptr = nullptr;
         // TODO: check for errors
-        theBackend->deviceMalloc(&ptr, bytes);
+        activeBackendInst->deviceMalloc(&ptr, bytes);
         return ptr;
     }
 
     void free(void *ptr) {
         // TODO: check for errors
-        theBackend->free(ptr);
+        activeBackendInst->free(ptr);
     }
 
     void memcpy(void *dst, const void *src, size_t bytes) {
         // TODO: check for errors
-        theBackend->memcpy(dst, src, bytes);
+        activeBackendInst->memcpy(dst, src, bytes);
     }
+
+    GPUBackendType activeBackend() {
+        return activeBackendType;
+    }
+
 
 }
 

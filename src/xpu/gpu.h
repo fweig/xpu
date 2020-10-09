@@ -40,6 +40,8 @@ void *malloc(size_t);
 void free(void *);
 void memcpy(void *, const void *, size_t);
 
+GPUBackendType activeBackend();
+
 template<typename T>
 T *alloc(size_t N) {
     return static_cast<T *>(malloc(sizeof(T) * N));
@@ -50,8 +52,12 @@ const char *getName();
 
 template<typename Kernel, typename Enable = typename std::enable_if<is_kernel<Kernel>::value>::type, typename... Args>
 void runKernel(GPUKernelParams params, Args&&... args) {
-    std::cout << "Running kernel " << getName<Kernel>() << std::endl;
-    Kernel::dispatch(Kernel::Library::instance(), params, std::forward<Args>(args)...);
+    std::string backend = "CPU";
+    if (activeBackend() == GPUBackendType::CUDA) {
+        backend = "CUDA";
+    }
+    std::cout << "Running kernel " << getName<Kernel>() << " on backend " << backend << std::endl;
+    Kernel::dispatch(Kernel::Library::instance(activeBackend()), params, std::forward<Args>(args)...);
 }
 
 }

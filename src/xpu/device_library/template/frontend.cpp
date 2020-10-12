@@ -7,14 +7,14 @@
 // #define XPU_DEVICE_LIBRARY_BACKEND_NAME VectorOpsCPU
 // #define XPU_DEVICE_LIBRARY_FRONTEND_H "VectorOps.h"
 
-XPU_DEVICE_LIBRARY_NAME &XPU_DEVICE_LIBRARY_NAME::instance(GPUBackendType type) {
+XPU_DEVICE_LIBRARY_NAME &XPU_DEVICE_LIBRARY_NAME::instance(xpu::driver type) {
     static XPU_DEVICE_LIBRARY_BACKEND_NAME testKernelsCPU{};
     static std::unique_ptr<LibObj<XPU_DEVICE_LIBRARY_NAME>> testKernelsCUDA{};
 
     switch (type) {
-        case GPUBackendType::CPU:
+        case xpu::driver::cpu:
             return testKernelsCPU;
-        case GPUBackendType::CUDA:
+        case xpu::driver::cuda:
             if (testKernelsCUDA == nullptr) {
                 testKernelsCUDA.reset(new LibObj<XPU_DEVICE_LIBRARY_NAME>("./build/lib" XPU_STRINGIZE(XPU_DEVICE_LIBRARY_NAME) "CUDA.so"));
             }

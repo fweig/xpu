@@ -1,9 +1,9 @@
 #pragma once
 
-#include "gpu.h"
+#include "xpu.h"
 
 #if defined(__NVCC__)
-#include "backend/cuda/kernel.h"
+#include "driver/cuda/kernel.h"
 #else // CPU
-#include "backend/cpu/kernel.h"
+#include "driver/cpu/kernel.h"
 #endif

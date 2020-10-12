@@ -7,13 +7,13 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 enable_language(CUDA)
 
 add_library(xpu
-    src/xpu/gpu.cpp
+    src/xpu/xpu.cpp
     src/xpu/dl_utils.cpp
-    src/xpu/backend/cpu/CPUBackend.cpp
+    src/xpu/driver/cpu/cpu_driver.cpp
 )
 
 add_library(XPUBackendCUDA MODULE
-    src/xpu/backend/cuda/CUDABackend.cu
+    src/xpu/driver/cuda/cuda_driver.cu
 )
 
 target_link_libraries(xpu dl)

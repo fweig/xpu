@@ -1,7 +1,5 @@
 #include <xpu/kernel.h>
 
-#include "TestKernels.h"
-
 struct NoSHM {};
 
 

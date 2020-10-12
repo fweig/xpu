@@ -12,6 +12,16 @@ enum class GPUBackendType {
 
 struct Vec3i { int x; int y; int z; };
 
+// TODO rename + add lane info
+// Common calls: 
+// - num of blocks + (optional) lane
+// - num of threads + (optional) lane
+// - auto num of blocks + (optional) lane
+// xpu::grid::n_blocks(xpu::dim, xpu::lane lane=xpu::lane::default)
+// xpu::grid::n_threads(xpu::dim, xpu::lane lane=xpu::lane::default)
+// xpu::grid::auto(xpu::lane lane=xpu::lane::default)
+// xpu::run_kernel<VectorOps::add>(xpu::grid::n_threads(100), )
+
 struct GPUKernelParams {
     Vec3i range;
 };
@@ -48,7 +58,9 @@ T *alloc(size_t N) {
 }
 
 template<typename Kernel, typename Enable = typename std::enable_if<is_kernel<Kernel>::value>::type>
-const char *getName();
+const char *get_name() {
+    return Kernel::name();
+}
 
 template<typename Kernel, typename Enable = typename std::enable_if<is_kernel<Kernel>::value>::type, typename... Args>
 void runKernel(GPUKernelParams params, Args&&... args) {
@@ -56,7 +68,7 @@ void runKernel(GPUKernelParams params, Args&&... args) {
     if (activeBackend() == GPUBackendType::CUDA) {
         backend = "CUDA";
     }
-    std::cout << "Running kernel " << getName<Kernel>() << " on backend " << backend << std::endl;
+    std::cout << "Running kernel " << get_name<Kernel>() << " on backend " << backend << std::endl;
     Kernel::dispatch(Kernel::Library::instance(activeBackend()), params, std::forward<Args>(args)...);
 }
 

@@ -22,12 +22,17 @@ include_directories(src)
 
 add_executable(vector_add
     examples/vector_add/test.cpp
-    examples/vector_add/TestKernels.cpp
-    examples/vector_add/vec_add.cpp
+    examples/vector_add/VectorOpsCPU.cpp
 )
 
 target_link_libraries(vector_add xpu)
 
-add_library(TestKernelsCUDA MODULE
-    examples/vector_add/TestKernelsCUDA.cu
+add_library(VectorOpsCUDA MODULE
+    examples/vector_add/VectorOpsCUDA.cu
 )
+
+#xpu_add_device_library(VectorOps
+#    INTERFACE types.h
+#    KERNELS vectorOps.def
+#    SOURCES vector_add.cpp
+#)

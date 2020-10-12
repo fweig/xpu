@@ -17,7 +17,7 @@
         }; \
         name ## _impl(info, shm, PARAM_NAMES(__VA_ARGS__)); \
     } \
-    GPUError TestKernelsCUDA::run_ ## name(GPUKernelParams params, PARAM_LIST(__VA_ARGS__)) { \
+    GPUError XPU_DEVICE_LIBRARY_BACKEND_NAME::run_ ## name(GPUKernelParams params, PARAM_LIST(__VA_ARGS__)) { \
         name ## _entry<<<(params.range.x + 31) / 32, 32>>>(PARAM_NAMES(__VA_ARGS__)); \
         return 0; \
     } \

@@ -4,7 +4,7 @@
 
 #define KERNEL_IMPL(name, sharedMemoryT, ...) \
     void kernel_ ## name(const GPUKernelInfo &, sharedMemoryT &, PARAM_LIST(__VA_ARGS__)); \
-    GPUError TestKernelsCPU::run_ ## name(GPUKernelParams params, PARAM_LIST(__VA_ARGS__)) { \
+    GPUError XPU_DEVICE_LIBRARY_BACKEND_NAME::run_ ## name(GPUKernelParams params, PARAM_LIST(__VA_ARGS__)) { \
         for (int i = 0; i < params.range.x; i++) { \
             sharedMemoryT shm{}; \
             GPUKernelInfo info{ \

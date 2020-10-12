@@ -18,3 +18,6 @@
 
 #define PARAM_LIST(...) FOR_EACH(STRIP_TYPE_BRACKET, __VA_ARGS__)
 #define PARAM_NAMES(...) FOR_EACH(EAT_TYPE, __VA_ARGS__)
+
+#define XPU_STRINGIZE_I(val) #val
+#define XPU_STRINGIZE(val) XPU_STRINGIZE_I(val)

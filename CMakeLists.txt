@@ -20,19 +20,62 @@ target_link_libraries(xpu dl)
 
 include_directories(src)
 
-add_executable(vector_add
-    examples/vector_add/test.cpp
-    examples/vector_add/VectorOpsCPU.cpp
-)
+set_property(GLOBAL PROPERTY xpu_generate_script "${CMAKE_CURRENT_SOURCE_DIR}/generate_device_library_src.sh")
 
-target_link_libraries(vector_add xpu)
+function(xpu_add_device_library libName kernelDeclFile)
+    set(sourceFiles ${ARGN})
+    set(frontendHeader "${libName}.h")
+    set(frontendSrc "${libName}CPU.cpp")
+    set(backendCudaName "${libName}CUDA")
+    set(backendCudaSrc "${libName}CUDA.cu")
 
-add_library(VectorOpsCUDA MODULE
-    examples/vector_add/VectorOpsCUDA.cu
-)
+    get_property(generateScript GLOBAL PROPERTY xpu_generate_script)
 
-#xpu_add_device_library(VectorOps
-#    INTERFACE types.h
-#    KERNELS vectorOps.def
-#    SOURCES vector_add.cpp
-#)
+    # message(STATUS "${sourceFiles}")
+
+    add_custom_command(
+        OUTPUT ${frontendHeader}
+        COMMAND bash ${generateScript} -t header -o ${CMAKE_CURRENT_BINARY_DIR}/${frontendHeader}
+        DEPENDS ${generateScript}
+    )
+
+    add_custom_command(
+        OUTPUT ${frontendSrc}
+        COMMAND bash ${generateScript} -t frontend -s ${sourceFiles} -o ${CMAKE_CURRENT_BINARY_DIR}/${frontendSrc}
+        DEPENDS ${generateScript} ${kernelDeclFile} ${sourceFiles} ${frontendHeader}
+    )
+    add_library(${libName}
+        ${CMAKE_CURRENT_BINARY_DIR}/${frontendSrc}
+    )
+    target_include_directories(${libName}
+        PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+        PUBLIC ${CMAKE_CURRENT_BINARY_DIR}    
+    )
+    target_compile_definitions(${libName} 
+        PUBLIC XPU_DEVICE_LIBRARY_NAME=${libName}
+        PUBLIC  XPU_DEVICE_LIBRARY_KERNEL_DEF_FILE=<${kernelDeclFile}>
+        PRIVATE XPU_DEVICE_LIBRARY_BACKEND_NAME=${libName}CPU
+        PRIVATE XPU_DEVICE_LIBRARY_FRONTEND_H=<${frontendHeader}>
+    )
+
+    add_custom_command(
+        OUTPUT ${backendCudaSrc}
+        COMMAND bash ${generateScript} -t backend -s ${sourceFiles} -o ${CMAKE_CURRENT_BINARY_DIR}/${backendCudaSrc}
+        DEPENDS ${generateScript} ${kernelDeclFile} ${sourceFiles} ${frontendHeader}
+    )
+    add_library(${backendCudaName} MODULE
+        ${CMAKE_CURRENT_BINARY_DIR}/${backendCudaSrc}
+    )
+    target_include_directories(${backendCudaName}
+        PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+        PUBLIC ${CMAKE_CURRENT_BINARY_DIR}
+    )
+    target_compile_definitions(${backendCudaName}
+        PUBLIC XPU_DEVICE_LIBRARY_NAME=${libName}
+        PUBLIC  XPU_DEVICE_LIBRARY_KERNEL_DEF_FILE=<${kernelDeclFile}>
+        PRIVATE XPU_DEVICE_LIBRARY_BACKEND_NAME=${backendCudaName}
+        PRIVATE XPU_DEVICE_LIBRARY_FRONTEND_H=<${frontendHeader}>
+    )
+endfunction()
+
+add_subdirectory(examples/vector_add)

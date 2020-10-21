@@ -6,7 +6,7 @@
 class XPU_DEVICE_LIBRARY_NAME {
 
 public:
-    #define KERNEL_DECL(name, ...) \
+    #define XPU_KERNEL_DECL(name, ...) \
         struct name : public xpu::kernel_dispatcher<name, XPU_DEVICE_LIBRARY_NAME> { \
             template<typename... Args> \
             static inline xpu::error dispatch_impl(XPU_DEVICE_LIBRARY_NAME &lib, xpu::grid params, Args &&... args) { \
@@ -18,7 +18,7 @@ public:
         }; \
         virtual xpu::error run_ ## name(xpu::grid, ## __VA_ARGS__) = 0;
     #include XPU_DEVICE_LIBRARY_KERNEL_DEF_FILE 
-    #undef KERNEL_DECL
+    #undef XPU_KERNEL_DECL
 
 private:
     template<typename, typename, typename...Args>
@@ -27,8 +27,8 @@ private:
     static XPU_DEVICE_LIBRARY_NAME &instance(xpu::driver type);
 };
 
-#define KERNEL_DECL(name, ...) \
+#define XPU_KERNEL_DECL(name, ...) \
     template<> \
     struct xpu::is_kernel<XPU_DEVICE_LIBRARY_NAME::name> : std::true_type {};
 #include XPU_DEVICE_LIBRARY_KERNEL_DEF_FILE
-#undef KERNEL_DECL
+#undef XPU_KERNEL_DECL

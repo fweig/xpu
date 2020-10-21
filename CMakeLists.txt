@@ -31,8 +31,6 @@ function(xpu_add_device_library libName kernelDeclFile)
 
     get_property(generateScript GLOBAL PROPERTY xpu_generate_script)
 
-    # message(STATUS "${sourceFiles}")
-
     add_custom_command(
         OUTPUT ${frontendHeader}
         COMMAND bash ${generateScript} -t header -o ${CMAKE_CURRENT_BINARY_DIR}/${frontendHeader}

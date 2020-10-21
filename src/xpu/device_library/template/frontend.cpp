@@ -16,7 +16,8 @@ XPU_DEVICE_LIBRARY_NAME &XPU_DEVICE_LIBRARY_NAME::instance(xpu::driver type) {
             return testKernelsCPU;
         case xpu::driver::cuda:
             if (testKernelsCUDA == nullptr) {
-                testKernelsCUDA.reset(new LibObj<XPU_DEVICE_LIBRARY_NAME>("./build/lib" XPU_STRINGIZE(XPU_DEVICE_LIBRARY_NAME) "CUDA.so"));
+                // FIXME: Don't hardcode library paths. Add option to set library paths!!!
+                testKernelsCUDA.reset(new LibObj<XPU_DEVICE_LIBRARY_NAME>("./build/examples/vector_add/lib" XPU_STRINGIZE(XPU_DEVICE_LIBRARY_NAME) "CUDA.so"));
             }
             return *testKernelsCUDA->obj;
     }

@@ -19,11 +19,14 @@ namespace xpu {
         switch (t){
         case driver::cpu:
             activeBackendInst = theCPUBackend.get();
+            std::cout << "xpu: set cpu as active backend" << std::endl;
             break;
         case driver::cuda:       
             theCUDABackend.reset(new LibObj<driver_interface>("./build/libXPUBackendCUDA.so"));
             theCUDABackend->obj->setup();
             activeBackendInst = theCUDABackend->obj;
+            std::cout << "xpu: set cuda as active backend" << std::endl;
+            break;
         }
          activeBackendType = t;
     }

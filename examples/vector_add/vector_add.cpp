@@ -9,7 +9,7 @@
 int main() {
     constexpr int NElems = 100;
 
-    xpu::initialize(xpu::driver::cuda); // or xpu::driver::cuda
+    xpu::initialize(xpu::driver::cpu); // or xpu::driver::cuda
 
     std::vector<float> hx(NElems, 8);
     std::vector<float> hy(NElems, 8);
@@ -18,14 +18,13 @@ int main() {
     float *dy = xpu::device_malloc<float>(NElems);
     float *dz = xpu::device_malloc<float>(NElems);
 
-    xpu::memcpy(dx, hx.data(), NElems * sizeof(float));
-    xpu::memcpy(dy, hy.data(), NElems * sizeof(float));
+    xpu::copy(dx, hx.data(), NElems);
+    xpu::copy(dy, hy.data(), NElems);
 
     xpu::run_kernel<VectorOps::add>(xpu::grid::n_threads(NElems), dx, dy, dz, NElems);
 
     std::vector<float> hz(NElems);
-
-    xpu::memcpy(hz.data(), dz, NElems * sizeof(float));
+    xpu::copy(hz.data(), dz, NElems);
 
     for (auto &x: hz) {
         if (x != 16) {

@@ -21,4 +21,7 @@ XPU_DEVICE_LIBRARY_NAME &XPU_DEVICE_LIBRARY_NAME::instance(xpu::driver type) {
             }
             return *testKernelsCUDA->obj;
     }
+
+    // unreachable
+    return testKernelsCPU;
 }

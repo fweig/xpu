@@ -16,6 +16,7 @@ error cpu_driver::device_malloc(void ** ptr, size_t bytes) {
 
 error cpu_driver::free(void *ptr) {
     std::free(ptr);
+    return 0;
 }
 
 error cpu_driver::memcpy(void *dst, const void *src, size_t bytes) {

@@ -9,6 +9,8 @@
 #error "Backend name missing."
 #endif
 
+#define XPU_CPU_CODE 0
+
 // TODO: don't hardcode block size
 #define XPU_KERNEL(name, sharedMemoryT, ...) \
     __device__ void name ## _impl(const xpu::kernel_info &info, sharedMemoryT &, PARAM_LIST(__VA_ARGS__)); \

@@ -32,6 +32,8 @@ struct lane {
     lane(cpu_t) : value(0) {}
 };
 
+struct no_smem {};
+
 struct dim {
     int x = 0; 
     int y = 0; 
@@ -79,6 +81,11 @@ T *device_malloc(size_t N) {
 
 void free(void *);
 void memcpy(void *, const void *, size_t);
+
+template<typename T>
+void copy(T *dst, const T *src, size_t entries) {
+    memcpy(dst, src, sizeof(T) * entries);
+}
 
 driver active_driver();
 

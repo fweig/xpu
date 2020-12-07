@@ -1,8 +1,6 @@
 #ifndef XPU_DRIVER_CUDA_DEVICE_RUNTIME_H
 #define XPU_DRIVER_CUDA_DEVICE_RUNTIME_H
 
-#include "../../macros.h"
-
 #ifndef XPU_DEVICE_LIBRARY_BACKEND_NAME
 #error "Backend name missing."
 #endif

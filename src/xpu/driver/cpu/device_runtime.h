@@ -1,8 +1,6 @@
 #ifndef XPU_DRIVER_CPU_DEVICE_RUNTIME
 #define XPU_DRIVER_CPU_DEVICE_RUNTIME
 
-#include "../../macros.h"
-
 #define XPU_KERNEL(name, sharedMemoryT, ...) \
     void kernel_ ## name(const xpu::kernel_info &, sharedMemoryT &, PARAM_LIST(__VA_ARGS__)); \
     xpu::error XPU_DEVICE_LIBRARY_BACKEND_NAME::run_ ## name(xpu::grid params, PARAM_LIST(__VA_ARGS__)) { \

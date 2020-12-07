@@ -1,5 +1,5 @@
 #include XPU_DEVICE_LIBRARY_FRONTEND_H
-#include <xpu/macros.h>
+#include <xpu/device.h>
 
 #include <memory>
 

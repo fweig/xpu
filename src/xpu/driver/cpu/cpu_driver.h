@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../driver_interface.h"
+#include "../../host.h"
 
 namespace xpu {
 

@@ -1,7 +1,6 @@
 #pragma once
 
-#include <xpu/device_library/device_library.h>
-#include <xpu/internals.h>
+#include <xpu/host.h>
 #include XPU_DEVICE_LIBRARY_INTERFACE_H
 
 class XPU_DEVICE_LIBRARY_NAME {

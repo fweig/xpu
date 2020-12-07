@@ -1,16 +1,10 @@
 #pragma once
 
 #include "defs.h"
-#include "internals.h"
+#include "host.h"
 
 namespace xpu {
     struct no_smem {};
-    struct kernel_info {
-    dim i_thread;
-    dim n_threads;
-    dim i_block;
-    dim n_blocks;
-};
 }
 
 #if defined(__NVCC__)

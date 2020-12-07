@@ -14,7 +14,6 @@ enum class driver {
     cuda,
 };
 
-
 template<class K>
 struct is_kernel : std::false_type {};
 
@@ -61,6 +60,84 @@ private:
 
 };
 
+// internal definitions.
+using error = int;
+
+class driver_interface {
+
+public:
+    virtual xpu::error setup() = 0;
+    virtual xpu::error device_malloc(void **, size_t) = 0;
+    virtual xpu::error free(void *) = 0;
+    virtual xpu::error memcpy(void *, const void *, size_t) = 0;
+
+};
+
+struct kernel_info {
+    dim i_thread;
+    dim n_threads;
+    dim i_block;
+    dim n_blocks;
+};
+
+template<typename K, typename L>
+struct kernel_dispatcher {
+    using library = L;
+    using kernel = K;
+
+    template<typename... Args>
+    static inline void dispatch(library &inst, grid params, Args &&... args) {
+        kernel::dispatch_impl(inst, params, std::forward<Args>(args)...);
+    }
+
+    static inline const char *name() {
+        return kernel::name_impl();
+    }
+};
+
+// Some utility classes for loading shared libraries at runtime
+class library_loader {
+
+public:
+    library_loader(const std::string &);
+    ~library_loader();
+
+    void *symbol(const std::string &);
+
+private:
+    void *handle = nullptr;
+
+};
+
+template<class T>
+class lib_obj {
+
+public:
+    using create_f = T*();
+    using destroy_f = void(T*);
+
+    T *obj = nullptr;
+
+    lib_obj(const std::string &libname) : lib(libname) {
+        create = reinterpret_cast<create_f *>(lib.symbol("create"));
+        destroy = reinterpret_cast<destroy_f *>(lib.symbol("destroy"));
+        obj = create();
+    }
+
+    ~lib_obj() {
+        if (obj != nullptr) {
+            destroy(obj);
+        }
+    }
+
+private:
+    library_loader lib;
+    create_f *create = nullptr;
+    destroy_f *destroy = nullptr;
+
+};
+
+// library interface
 void initialize(driver);
 void *device_malloc(size_t);
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../driver_interface.h"
+#include "../../host.h"
 
 class cuda_driver : public xpu::driver_interface {
 

@@ -1,7 +1,4 @@
 #include "host.h"
-
-#include "internals.h"
-#include "driver_interface.h"
 #include "driver/cpu/cpu_driver.h"
 
 #include <memory>

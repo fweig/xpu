@@ -1,8 +1,7 @@
-#pragma once
+#ifndef XPU_DRIVER_CPU_DEVICE_RUNTIME
+#define XPU_DRIVER_CPU_DEVICE_RUNTIME
 
 #include "../../macros.h"
-
-#define XPU_CPU_CODE 1
 
 #define XPU_KERNEL(name, sharedMemoryT, ...) \
     void kernel_ ## name(const xpu::kernel_info &, sharedMemoryT &, PARAM_LIST(__VA_ARGS__)); \
@@ -24,3 +23,5 @@
     } \
     \
     void kernel_ ## name(const xpu::kernel_info &info, __attribute__((unused)) sharedMemoryT &shm, PARAM_LIST(__VA_ARGS__))
+
+#endif

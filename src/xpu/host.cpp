@@ -1,13 +1,13 @@
-#include "xpu.h"
+#include "host.h"
 
+#include "internals.h"
 #include "driver_interface.h"
-#include "dl_utils.h"
 #include "driver/cpu/cpu_driver.h"
 
 #include <memory>
 
 static std::unique_ptr<xpu::driver_interface> theCPUBackend;
-static std::unique_ptr<LibObj<xpu::driver_interface>> theCUDABackend;
+static std::unique_ptr<xpu::lib_obj<xpu::driver_interface>> theCUDABackend;
 static xpu::driver_interface *activeBackendInst = nullptr;
 
 static xpu::driver activeBackendType; 
@@ -22,7 +22,7 @@ namespace xpu {
             std::cout << "xpu: set cpu as active backend" << std::endl;
             break;
         case driver::cuda:       
-            theCUDABackend.reset(new LibObj<driver_interface>("./build/libXPUBackendCUDA.so"));
+            theCUDABackend.reset(new lib_obj<driver_interface>("./build/libXPUBackendCUDA.so"));
             theCUDABackend->obj->setup();
             activeBackendInst = theCUDABackend->obj;
             std::cout << "xpu: set cuda as active backend" << std::endl;

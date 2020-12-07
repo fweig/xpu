@@ -1,5 +1,5 @@
 #include "VectorOps.h"
-#include <xpu/xpu.h>
+#include <xpu/host.h>
 
 #include <cassert>
 #include <algorithm>
@@ -10,6 +10,7 @@ int main() {
     constexpr int NElems = 100;
 
     xpu::initialize(xpu::driver::cpu); // or xpu::driver::cuda
+    // xpu::select_device(xpu::any_gpu | xpu::cpu_fallback);
 
     std::vector<float> hx(NElems, 8);
     std::vector<float> hy(NElems, 8);
@@ -28,7 +29,7 @@ int main() {
 
     for (auto &x: hz) {
         if (x != 16) {
-            std::cout << "ERROR";
+            std::cout << "ERROR" << std::endl;
             abort();
         }
     }

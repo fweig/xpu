@@ -1,6 +1,7 @@
-#pragma once
+#ifndef XPU_DRIVER_INTERFACE_H
+#define XPU_DRIVER_INTERFACE_H
 
-#include "xpu.h"
+#include "internals.h"
 
 #include <cstddef>
 
@@ -18,4 +19,4 @@ public:
 
 }
 
-// vim: set ts=4 sw=4 sts=4 expandtab:
+#endif

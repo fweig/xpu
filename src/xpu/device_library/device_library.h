@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../xpu.h"
+#include "../host.h"
 
 namespace xpu {
 

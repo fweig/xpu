@@ -14,7 +14,6 @@ enum class driver {
     cuda,
 };
 
-using error = int;
 
 template<class K>
 struct is_kernel : std::false_type {};
@@ -31,8 +30,6 @@ struct lane {
     lane(standard_t) : value(0) {}
     lane(cpu_t) : value(0) {}
 };
-
-struct no_smem {};
 
 struct dim {
     int x = 0; 
@@ -62,13 +59,6 @@ struct grid {
 private:
     grid(dim b, dim t, lane) : blocks(b), threads(t) {} 
 
-};
-
-struct kernel_info {
-    dim i_thread;
-    dim n_threads;
-    dim i_block;
-    dim n_blocks;
 };
 
 void initialize(driver);

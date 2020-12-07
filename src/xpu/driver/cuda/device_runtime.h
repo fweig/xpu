@@ -1,15 +1,11 @@
-#pragma once
+#ifndef XPU_DRIVER_CUDA_DEVICE_RUNTIME_H
+#define XPU_DRIVER_CUDA_DEVICE_RUNTIME_H
 
-#include "../../xpu.h"
 #include "../../macros.h"
-
-#include <iostream>
 
 #ifndef XPU_DEVICE_LIBRARY_BACKEND_NAME
 #error "Backend name missing."
 #endif
-
-#define XPU_CPU_CODE 0
 
 // TODO: don't hardcode block size
 #define XPU_KERNEL(name, sharedMemoryT, ...) \
@@ -29,3 +25,5 @@
         return 0; \
     } \
     __device__ inline void name ## _impl(const xpu::kernel_info &info, sharedMemoryT &shm, PARAM_LIST(__VA_ARGS__))
+
+#endif

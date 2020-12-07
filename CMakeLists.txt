@@ -7,7 +7,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 enable_language(CUDA)
 
 add_library(xpu
-    src/xpu/xpu.cpp
+    src/xpu/host.cpp
     src/xpu/dl_utils.cpp
     src/xpu/driver/cpu/cpu_driver.cpp
 )
@@ -88,4 +88,4 @@ function(xpu_add_device_library libName)
 endfunction()
 
 add_subdirectory(examples/vector_add)
-add_subdirectory(examples/stsreco)
+# add_subdirectory(examples/stsreco)

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef XPU_HOST_H
+#define XPU_HOST_H
 
 #include "defs.h"
 
@@ -12,6 +13,7 @@ namespace xpu {
 enum class driver {
     cpu,
     cuda,
+    hip,
 };
 
 template<class K>
@@ -172,3 +174,5 @@ void run_kernel(grid params, Args&&... args) {
 }
 
 }
+
+#endif

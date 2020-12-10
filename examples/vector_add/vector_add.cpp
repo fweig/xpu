@@ -9,7 +9,7 @@
 int main() {
     constexpr int NElems = 100;
 
-    xpu::initialize(xpu::driver::cpu); // or xpu::driver::cuda
+    xpu::initialize(xpu::driver::cuda); // or xpu::driver::cuda
     // xpu::select_device(xpu::any_gpu | xpu::cpu_fallback);
 
     std::vector<float> hx(NElems, 8);

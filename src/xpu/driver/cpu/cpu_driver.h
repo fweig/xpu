@@ -1,4 +1,5 @@
-#pragma once
+#ifndef XPU_DRIVER_CPU_CPU_DRIVER_H
+#define XPU_DRIVER_CPU_CPU_DRIVER_H
 
 #include "../../host.h"
 
@@ -14,3 +15,5 @@ public:
 };
 
 }
+
+#endif

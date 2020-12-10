@@ -1,0 +1,13 @@
+#ifndef @libName@_BACKEND_H
+#define @libName@_BACKEND_H
+
+#include <@frontendHeader@>
+
+class @backendName@ : public @libName@ {
+    #define XPU_KERNEL_DECL(name, ...) \
+        xpu::error run_ ## name(xpu::grid, ## __VA_ARGS__) override;
+    #include <@kernelDeclFile@>
+    #undef XPU_KERNEL_DECL
+};
+
+#endif

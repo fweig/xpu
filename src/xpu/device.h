@@ -40,6 +40,7 @@
 #endif
 
 namespace xpu {
+
 struct no_smem {};
 
 template<typename T, int BlockSize>
@@ -60,8 +61,6 @@ private:
 
 };
 
-}
-
-
+} // namespace xpu
 
 #endif

@@ -172,6 +172,6 @@ void run_kernel(grid params, Args&&... args) {
     Kernel::dispatch(Kernel::library::instance(active_driver()), params, std::forward<Args>(args)...);
 }
 
-}
+} // namespace xpu
 
 #endif

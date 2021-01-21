@@ -100,5 +100,6 @@ function(xpu_add_device_library libName)
     )
 endfunction()
 
+add_subdirectory(test)
 add_subdirectory(examples/vector_add)
 # add_subdirectory(examples/stsreco)

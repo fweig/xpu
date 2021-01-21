@@ -1,6 +1,8 @@
 #ifndef XPU_DRIVER_CPU_DEVICE_RUNTIME
 #define XPU_DRIVER_CPU_DEVICE_RUNTIME
 
+#include <algorithm>
+
 #define XPU_KERNEL(name, sharedMemoryT, ...) \
     void kernel_ ## name(const xpu::kernel_info &, sharedMemoryT &, XPU_PARAM_LIST(__VA_ARGS__)); \
     xpu::error XPU_DEVICE_LIBRARY_BACKEND_NAME::run_ ## name(xpu::grid params, XPU_PARAM_LIST(__VA_ARGS__)) { \
@@ -20,6 +22,24 @@
         return 0; \
     } \
     \
-    void kernel_ ## name(const xpu::kernel_info &info, __attribute__((unused)) sharedMemoryT &shm, XPU_PARAM_LIST(__VA_ARGS__))
+    void kernel_ ## name(__attribute__((unused)) const xpu::kernel_info &info, __attribute__((unused)) sharedMemoryT &shm, XPU_PARAM_LIST(__VA_ARGS__))
+
+namespace xpu {
+
+template<typename T, int BlockSize>
+class block_sort_impl {
+
+public:
+    struct storage {};
+
+    block_sort_impl(storage &) {}
+
+    void sort(T *vals, size_t N) {
+        std::sort(vals, &vals[N]);
+    }
+
+};
+
+} // namespace xpu
 
 #endif

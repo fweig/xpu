@@ -24,4 +24,48 @@
     } \
     __device__ inline void name ## _impl(const xpu::kernel_info &info, sharedMemoryT &shm, XPU_PARAM_LIST(__VA_ARGS__))
 
+namespace xpu {
+
+template<typename T, size_t BlockSize>
+class block_sort_impl {
+
+public:
+    struct storage {};
+
+    __device__ block_sort_impl(storage &) {}
+
+    __device__ void sort(T *data, size_t N) {
+        if (threadIdx.x == 0) {
+            selection_sort(data, N);
+        }
+    }
+
+private:
+    __device__ void selection_sort(T *data, size_t N) {
+        for (int i = 0 ; i < N ; ++i) {
+            T min_val = data[i];
+            size_t min_idx = i;
+
+            // Find the smallest value in the range [left, right].
+            for (int j = i+1 ; j < N ; ++j) {
+                T val_j = data[j];
+
+                if (val_j < min_val) {
+                    min_idx = j;
+                    min_val = val_j;
+                }
+            }
+
+            // Swap the values.
+            if (i != min_idx) {
+                data[min_idx] = data[i];
+                data[i] = min_val;
+            }
+        }
+    }
+
+};
+
+} // namespace xpu
+
 #endif

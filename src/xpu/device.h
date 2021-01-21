@@ -29,10 +29,6 @@
 #define XPU_STRINGIZE_I(val) #val
 #define XPU_STRINGIZE(val) XPU_STRINGIZE_I(val)
 
-namespace xpu {
-struct no_smem {};
-}
-
 #if defined(__NVCC__)
 #include "driver/cuda/device_runtime.h"
 #else // CPU
@@ -42,5 +38,30 @@ struct no_smem {};
 #ifndef XPU_KERNEL
 #error "XPU_KERNEL not defined."
 #endif
+
+namespace xpu {
+struct no_smem {};
+
+template<typename T, int BlockSize>
+class block_sort {
+
+public:
+    using impl_t = block_sort_impl<T, BlockSize>;
+    using storage_t = typename impl_t::storage;
+
+    XPU_DI block_sort(storage_t &storage) : impl(storage) {}
+
+    XPU_DI void sort(T *vals, size_t N) {
+        impl.sort(vals, N);
+    }
+
+private:
+    impl_t impl;
+
+};
+
+}
+
+
 
 #endif

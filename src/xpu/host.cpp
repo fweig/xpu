@@ -19,7 +19,7 @@ namespace xpu {
             std::cout << "xpu: set cpu as active backend" << std::endl;
             break;
         case driver::cuda:       
-            theCUDABackend.reset(new lib_obj<driver_interface>("./build/libXPUBackendCUDA.so"));
+            theCUDABackend.reset(new lib_obj<driver_interface>("libXPUBackendCUDA.so"));
             theCUDABackend->obj->setup();
             activeBackendInst = theCUDABackend->obj;
             std::cout << "xpu: set cuda as active backend" << std::endl;
@@ -42,7 +42,10 @@ namespace xpu {
 
     void memcpy(void *dst, const void *src, size_t bytes) {
         // TODO: check for errors
-        activeBackendInst->memcpy(dst, src, bytes);
+        xpu::error err = activeBackendInst->memcpy(dst, src, bytes);
+        if (err != 0) {
+            std::cout << "Caught error " << err << std::endl;
+        }
     }
 
     driver active_driver() {

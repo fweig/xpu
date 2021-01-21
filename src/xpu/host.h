@@ -13,7 +13,6 @@ namespace xpu {
 enum class driver {
     cpu,
     cuda,
-    hip,
 };
 
 template<class K>

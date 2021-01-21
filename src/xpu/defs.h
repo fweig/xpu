@@ -19,4 +19,14 @@
 #error "XPU_D not defined."
 #endif
 
+#ifndef XPU_INLINE
+#error "XPU_INLINE not defined."
+#endif
+
+#ifndef XPU_NO_INLINE
+#error "XPU_NO_LINE not defined."
+#endif
+
+#define XPU_DI XPU_D XPU_INLINE
+
 #endif

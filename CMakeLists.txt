@@ -2,6 +2,14 @@ cmake_minimum_required(VERSION 3.18)
 
 project(xpu)
 
+if(NOT DEFINED XPU_BUILD_TESTS)
+    set(XPU_BUILD_TESTS OFF)
+endif()
+
+if (NOT DEFINED XPU_BUILD_EXAMPLES)
+    set(XPU_BUILD_EXAMPLES OFF)
+endif()
+
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 enable_language(CUDA)
@@ -100,6 +108,11 @@ function(xpu_add_device_library libName)
     )
 endfunction()
 
-add_subdirectory(test)
-add_subdirectory(examples/vector_add)
+if (XPU_BUILD_TESTS)
+    add_subdirectory(test)
+endif()
+
+if (XPU_BUILD_EXAMPLES)
+    add_subdirectory(examples/vector_add)
+endif()
 # add_subdirectory(examples/stsreco)

@@ -31,20 +31,26 @@ namespace xpu {
     void *device_malloc(size_t bytes) {
         void *ptr = nullptr;
         // TODO: check for errors
-        activeBackendInst->device_malloc(&ptr, bytes);
+        error err = activeBackendInst->device_malloc(&ptr, bytes);
+        if (err != 0) {
+            throw exception{"Caught error " + err};
+        }
+
         return ptr;
     }
 
     void free(void *ptr) {
-        // TODO: check for errors
-        activeBackendInst->free(ptr);
+        error err = activeBackendInst->free(ptr);
+        if (err != 0) {
+            throw exception{"Caught error " + err};
+        }
     }
 
     void memcpy(void *dst, const void *src, size_t bytes) {
         // TODO: check for errors
-        xpu::error err = activeBackendInst->memcpy(dst, src, bytes);
+        error err = activeBackendInst->memcpy(dst, src, bytes);
         if (err != 0) {
-            std::cout << "Caught error " << err << std::endl;
+            throw exception{"Caught error " + err};
         }
     }
 

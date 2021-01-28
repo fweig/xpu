@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <iostream>
 #include <utility>
+#include <string>
 #include <type_traits>
 
 namespace xpu {
@@ -139,6 +140,20 @@ private:
 };
 
 // library interface
+class exception : public std::exception {
+
+public:
+    explicit exception(const std::string message_) : message(message_) {}
+
+    const char *what() const noexcept override {
+        return message.c_str();
+    }
+
+private:
+    std::string message;
+
+};
+
 void initialize(driver);
 void *device_malloc(size_t);
 

@@ -31,6 +31,14 @@ TEST(XPUTest, CanRunVectorAdd) {
     xpu::free(dz);
 }
 
+TEST(XPUTest, ThrowsExceptionsOnError) {
+    EXPECT_THROW(xpu::memcpy(nullptr, nullptr, 5), xpu::exception);
+
+    float *ptr = xpu::device_malloc<float>(10);
+    xpu::free(ptr);
+    EXPECT_THROW(xpu::free(ptr), xpu::exception);
+}
+
 TEST(XPUTest, CanSortFloats) {
     constexpr int NElems = 10;
 

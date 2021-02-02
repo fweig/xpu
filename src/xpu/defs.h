@@ -27,6 +27,8 @@
 #error "XPU_NO_LINE not defined."
 #endif
 
-#define XPU_DI XPU_D XPU_INLINE
+#ifndef XPU_UNITY_BUILD
+#error "XPU_UNITY_BUILD not defined."
+#endif
 
 #endif

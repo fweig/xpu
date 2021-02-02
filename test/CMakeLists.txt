@@ -1,4 +1,7 @@
 find_package(GTest REQUIRED)
-xpu_add_device_library(test_kernels KERNEL_DEF test_kernels.def INTERFACE_H test_kernels_interface.h SRCS test_kernels.cpp)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+set(deviceSrcs test_kernels.cpp)
+add_library(test_kernels ${deviceSrcs})
+xpu_attach_device_library(test_kernels test_kernels.cu)
 add_executable(xpu_test xpu_test.cpp)
 target_link_libraries(xpu_test xpu test_kernels GTest::GTest)

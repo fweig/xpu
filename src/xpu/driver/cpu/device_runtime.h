@@ -4,8 +4,8 @@
 #include <algorithm>
 
 #define XPU_KERNEL(name, sharedMemoryT, ...) \
-    void kernel_ ## name(const xpu::kernel_info &, sharedMemoryT &, XPU_PARAM_LIST(__VA_ARGS__)); \
-    xpu::error XPU_DEVICE_LIBRARY_BACKEND_NAME::run_ ## name(xpu::grid params, XPU_PARAM_LIST(__VA_ARGS__)) { \
+    void kernel_ ## name(XPU_PARAM_LIST((const xpu::kernel_info &) info, (sharedMemoryT &) smem, ##__VA_ARGS__)); \
+    xpu::error XPU_CONCAT(XPU_DEVICE_LIBRARY, XPU_DRIVER_NAME)::run_ ## name(XPU_PARAM_LIST((xpu::grid) params, ##__VA_ARGS__)) { \
         if (params.threads.x == -1) { \
             params.threads.x = params.blocks.x; \
         } \
@@ -13,16 +13,16 @@
             sharedMemoryT shm{}; \
             xpu::kernel_info info{ \
             .i_thread = {0, 0, 0}, \
-            .n_threads  = {1, 0, 0}, \
-            .i_block  = {i, 0, 0}, \
-            .n_blocks   = {params.threads.x, 0, 0}}; \
+            .n_threads = {1, 0, 0}, \
+            .i_block = {i, 0, 0}, \
+            .n_blocks = {params.threads.x, 0, 0}}; \
             \
-            kernel_ ## name(info, shm, XPU_PARAM_NAMES(__VA_ARGS__)); \
+            kernel_ ## name(XPU_PARAM_NAMES(() info, () shm, ##__VA_ARGS__)); \
         } \
         return 0; \
     } \
     \
-    void kernel_ ## name(__attribute__((unused)) const xpu::kernel_info &info, __attribute__((unused)) sharedMemoryT &shm, XPU_PARAM_LIST(__VA_ARGS__))
+    void kernel_ ## name(XPU_PARAM_LIST((__attribute__((unused)) const xpu::kernel_info &) info, (__attribute__((unused)) sharedMemoryT &) shm, ##__VA_ARGS__))
 
 namespace xpu {
 

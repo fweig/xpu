@@ -17,7 +17,7 @@ TEST(XPUTest, CanRunVectorAdd) {
     xpu::copy(dx, hx.data(), NElems);
     xpu::copy(dy, hy.data(), NElems);
 
-    xpu::run_kernel<test_kernels::vector_add>(xpu::grid::n_threads(NElems), dx, dy, dz, NElems);
+    xpu::run_kernel<xpu_test::vector_add>(xpu::grid::n_threads(NElems), dx, dy, dz, NElems);
 
     std::vector<float> hz(NElems);
     xpu::copy(hz.data(), dz, NElems);
@@ -59,7 +59,7 @@ TEST(XPUTest, CanSortFloats) {
 
     xpu::copy(ditems, items.data(), NElems);
 
-    xpu::run_kernel<test_kernels::sort_floats>(xpu::grid::n_threads(1), ditems, NElems);
+    xpu::run_kernel<xpu_test::sort_floats>(xpu::grid::n_threads(1), ditems, NElems);
 
     xpu::copy(items.data(), ditems, NElems);
 

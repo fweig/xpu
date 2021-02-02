@@ -28,6 +28,16 @@ namespace xpu {
          activeBackendType = t;
     }
 
+    void *host_malloc(size_t bytes) {
+        void *ptr = nullptr;
+        error err = theCPUBackend->device_malloc(&ptr, bytes);
+        if (err != 0) {
+            throw exception{"Caught error " + err};
+        }
+
+        return ptr;
+    }
+
     void *device_malloc(size_t bytes) {
         void *ptr = nullptr;
         // TODO: check for errors

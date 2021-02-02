@@ -16,8 +16,15 @@ enum class driver {
     cuda,
 };
 
-template<class K>
-struct is_kernel : std::false_type {};
+enum class side {
+    host,
+    device,
+};
+
+enum direction {
+    host_to_device,
+    device_to_host,
+};
 
 struct lane {
     struct standard_t {};
@@ -82,8 +89,10 @@ struct kernel_info {
     dim n_blocks;
 };
 
+struct kernel_dispatcher_any {};
+
 template<typename K, typename L>
-struct kernel_dispatcher {
+struct kernel_dispatcher : kernel_dispatcher_any {
     using library = L;
     using kernel = K;
 
@@ -96,6 +105,9 @@ struct kernel_dispatcher {
         return kernel::name_impl();
     }
 };
+
+template<class K>
+struct is_kernel : std::is_base_of<kernel_dispatcher_any, K> {};
 
 // Some utility classes for loading shared libraries at runtime
 class library_loader {
@@ -155,20 +167,33 @@ private:
 };
 
 void initialize(driver);
-void *device_malloc(size_t);
 
+void *host_malloc(size_t);
+template<typename T>
+T *host_malloc(size_t N) {
+    return static_cast<T *>(host_malloc(sizeof(T) * N));
+}
+
+void *device_malloc(size_t);
 template<typename T>
 T *device_malloc(size_t N) {
     return static_cast<T *>(device_malloc(sizeof(T) * N));
 }
 
+template<typename T>
+T *malloc(size_t N, side where) {
+    switch (where) {
+        case side::device:
+            return device_malloc<T>(N);
+        case side::host:
+            return host_malloc<T>(N);
+    }
+}
+
 void free(void *);
 void memcpy(void *, const void *, size_t);
 
-template<typename T>
-void copy(T *dst, const T *src, size_t entries) {
-    memcpy(dst, src, sizeof(T) * entries);
-}
+
 
 driver active_driver();
 
@@ -186,6 +211,113 @@ void run_kernel(grid params, Args&&... args) {
     std::cout << "Running kernel " << get_name<Kernel>() << " on backend " << backend << std::endl;
     Kernel::dispatch(Kernel::library::instance(active_driver()), params, std::forward<Args>(args)...);
 }
+
+template<typename T>
+class hd_buffer {
+
+public:
+    explicit hd_buffer(size_t N) {
+        _size = N;
+        hostdata = host_malloc<T>(N);
+        if (active_driver() == xpu::driver::cpu) {
+            devicedata = hostdata;
+        } else {
+            devicedata = device_malloc<T>(N);
+        }
+    }
+
+    ~hd_buffer() {
+        free(hostdata);
+        if (copy_required()) {
+            free(devicedata);
+        }
+    }
+
+    size_t size() const { return _size; }
+    T *host() { return hostdata; }
+    T *device() { return devicedata; }
+
+    bool copy_required() const { return hostdata != devicedata; }
+
+private:
+    size_t _size = 0;
+    T *hostdata = nullptr;
+    T *devicedata = nullptr;
+
+};
+
+template<typename T>
+class d_buffer {
+
+public:
+    explicit d_buffer(size_t N) {
+        _size = N;
+        devicedata = device_malloc<T>(N);
+    }
+
+    ~d_buffer() {
+        free(devicedata);
+    }
+
+    size_t size() const { return _size; }
+    T *data() { return devicedata; }
+
+private:
+    size_t _size = 0;
+    T *devicedata = nullptr;
+
+};
+
+template<typename T>
+void copy(T *dst, const T *src, size_t entries) {
+    memcpy(dst, src, sizeof(T) * entries);
+}
+
+template<typename T>
+void copy(hd_buffer<T> &buf, direction dir) {
+    if (not buf.copy_required()) {
+        return;
+    }
+
+    switch (dir) {
+        case host_to_device:
+            copy<T>(buf.device(), buf.host(), buf.size());
+        case device_to_host:
+            copy<T>(buf.host(), buf.device(), buf.size());
+    }
+}
+
+template<typename T, side S>
+struct cmem_io {};
+
+template<typename T, side S>
+using cmem_io_t = typename cmem_io<T, S>::type;
+
+template<typename T>
+struct cmem_io<T, side::host> {
+    using type = hd_buffer<T>;
+};
+
+template<typename T>
+struct cmem_io<T, side::device> {
+    using type = T *;
+};
+
+template<typename T, side S>
+struct cmem_device {};
+
+template<typename T, side S>
+using cmem_device_t = typename cmem_device<T, S>::type;
+
+template<typename T>
+struct cmem_device<T, side::host> {
+    using type = d_buffer<T>;
+};
+
+template<typename T>
+struct cmem_device<T, side::device> {
+    using type = T *;
+};
 
 } // namespace xpu
 

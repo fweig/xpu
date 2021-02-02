@@ -1,0 +1,45 @@
+#ifndef XPU_KERNEL_DECL_DEF
+#error "XPU_KERNEL_DECL_DEF not defined!"
+#endif
+
+#define LibT XPU_DEVICE_LIBRARY
+#define BackendT XPU_CONCAT(XPU_DEVICE_LIBRARY, XPU_DRIVER_NAME)
+
+class LibT {
+
+public:
+    #define XPU_KERNEL_DECL(name, ...) \
+        virtual xpu::error run_ ## name(xpu::grid, ## __VA_ARGS__) = 0;
+    #include XPU_KERNEL_DECL_DEF
+    #undef XPU_KERNEL_DECL
+
+private:
+    template<typename, typename, typename...Args>
+    friend void xpu::run_kernel(xpu::grid, Args&&...);
+
+    static LibT &instance(xpu::driver type);
+
+};
+
+class BackendT : public LibT {
+    #define XPU_KERNEL_DECL(name, ...) \
+        xpu::error run_ ## name(xpu::grid, ## __VA_ARGS__) override;
+    #include XPU_KERNEL_DECL_DEF
+    #undef XPU_KERNEL_DECL
+};
+
+#define XPU_KERNEL_DECL(name, ...) \
+    struct name : public xpu::kernel_dispatcher<name, LibT> { \
+        template<typename... Args> \
+        static inline xpu::error dispatch_impl(LibT &lib, xpu::grid params, Args &&... args) { \
+            return lib.run_ ## name(params, std::forward<Args>(args)...); \
+        } \
+        static inline const char *name_impl() { \
+            return #name; \
+        } \
+    };
+#include XPU_KERNEL_DECL_DEF
+#undef XPU_KERNEL_DECL
+
+#undef BackendT
+#undef LibT

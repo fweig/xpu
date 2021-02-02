@@ -6,5 +6,7 @@
 #define XPU_D
 #define XPU_INLINE inline
 #define XPU_NO_INLINE
+#define XPU_UNITY_BUILD 0
+#define XPU_DRIVER_NAME CPU
 
 #endif

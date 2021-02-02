@@ -1,0 +1,35 @@
+#define LibT XPU_DEVICE_LIBRARY
+#define BackendT XPU_CONCAT(XPU_DEVICE_LIBRARY, XPU_DRIVER_NAME)
+#define LibObject(driver) "lib" XPU_STRINGIZE(LibT) XPU_STRINGIZE(driver) ".so"
+
+#if XPU_IS_CPU
+LibT &LibT::instance(xpu::driver type) {
+    static BackendT testKernelsCPU{};
+    static std::unique_ptr<xpu::lib_obj<LibT>> testKernelsCUDA{};
+
+    switch (type) {
+        case xpu::driver::cpu:
+            return testKernelsCPU;
+        case xpu::driver::cuda:
+            if (testKernelsCUDA == nullptr) {
+                testKernelsCUDA.reset(new xpu::lib_obj<LibT>{LibObject(CUDA)});
+            }
+            return *testKernelsCUDA->obj;
+    }
+
+    // unreachable
+    return testKernelsCPU;
+}
+#else
+extern "C" LibT *create() {
+    return new BackendT{};
+}
+
+extern "C" void destroy(LibT *obj) {
+    delete obj;
+}
+#endif
+
+#undef LibT
+#undef BackendT
+#undef LibObject

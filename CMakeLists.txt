@@ -10,9 +10,22 @@ if (NOT DEFINED XPU_BUILD_EXAMPLES)
     set(XPU_BUILD_EXAMPLES OFF)
 endif()
 
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
-enable_language(CUDA)
+if (NOT DEFINED XPU_ENABLE_CUDA)
+    set(XPU_ENABLE_CUDA OFF)
+endif()
+
+if( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR )
+    set(XPU_STANDALONE ON)
+else()
+    set(XPU_STANDALONE OFF)
+endif()
+
+if (XPU_STANDALONE)
+    set(CMAKE_CXX_STANDARD 11)
+    set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
+    # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g3 -Wall -Wextra -Werror -Wfatal-errors")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g3 -Wall -Wextra -Werror")
+endif()
 
 add_library(xpu
     src/xpu/host.cpp
@@ -20,11 +33,13 @@ add_library(xpu
     src/xpu/driver/cpu/cpu_driver.cpp
 )
 
-add_library(XPUBackendCUDA MODULE
-    src/xpu/driver/cuda/cuda_driver.cu
-)
+if (${XPU_ENABLE_CUDA})
+    enable_language(CUDA)
+    add_library(XPUBackendCUDA MODULE
+        src/xpu/driver/cuda/cuda_driver.cu
+    )
+endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g3 -Wall -Wextra -Werror")
 
 target_link_libraries(xpu dl)
 
@@ -32,6 +47,12 @@ include_directories(src)
 
 set_property(GLOBAL PROPERTY xpu_generate_script "${CMAKE_CURRENT_SOURCE_DIR}/generate_device_library_src.sh")
 set_property(GLOBAL PROPERTY xpu_root_dir "${CMAKE_CURRENT_SOURCE_DIR}")
+
+function(xpu_attach_device_library libName)
+    set(srcs ${ARGN})
+
+    add_library(${libName}CUDA MODULE ${srcs})
+endfunction()
 
 function(xpu_add_device_library libName)
     set(oneValueArgs KERNEL_DEF INTERFACE_H)
@@ -85,27 +106,29 @@ function(xpu_add_device_library libName)
         PRIVATE XPU_DEVICE_LIBRARY_BACKEND_NAME=${libName}CPU
     )
 
-    set(backendName "${libName}CUDA")
-    configure_file(${rootDir}/src/xpu/device_library/template/backend.h.in ${libName}CUDA.h)
-    configure_file(${rootDir}/src/xpu/device_library/template/backend.cpp.in ${libName}CUDABackend.cpp)
-    file (WRITE ${CMAKE_CURRENT_BINARY_DIR}/${libName}CUDAUnity.cu
-        "#include <${libName}CUDABackend.cpp>\n"
-    )
-    foreach(file ${sourceFiles})
-        file (APPEND ${CMAKE_CURRENT_BINARY_DIR}/${libName}CUDAUnity.cu
-            "#include <${file}>\n"
+    if (${XPU_CUDA_ENABLED})
+        set(backendName "${libName}CUDA")
+        configure_file(${rootDir}/src/xpu/device_library/template/backend.h.in ${libName}CUDA.h)
+        configure_file(${rootDir}/src/xpu/device_library/template/backend.cpp.in ${libName}CUDABackend.cpp)
+        file (WRITE ${CMAKE_CURRENT_BINARY_DIR}/${libName}CUDAUnity.cu
+            "#include <${libName}CUDABackend.cpp>\n"
         )
-    endforeach()
-    add_library(${backendCudaName} MODULE
-        ${CMAKE_CURRENT_BINARY_DIR}/${libName}CUDAUnity.cu
-    )
-    target_include_directories(${backendCudaName}
-        PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
-        PUBLIC ${CMAKE_CURRENT_BINARY_DIR}
-    )
-    target_compile_definitions(${backendCudaName}
-        PRIVATE XPU_DEVICE_LIBRARY_BACKEND_NAME=${libName}CUDA
-    )
+        foreach(file ${sourceFiles})
+            file (APPEND ${CMAKE_CURRENT_BINARY_DIR}/${libName}CUDAUnity.cu
+                "#include <${file}>\n"
+            )
+        endforeach()
+        add_library(${backendCudaName} MODULE
+            ${CMAKE_CURRENT_BINARY_DIR}/${libName}CUDAUnity.cu
+        )
+        target_include_directories(${backendCudaName}
+            PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+            PUBLIC ${CMAKE_CURRENT_BINARY_DIR}
+        )
+        target_compile_definitions(${backendCudaName}
+            PRIVATE XPU_DEVICE_LIBRARY_BACKEND_NAME=${libName}CUDA
+        )
+    endif()
 endfunction()
 
 if (XPU_BUILD_TESTS)

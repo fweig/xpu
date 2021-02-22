@@ -12,6 +12,7 @@ public:
     error device_malloc(void **, size_t) override;
     error free(void *) override;
     error memcpy(void *, const void *, size_t) override;
+    error memset(void *, int, size_t) override;
 };
 
 }

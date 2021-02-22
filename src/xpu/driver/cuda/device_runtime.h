@@ -17,12 +17,33 @@
         name ## _impl(XPU_PARAM_NAMES(() info, () shm, ##__VA_ARGS__)); \
     } \
     xpu::error XPU_CONCAT(XPU_DEVICE_LIBRARY, XPU_DRIVER_NAME)::run_ ## name(XPU_PARAM_LIST((xpu::grid) params, ##__VA_ARGS__)) { \
-        name ## _entry<<<(params.threads.x + 31) / 32, 32>>>(XPU_PARAM_NAMES(() 0, ##__VA_ARGS__)); \
+        if (params.threads.x > -1) { \
+            name ## _entry<<<(params.threads.x + 31) / 32, 32>>>(XPU_PARAM_NAMES(() 0, ##__VA_ARGS__)); \
+        } else { \
+            name ## _entry<<<params.blocks.x, 32>>>(XPU_PARAM_NAMES(() 0, ##__VA_ARGS__)); \
+        } \
         return 0; \
     } \
     __device__ inline void name ## _impl( XPU_PARAM_LIST((const xpu::kernel_info &) info, (sharedMemoryT &) shm, ##__VA_ARGS__))
 
+#define XPU_ASSERT(x) static_cast<void>(0)
+
 namespace xpu {
+
+namespace impl {
+__device__ __forceinline__ constexpr float pi() { return 3.14159265358979323846f; }
+
+__device__ __forceinline__ float ceil(float x) { return ceilf(x); }
+__device__ __forceinline__ float cos(float x) { return cosf(x); }
+__device__ __forceinline__ float fabs(float x) { return fabsf(x); }
+__device__ __forceinline__ float fmin(float a, float b) { return fminf(a, b); }
+__device__ __forceinline__ float fmax(float a, float b) { return fmaxf(a, b); }
+__device__ __forceinline__ int   iabs(int a) { return abs(a); }
+__device__ __forceinline__ int   imin(int a, int b) { return min(a, b); }
+__device__ __forceinline__ int   imax(int a, int b) { return max(a, b); }
+__device__ __forceinline__ float sqrt(float x) { return sqrtf(x); }
+__device__ __forceinline__ float tan(float x) { return tanf(x); }
+} // namespace impl
 
 template<typename C>
 struct cmem_accessor {

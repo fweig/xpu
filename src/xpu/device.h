@@ -49,14 +49,29 @@
 #error "XPU_KERNEL not defined."
 #endif
 
+#ifndef XPU_ASSERT
+#error "XPU_ASSERT not defined."
+#endif
+
 namespace xpu {
 
 struct no_smem {};
 
-template<typename C>
-XPU_D XPU_INLINE const C &cmem() {
-    return cmem_accessor<C>::get();
-}
+template<typename C> XPU_D XPU_INLINE const C &cmem() { return cmem_accessor<C>::get(); }
+
+XPU_D XPU_INLINE constexpr float pi() { return impl::pi(); }
+XPU_D XPU_INLINE constexpr float deg_to_rad() { return pi() / 180.f; }
+
+XPU_D XPU_INLINE int   abs(int x) { return impl::iabs(x); }
+XPU_D XPU_INLINE float abs(float x) { return impl::fabs(x); }
+XPU_D XPU_INLINE float ceil(float x) { return impl::ceil(x); }
+XPU_D XPU_INLINE float cos(float x) { return impl::cos(x); }
+XPU_D XPU_INLINE int   min(int a, int b) { return impl::imin(a, b); }
+XPU_D XPU_INLINE float min(float a, float b) { return impl::fmin(a, b); }
+XPU_D XPU_INLINE int   max(int a, int b) { return impl::imax(a, b); }
+XPU_D XPU_INLINE float max(float a, float b) { return impl::fmax(a, b); }
+XPU_D XPU_INLINE float sqrt(float x) { return impl::sqrt(x); }
+XPU_D XPU_INLINE float tan(float x) { return impl::tan(x); }
 
 template<typename T, int BlockSize>
 class block_sort {
@@ -67,9 +82,7 @@ public:
 
     XPU_D XPU_INLINE block_sort(storage_t &storage) : impl(storage) {}
 
-    XPU_D XPU_INLINE void sort(T *vals, size_t N) {
-        impl.sort(vals, N);
-    }
+    XPU_D XPU_INLINE void sort(T *vals, size_t N) { impl.sort(vals, N); }
 
 private:
     impl_t impl;

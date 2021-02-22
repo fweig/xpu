@@ -2,6 +2,9 @@
 #define XPU_DRIVER_CPU_DEVICE_RUNTIME
 
 #include <algorithm>
+#include <cassert>
+#define _USE_MATH_DEFINES
+#include <cmath>
 
 #define XPU_KERNEL(name, sharedMemoryT, ...) \
     void kernel_ ## name(XPU_PARAM_LIST((const xpu::kernel_info &) info, (sharedMemoryT &) smem, ##__VA_ARGS__)); \
@@ -24,7 +27,25 @@
     \
     void kernel_ ## name(XPU_PARAM_LIST((__attribute__((unused)) const xpu::kernel_info &) info, (__attribute__((unused)) sharedMemoryT &) shm, ##__VA_ARGS__))
 
+#define XPU_ASSERT(x) assert(x)
+
 namespace xpu {
+
+// math functions
+namespace impl {
+constexpr float pi() { return static_cast<float>(M_PI); }
+
+inline float ceil(float x) { return std::ceil(x); }
+inline float cos(float x) { return std::cos(x); }
+inline float fabs(float x) { return std::abs(x); }
+inline float fmin(float a, float b) { return std::min(a, b);}
+inline float fmax(float a, float b) { return std::max(a, b); }
+inline int   iabs(int a) { return std::abs(a); }
+inline int   imin(int a, int b) { return std::min(a, b); }
+inline int   imax(int a, int b) { return std::max(a, b); }
+inline float sqrt(float x) { return std::sqrt(x); }
+inline float tan(float x) { return std::tan(x); }
+} // namespace impl
 
 template<typename T, int BlockSize>
 class block_sort_impl {
@@ -34,9 +55,7 @@ public:
 
     block_sort_impl(storage &) {}
 
-    void sort(T *vals, size_t N) {
-        std::sort(vals, &vals[N]);
-    }
+    void sort(T *vals, size_t N) { std::sort(vals, &vals[N]); }
 
 };
 

@@ -16,13 +16,17 @@ namespace xpu {
         switch (t){
         case driver::cpu:
             activeBackendInst = theCPUBackend.get();
-            std::cout << "xpu: set cpu as active backend" << std::endl;
+            std::cout << "xpu: set cpu as active driver" << std::endl;
             break;
-        case driver::cuda:       
+        case driver::cuda:
+            std::cout << "xpu: try to setup cuda driver" << std::endl;
             theCUDABackend.reset(new lib_obj<driver_interface>("libXPUBackendCUDA.so"));
-            theCUDABackend->obj->setup();
+            xpu::error err = theCUDABackend->obj->setup();
+            if (err != 0) {
+                throw exception{"Caught error " + std::to_string(err)};
+            }
             activeBackendInst = theCUDABackend->obj;
-            std::cout << "xpu: set cuda as active backend" << std::endl;
+            std::cout << "xpu: set cuda as active driver" << std::endl;
             break;
         }
          activeBackendType = t;
@@ -43,7 +47,7 @@ namespace xpu {
         // TODO: check for errors
         error err = activeBackendInst->device_malloc(&ptr, bytes);
         if (err != 0) {
-            throw exception{"Caught error " + err};
+            throw exception{"Caught error " + std::to_string(err)};
         }
 
         return ptr;
@@ -52,15 +56,21 @@ namespace xpu {
     void free(void *ptr) {
         error err = activeBackendInst->free(ptr);
         if (err != 0) {
-            throw exception{"Caught error " + err};
+            throw exception{"Caught error " + std::to_string(err)};
         }
     }
 
     void memcpy(void *dst, const void *src, size_t bytes) {
-        // TODO: check for errors
         error err = activeBackendInst->memcpy(dst, src, bytes);
         if (err != 0) {
-            throw exception{"Caught error " + err};
+            throw exception{"Caught error " + std::to_string(err)};
+        }
+    }
+
+    void memset(void *dst, int ch, size_t bytes) {
+        error err = activeBackendInst->memset(dst, ch, bytes);
+        if (err != 0) {
+            throw exception{"Caught error " + std::to_string(err)};
         }
     }
 

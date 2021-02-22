@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.18)
 
 project(xpu)
 
+enable_language(CUDA)
+
 if(NOT DEFINED XPU_BUILD_TESTS)
     set(XPU_BUILD_TESTS OFF)
 endif()
@@ -11,7 +13,12 @@ if (NOT DEFINED XPU_BUILD_EXAMPLES)
 endif()
 
 if (NOT DEFINED XPU_ENABLE_CUDA)
+check_language(CUDA)
+if (CMAKE_CUDA_COMPILER)
+    set(XPU_ENABLE_CUDA ON)
+else()
     set(XPU_ENABLE_CUDA OFF)
+endif()
 endif()
 
 if( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR )
@@ -19,6 +26,7 @@ if( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR )
 else()
     set(XPU_STANDALONE OFF)
 endif()
+
 
 if (XPU_STANDALONE)
     set(CMAKE_CXX_STANDARD 11)
@@ -34,7 +42,6 @@ add_library(xpu SHARED
 )
 
 if (${XPU_ENABLE_CUDA})
-    enable_language(CUDA)
     add_library(XPUBackendCUDA MODULE
         src/xpu/driver/cuda/cuda_driver.cu
     )

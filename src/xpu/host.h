@@ -4,6 +4,7 @@
 #include "defs.h"
 
 #include <cstddef>
+#include <cstring>
 #include <iostream>
 #include <utility>
 #include <string>
@@ -79,6 +80,7 @@ public:
     virtual xpu::error device_malloc(void **, size_t) = 0;
     virtual xpu::error free(void *) = 0;
     virtual xpu::error memcpy(void *, const void *, size_t) = 0;
+    virtual xpu::error memset(void *, int, size_t) = 0;
 
 };
 
@@ -192,6 +194,7 @@ T *malloc(size_t N, side where) {
 
 void free(void *);
 void memcpy(void *, const void *, size_t);
+void memset(void *, int, size_t);
 
 driver active_driver();
 
@@ -219,9 +222,13 @@ template<typename T>
 class hd_buffer {
 
 public:
+    hd_buffer() = default;
     explicit hd_buffer(size_t N) {
+        std::cout << "Allocate hd_buffer with " << N << " elems of size " << sizeof(T) << std::endl; 
         _size = N;
-        hostdata = host_malloc<T>(N);
+        hostdata = static_cast<T *>(std::malloc(sizeof(T) * N));
+        std::cout << "Finished allocation" << std::endl;
+
         if (active_driver() == xpu::driver::cpu) {
             devicedata = hostdata;
         } else {
@@ -230,10 +237,22 @@ public:
     }
 
     ~hd_buffer() {
-        xpu::free(hostdata);
+        if (hostdata != nullptr) {
+            std::free(hostdata);
+        }
         if (copy_required()) {
             xpu::free(devicedata);
         }
+    }
+
+    hd_buffer<T> &operator=(const hd_buffer<T> &) = delete;
+    hd_buffer<T> &operator=(hd_buffer<T> &&other) {
+        _size = other._size;
+        hostdata = other.hostdata;
+        devicedata = other.devicedata;
+
+        other._size = 0;
+        other.hostdata = other.devicedata = nullptr;
     }
 
     size_t size() const { return _size; }
@@ -253,6 +272,7 @@ template<typename T>
 class d_buffer {
 
 public:
+    d_buffer() = default;
     explicit d_buffer(size_t N) {
         _size = N;
         devicedata = device_malloc<T>(N);
@@ -260,6 +280,15 @@ public:
 
     ~d_buffer() {
         free(devicedata);
+    }
+
+    d_buffer<T> &operator=(const d_buffer<T> &) = delete;
+    d_buffer<T> &operator=(d_buffer<T> &&other) {
+        _size = other._size;
+        devicedata = other.devicedata;
+
+        other._size = 0;
+        other.devicedata = nullptr;
     }
 
     size_t size() const { return _size; }
@@ -290,6 +319,20 @@ void copy(hd_buffer<T> &buf, direction dir) {
             copy<T>(buf.host(), buf.device(), buf.size());
             break;
     }
+}
+
+template<typename T>
+void memset(hd_buffer<T> &buf, int ch) {
+    std::cout << "xpu::memset: sizeof(T) = "<< sizeof(T) << "; size = " << buf.size() << std::endl;
+    std::memset(buf.host(), ch, sizeof(T) * buf.size());
+    if (buf.copy_required()) {
+        xpu::memset(buf.device(), ch, sizeof(T) * buf.size());
+    }
+}
+
+template<typename T>
+void memset(d_buffer<T> &buf, int ch) {
+    xpu::memset(buf.data(), ch, sizeof(T) * buf.size());
 }
 
 template<typename T, side S>

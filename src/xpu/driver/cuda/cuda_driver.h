@@ -10,6 +10,7 @@ public:
     xpu::error device_malloc(void **, size_t) override;
     xpu::error free(void *) override;
     xpu::error memcpy(void *, const void *, size_t) override;
+    xpu::error memset(void *, int, size_t) override;
 };
 
 #endif

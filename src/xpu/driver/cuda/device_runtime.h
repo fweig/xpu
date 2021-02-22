@@ -1,6 +1,8 @@
 #ifndef XPU_DRIVER_CUDA_DEVICE_RUNTIME_H
 #define XPU_DRIVER_CUDA_DEVICE_RUNTIME_H
 
+#define XPU_CMEM_IDENTIFIER(name) XPU_CONCAT(xpu_cuda_driver_cmem_symbol_, name) 
+
 // TODO: don't hardcode block size
 #define XPU_KERNEL(name, sharedMemoryT, ...) \
     __device__ void name ## _impl(XPU_PARAM_LIST((const xpu::kernel_info &) info, (sharedMemoryT &) smem, ##__VA_ARGS__)); \
@@ -21,6 +23,10 @@
     __device__ inline void name ## _impl( XPU_PARAM_LIST((const xpu::kernel_info &) info, (sharedMemoryT &) shm, ##__VA_ARGS__))
 
 namespace xpu {
+
+template<typename C>
+struct cmem_accessor {
+};
 
 template<typename T, size_t BlockSize>
 class block_sort_impl {

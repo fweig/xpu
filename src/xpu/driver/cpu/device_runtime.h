@@ -40,6 +40,18 @@ public:
 
 };
 
+// internal class used to handle constant memory
+template<typename C>
+struct cmem_accessor {
+
+    static C symbol;
+
+    static C &get() { return symbol; }
+};
+
+template<typename C>
+C cmem_accessor<C>::symbol;
+
 } // namespace xpu
 
 #endif

@@ -5,12 +5,14 @@
 
 #include <xpu/device.h>
 
-namespace xpu_test {
+struct test_constants {
+    float x;
+    float y;
+    float z;
+};
 
 #define XPU_KERNEL_DECL_DEF <test_kernels.def>
 #include <xpu/device_library_h.def>
 #undef XPU_KERNEL_DECL_DEF
-
-} // namespace test_kernels
 
 #endif

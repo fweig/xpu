@@ -8,14 +8,33 @@
 class LibT {
 
 public:
+    template<typename C>
+    struct cmem {};
+
     #define XPU_KERNEL_DECL(name, ...) \
-        virtual xpu::error run_ ## name(xpu::grid, ## __VA_ARGS__) = 0;
+        virtual xpu::error run_ ## name(xpu::grid, ## __VA_ARGS__) = 0; \
+        \
+        struct name : public xpu::kernel_dispatcher<name, LibT> { \
+            template<typename... Args> \
+            static inline xpu::error dispatch_impl(LibT &lib, xpu::grid params, Args &&... args) { \
+                return lib.run_ ## name(params, std::forward<Args>(args)...); \
+            } \
+            static inline const char *name_impl() { \
+                return #name; \
+            } \
+        };
+    #define XPU_CMEM_DECL(type, id) \
+        virtual xpu::error set_cmem_ ## id(const type &) = 0;
     #include XPU_KERNEL_DECL_DEF
+    #undef XPU_CMEM_DECL
     #undef XPU_KERNEL_DECL
 
 private:
     template<typename, typename, typename...Args>
     friend void xpu::run_kernel(xpu::grid, Args&&...);
+
+    template<typename DeviceLibrary, typename C>
+    friend void xpu::set_cmem(const C &);
 
     static LibT &instance(xpu::driver type);
 
@@ -24,21 +43,33 @@ private:
 class BackendT : public LibT {
     #define XPU_KERNEL_DECL(name, ...) \
         xpu::error run_ ## name(xpu::grid, ## __VA_ARGS__) override;
+    #define XPU_CMEM_DECL(type, id) \
+        xpu::error set_cmem_ ## id(const type &) override;
     #include XPU_KERNEL_DECL_DEF
+    #undef XPU_CMEM_DECL
     #undef XPU_KERNEL_DECL
 };
 
-#define XPU_KERNEL_DECL(name, ...) \
-    struct name : public xpu::kernel_dispatcher<name, LibT> { \
-        template<typename... Args> \
-        static inline xpu::error dispatch_impl(LibT &lib, xpu::grid params, Args &&... args) { \
-            return lib.run_ ## name(params, std::forward<Args>(args)...); \
-        } \
-        static inline const char *name_impl() { \
-            return #name; \
+#define XPU_KERNEL_DECL(...)
+#define XPU_CMEM_DECL(type, id) \
+    template<> \
+    struct LibT::cmem<type> { \
+        static xpu::error set(LibT &lib, const type &val) { \
+            return lib.set_cmem_ ## id(val); \
         } \
     };
 #include XPU_KERNEL_DECL_DEF
+#undef XPU_CMEM_DECL
+#undef XPU_KERNEL_DECL
+
+#define XPU_KERNEL_DECL(...)
+#if XPU_IS_CUDA
+#include <xpu/driver/cuda/cmem_decl.h>
+#else // XPU_IS_CPU
+#include <xpu/driver/cpu/cmem_decl.h>
+#endif
+#include XPU_KERNEL_DECL_DEF
+#undef XPU_CMEM_DECL
 #undef XPU_KERNEL_DECL
 
 #undef BackendT

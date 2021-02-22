@@ -1,7 +1,5 @@
 #include "test_kernels.h"
 
-using namespace xpu_test;
-
 #define XPU_KERNEL_DECL_DEF <test_kernels.def>
 #include <xpu/device_library_cpp.def>
 #undef XPU_KERNEL_DECL_DEF
@@ -21,4 +19,9 @@ XPU_KERNEL(vector_add, xpu::no_smem, (const float *) x, (const float *) y, (floa
 XPU_KERNEL(sort_floats, xpu::no_smem, (float *) items, (int) N) {
     xpu::block_sort<float, 32>::storage_t st{};
     xpu::block_sort<float, 32>(st).sort(items, N);
+}
+
+XPU_KERNEL(access_cmem, xpu::no_smem, (test_constants *) out) {
+    const test_constants &in = xpu::cmem<test_constants>();
+    *out = in;
 }

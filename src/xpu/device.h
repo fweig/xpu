@@ -18,6 +18,7 @@
 #define XPU_FE_7(action, x, ...) action(x),XPU_FE_6(action, __VA_ARGS__)
 #define XPU_FE_8(action, x, ...) action(x),XPU_FE_7(action, __VA_ARGS__)
 
+// FIXME make FOR_EACH macro work with empty arguments
 #define XPU_GET_MACRO(_0, _1, _2, _3, _4, _5, _6, _7, _8, NAME, ...) NAME
 #define XPU_FOR_EACH(action, ...) \
     XPU_GET_MACRO(_0, __VA_ARGS__, XPU_FE_8, XPU_FE_7, XPU_FE_6, XPU_FE_5, XPU_FE_4, XPU_FE_3, XPU_FE_2, XPU_FE_1, XPU_FE_0)(action, __VA_ARGS__)
@@ -51,6 +52,11 @@
 namespace xpu {
 
 struct no_smem {};
+
+template<typename C>
+XPU_D XPU_INLINE const C &cmem() {
+    return cmem_accessor<C>::get();
+}
 
 template<typename T, int BlockSize>
 class block_sort {

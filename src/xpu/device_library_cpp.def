@@ -30,6 +30,16 @@ extern "C" void destroy(LibT *obj) {
 }
 #endif
 
+#define XPU_KERNEL_DECL(...)
+#if XPU_IS_CUDA
+#include <xpu/driver/cuda/cmem_impl.h>
+#else // XPU_IS_CPU
+#include <xpu/driver/cpu/cmem_impl.h>
+#endif
+#include XPU_KERNEL_DECL_DEF
+#undef XPU_CMEM_DECL
+#undef XPU_KERNEL_DECL
+
 #undef LibT
 #undef BackendT
 #undef LibObject

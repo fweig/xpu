@@ -27,7 +27,7 @@ if (XPU_STANDALONE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g3 -Wall -Wextra -Werror")
 endif()
 
-add_library(xpu
+add_library(xpu SHARED
     src/xpu/host.cpp
     src/xpu/dl_utils.cpp
     src/xpu/driver/cpu/cpu_driver.cpp
@@ -48,11 +48,16 @@ include_directories(src)
 set_property(GLOBAL PROPERTY xpu_generate_script "${CMAKE_CURRENT_SOURCE_DIR}/generate_device_library_src.sh")
 set_property(GLOBAL PROPERTY xpu_root_dir "${CMAKE_CURRENT_SOURCE_DIR}")
 
-function(xpu_attach_device_library libName)
-    set(srcs ${ARGN})
+if (${XPU_ENABLE_CUDA})
+    function(xpu_attach_device_library libName)
+        set(srcs ${ARGN})
 
-    add_library(${libName}CUDA MODULE ${srcs})
-endfunction()
+        add_library(${libName}CUDA MODULE ${srcs})
+    endfunction()
+else()
+    function(xpu_attach_device_library libName)
+    endfunction()
+endif()
 
 function(xpu_add_device_library libName)
     set(oneValueArgs KERNEL_DEF INTERFACE_H)

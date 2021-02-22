@@ -44,9 +44,9 @@ struct dim {
     int y = 0; 
     int z = 0;
 
-    XPU_D dim(int x) : x(x) {}
-    XPU_D dim(int x, int y) : x(x), y(y) {}
-    XPU_D dim(int x, int y, int z) : x(x), y(y), z(z) {}
+    XPU_D dim(int _x) : x(_x) {}
+    XPU_D dim(int _x, int _y) : x(_x), y(_y) {}
+    XPU_D dim(int _x, int _y, int _z) : x(_x), y(_y), z(_z) {}
 };
 
 struct grid {
@@ -193,8 +193,6 @@ T *malloc(size_t N, side where) {
 void free(void *);
 void memcpy(void *, const void *, size_t);
 
-
-
 driver active_driver();
 
 template<typename Kernel, typename Enable = typename std::enable_if<is_kernel<Kernel>::value>::type>
@@ -212,6 +210,11 @@ void run_kernel(grid params, Args&&... args) {
     Kernel::dispatch(Kernel::library::instance(active_driver()), params, std::forward<Args>(args)...);
 }
 
+template<typename DeviceLibrary, typename C>
+void set_cmem(const C &symbol) {
+    DeviceLibrary::template cmem<C>::set(DeviceLibrary::instance(active_driver()), symbol);
+}
+
 template<typename T>
 class hd_buffer {
 
@@ -227,9 +230,9 @@ public:
     }
 
     ~hd_buffer() {
-        free(hostdata);
+        xpu::free(hostdata);
         if (copy_required()) {
-            free(devicedata);
+            xpu::free(devicedata);
         }
     }
 
@@ -270,7 +273,7 @@ private:
 
 template<typename T>
 void copy(T *dst, const T *src, size_t entries) {
-    memcpy(dst, src, sizeof(T) * entries);
+    xpu::memcpy(dst, src, sizeof(T) * entries);
 }
 
 template<typename T>
@@ -282,8 +285,10 @@ void copy(hd_buffer<T> &buf, direction dir) {
     switch (dir) {
         case host_to_device:
             copy<T>(buf.device(), buf.host(), buf.size());
+            break;
         case device_to_host:
             copy<T>(buf.host(), buf.device(), buf.size());
+            break;
     }
 }
 

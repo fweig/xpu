@@ -6,22 +6,34 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 
+namespace xpu {
+
+template<typename S, typename K, typename... Args>
+void run_cpu_kernel(int nBlocks, K kernel, Args... args) {
+    #ifdef _OPENMP
+    #pragma omp parallel for schedule(dynamic)
+    #endif
+    for (int i = 0; i < nBlocks; i++) {
+        S smem{};
+        xpu::kernel_info info{
+            .i_thread = {0, 0, 0},
+            .n_threads = {1, 0, 0},
+            .i_block = {i, 0, 0},
+            .n_blocks = {nBlocks, 0, 0},
+        };
+        kernel(info, smem, std::forward<Args>(args)...);
+    }
+}
+
+} // namespace xpu
+
 #define XPU_KERNEL(name, sharedMemoryT, ...) \
     void kernel_ ## name(XPU_PARAM_LIST((const xpu::kernel_info &) info, (sharedMemoryT &) smem, ##__VA_ARGS__)); \
     xpu::error XPU_CONCAT(XPU_DEVICE_LIBRARY, XPU_DRIVER_NAME)::run_ ## name(XPU_PARAM_LIST((xpu::grid) params, ##__VA_ARGS__)) { \
         if (params.threads.x == -1) { \
             params.threads.x = params.blocks.x; \
         } \
-        for (int i = 0; i < params.threads.x; i++) { \
-            sharedMemoryT shm{}; \
-            xpu::kernel_info info{ \
-            .i_thread = {0, 0, 0}, \
-            .n_threads = {1, 0, 0}, \
-            .i_block = {i, 0, 0}, \
-            .n_blocks = {params.threads.x, 0, 0}}; \
-            \
-            kernel_ ## name(XPU_PARAM_NAMES(() info, () shm, ##__VA_ARGS__)); \
-        } \
+        xpu::run_cpu_kernel<sharedMemoryT>(XPU_PARAM_NAMES(() params.threads.x, () kernel_ ## name, ##__VA_ARGS__)); \
         return 0; \
     } \
     \

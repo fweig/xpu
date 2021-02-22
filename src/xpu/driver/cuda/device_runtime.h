@@ -22,6 +22,7 @@
         } else { \
             name ## _entry<<<params.blocks.x, 32>>>(XPU_PARAM_NAMES(() 0, ##__VA_ARGS__)); \
         } \
+        cudaDeviceSynchronize(); \
         return 0; \
     } \
     __device__ inline void name ## _impl( XPU_PARAM_LIST((const xpu::kernel_info &) info, (sharedMemoryT &) shm, ##__VA_ARGS__))

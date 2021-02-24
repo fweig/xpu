@@ -47,6 +47,7 @@ private:
 
 };
 
+#if XPU_IS_CPU
 class @DeviceLibrary@_Cpu : public @DeviceLibrary@ {
     #define XPU_KERNEL_DECL(name, ...) \
         xpu::error run_ ## name(xpu::grid, ## __VA_ARGS__) override;
@@ -56,7 +57,9 @@ class @DeviceLibrary@_Cpu : public @DeviceLibrary@ {
     #undef XPU_CMEM_DECL
     #undef XPU_KERNEL_DECL
 };
+#endif
 
+#if XPU_IS_CUDA
 class @DeviceLibrary@_Cuda : public @DeviceLibrary@ {
     #define XPU_KERNEL_DECL(name, ...) \
         xpu::error run_ ## name(xpu::grid, ## __VA_ARGS__) override;
@@ -66,7 +69,9 @@ class @DeviceLibrary@_Cuda : public @DeviceLibrary@ {
     #undef XPU_CMEM_DECL
     #undef XPU_KERNEL_DECL
 };
+#endif
 
+#if XPU_IS_HIP
 class @DeviceLibrary@_Hip : public @DeviceLibrary@ {
     #define XPU_KERNEL_DECL(name, ...) \
         xpu::error run_ ## name(xpu::grid, ## __VA_ARGS__) override;
@@ -76,6 +81,7 @@ class @DeviceLibrary@_Hip : public @DeviceLibrary@ {
     #undef XPU_CMEM_DECL
     #undef XPU_KERNEL_DECL
 };
+#endif
 
 #define XPU_KERNEL_DECL(...)
 #define XPU_CMEM_DECL(type, id) \
@@ -90,8 +96,8 @@ class @DeviceLibrary@_Hip : public @DeviceLibrary@ {
 #undef XPU_KERNEL_DECL
 
 #define XPU_KERNEL_DECL(...)
-#if XPU_IS_CUDA
-#include <xpu/driver/cuda/cmem_decl.h>
+#if XPU_IS_HIP_CUDA
+#include <xpu/driver/hip_cuda/cmem_decl.h>
 #else // XPU_IS_CPU
 #include <xpu/driver/cpu/cmem_decl.h>
 #endif

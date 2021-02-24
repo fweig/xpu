@@ -51,10 +51,10 @@ TEST(XPUTest, CanSortFloats) {
         items.emplace_back(dist(gen));
     }
 
-    // for (auto &x : items) {
-    //     std::cout << x << " ";
-    // }
-    // std::cout << std::endl;
+    for (auto &x : items) {
+        std::cout << x << " ";
+    }
+    std::cout << std::endl;
 
     float *ditems = xpu::device_malloc<float>(NElems);
 
@@ -68,10 +68,10 @@ TEST(XPUTest, CanSortFloats) {
         EXPECT_LE(items[i-1], items[i]);
     }
 
-    // for (auto &x : items) {
-    //     std::cout << x << " ";
-    // }
-    // std::cout << std::endl;
+    for (auto &x : items) {
+        std::cout << x << " ";
+    }
+    std::cout << std::endl;
 }
 
 TEST(XPUTest, CanSetAndReadCMem) {
@@ -84,15 +84,26 @@ TEST(XPUTest, CanSetAndReadCMem) {
     xpu::copy(out, xpu::device_to_host);
 
     test_constants result = *out.host();
-    ASSERT_EQ(orig.x, result.x);
-    ASSERT_EQ(orig.y, result.y);
-    ASSERT_EQ(orig.z, result.z);
+    EXPECT_EQ(orig.x, result.x);
+    EXPECT_EQ(orig.y, result.y);
+    EXPECT_EQ(orig.z, result.z);
 
     // xpu::get_cmem<xpu_test::test_kernels>(constants_copy);
 
     // ASSERT_EQ(constants_orig.x, constants_copy.x);
     // ASSERT_EQ(constants_orig.y, constants_copy.y);
     // ASSERT_EQ(constants_orig.z, constants_copy.z);
+}
+
+TEST(XPUTest, CanGetThreadIdx) {
+    xpu::hd_buffer<int> idx{64};
+
+    xpu::run_kernel<TestKernels::get_thread_idx>(xpu::grid::n_threads(64), idx.device());
+    xpu::copy(idx, xpu::device_to_host);
+
+    for (int i = 0; i < 64; i++) {
+        EXPECT_EQ(idx.host()[i], i);
+    }
 }
 
 xpu::driver get_target_driver() {
@@ -108,6 +119,9 @@ xpu::driver get_target_driver() {
     }
     if (driver_name == "cuda") {
         return xpu::driver::cuda;
+    }
+    if (driver_name == "hip") {
+        return xpu::driver::hip;
     }
 
     std::cout << "ERROR: Unknown driver '" << driver_name_c << "'" << std::endl;

@@ -1,8 +1,8 @@
 #ifndef XPU_DEFS_H
 #define XPU_DEFS_H
 
-#ifdef __NVCC__
-#include "driver/cuda/defs.h"
+#if defined(__NVCC__) || defined(__HIPCC__)
+#include "driver/hip_cuda/defs.h"
 #else // CPU
 #include "driver/cpu/defs.h"
 #endif

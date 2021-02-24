@@ -15,6 +15,7 @@ namespace xpu {
 enum class driver {
     cpu,
     cuda,
+    hip,
 };
 
 enum class side {

@@ -8,6 +8,8 @@
 
 namespace xpu {
 
+inline int thread_idx::x() { return 0; }
+
 template<typename S, typename K, typename... Args>
 void run_cpu_kernel(int nBlocks, K kernel, Args... args) {
     #ifdef _OPENMP

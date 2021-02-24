@@ -40,14 +40,23 @@ endif()
 
 set_property(GLOBAL PROPERTY XpuRootDir "${CMAKE_CURRENT_SOURCE_DIR}")
 set_property(GLOBAL PROPERTY XpuEnableCuda "${XPU_ENABLE_CUDA}")
-
+if (DEFINED XPU_HIP_CXX)
+    set_property(GLOBAL PROPERTY XpuHipCxx "${XPU_HIP_CXX}")
+endif()
 
 function(xpu_create_subproject Library DeviceLibrary DriverType UnitySrcAbsolute)
     include(ExternalProject)
-    set(DriverType "Cuda")
     set(SrcDir "${CMAKE_CURRENT_BINARY_DIR}/${DeviceLibrary}_${DriverType}")
     get_property(RootDir GLOBAL PROPERTY XpuRootDir)
     get_target_property(IncludeDirectories ${Library} INCLUDE_DIRECTORIES)
+    get_property(HipCxx GLOBAL PROPERTY XpuHipCxx)
+
+    if (DriverType STREQUAL "Hip")
+        set(SubprojectCxx ${HipCxx})
+    else()
+        set(SubprojectCxx ${CMAKE_CXX_COMPILER})
+    endif()
+
     file(MAKE_DIRECTORY ${SrcDir})
     configure_file(
         "${RootDir}/templates/CMakeLists.txt.in" 
@@ -57,6 +66,7 @@ function(xpu_create_subproject Library DeviceLibrary DriverType UnitySrcAbsolute
         SOURCE_DIR "${SrcDir}"
         CMAKE_ARGS  
             -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=${CMAKE_CURRENT_BINARY_DIR}
+            -DCMAKE_CXX_COMPILER=${SubprojectCxx}
         BUILD_ALWAYS TRUE
         STEP_TARGETS build
         EXCLUDE_FROM_ALL TRUE
@@ -67,10 +77,10 @@ endfunction()
 function(xpu_attach_device_library Library DeviceLibrary KernelDecl)
     include(ExternalProject)
 
-    set(oneValueArgs KERNEL_DECL)
-    set(multiValueArgs SRCS)
+    # set(oneValueArgs KERNEL_DECL)
+    # set(multiValueArgs SRCS)
 
-    cmake_parse_arguments(DEV_LIB "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+    # cmake_parse_arguments(DEV_LIB "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     set(DeviceSrcs "${ARGN}")
     set(UnitySrc "${DeviceLibrary}_Unity.cpp")
@@ -80,13 +90,15 @@ function(xpu_attach_device_library Library DeviceLibrary KernelDecl)
 
     get_property(RootDir GLOBAL PROPERTY XpuRootDir)
     get_property(EnableCuda GLOBAL PROPERTY XpuEnableCuda)
+    get_property(EnableHip GLOBAL PROPERTY XpuHipCxx SET)
 
     configure_file("${RootDir}/templates/device_library.h.in" "${DeviceLibrary}.h")
     configure_file("${RootDir}/templates/device_library.cpp.in" "${DeviceLibrary}.cpp")
     set(DeviceSrcs "${CMAKE_CURRENT_BINARY_DIR}/${DeviceLibrary}.cpp" ${DeviceSrcs})
 
     target_include_directories(${Library} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
-    target_sources(${Library} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}/${DeviceLibrary}.cpp")
+    message(STATUS "Adding source ${CMAKE_CURRENT_BINARY_DIR}/${DeviceLibrary}.cpp to target ${Library}")
+    target_sources(${Library} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/${DeviceLibrary}.cpp")
 
     file(REMOVE ${UnitySrcAbsolute})
     foreach(File ${DeviceSrcs})
@@ -98,6 +110,10 @@ function(xpu_attach_device_library Library DeviceLibrary KernelDecl)
 
     if (${EnableCuda})
         xpu_create_subproject(${Library} ${DeviceLibrary} Cuda ${UnitySrcAbsolute})
+    endif()
+
+    if (${EnableHip})
+        xpu_create_subproject(${Library} ${DeviceLibrary} Hip ${UnitySrcAbsolute})
     endif()
 endfunction()
 
@@ -111,11 +127,20 @@ add_library(xpu SHARED
 target_link_libraries(xpu dl)
 
 
-if (${XPU_ENABLE_CUDA})
+if (XPU_ENABLE_CUDA)
     enable_language(CUDA)
-    xpu_create_subproject(xpu xpu_driver Cuda "${CMAKE_CURRENT_SOURCE_DIR}/src/xpu/driver/cuda/cuda_driver.cu")
+    xpu_create_subproject(
+        xpu xpu_driver Cuda
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/xpu/driver/hip_cuda/cuda_driver.cu"
+    )
 endif()
 
+if (DEFINED XPU_HIP_CXX)
+    xpu_create_subproject(
+        xpu xpu_driver Hip
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/xpu/driver/hip_cuda/hip_driver.cpp"
+    )
+endif()
 
 
 if (XPU_BUILD_TESTS)

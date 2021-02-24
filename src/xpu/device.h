@@ -4,10 +4,6 @@
 #include "defs.h"
 #include "host.h"
 
-#if XPU_IS_CPU
-#include <memory> // required by device_library_cpp.def
-#endif
-
 #define XPU_FE_0(action)
 #define XPU_FE_1(action, x, ...) action(x)
 #define XPU_FE_2(action, x, ...) action(x),XPU_FE_1(action, __VA_ARGS__)
@@ -39,8 +35,34 @@
 #define XPU_CONCAT_I(a, b) a##b
 #define XPU_CONCAT(a, b) XPU_CONCAT_I(a, b)
 
-#if defined(__NVCC__)
-#include "driver/cuda/device_runtime.h"
+#define XPU_IS_HIP_CUDA (XPU_IS_CUDA || XPU_IS_HIP)
+
+namespace xpu {
+
+struct thread_idx {
+    thread_idx() = delete;
+    XPU_D static XPU_INLINE int x();
+};
+
+struct block_dim {
+    block_dim() = delete;
+    XPU_D static XPU_INLINE int x();
+};
+
+struct block_idx {
+    block_idx() = delete;
+    XPU_D static XPU_INLINE int x();
+};
+
+struct grid_dim {
+    grid_dim() = delete;
+    XPU_D static XPU_INLINE int x();
+};
+
+} // namespace xpu
+
+#if XPU_IS_HIP_CUDA
+#include "driver/hip_cuda/device_runtime.h"
 #else // CPU
 #include "driver/cpu/device_runtime.h"
 #endif

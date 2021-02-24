@@ -6,5 +6,11 @@ enable_language(CUDA)
 set_source_files_properties(@UnitySrcAbsolute@ PROPERTIES LANGUAGE CUDA)
 endif()
 
+if ("@DriverType@" STREQUAL "Hip")
+set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} --amdgpu-target=gfx906")
+endif()
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 include_directories(@IncludeDirectories@)
 add_library(@DeviceLibrary@_@DriverType@ MODULE @UnitySrcAbsolute@)

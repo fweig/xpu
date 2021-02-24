@@ -1,7 +1,12 @@
 #include "@DeviceLibrary@.h"
 
+#include <memory>
+
 #if XPU_IS_CUDA
 #define XPU_DEVICE_LIBRARY @DeviceLibrary@_Cuda
+#elif XPU_IS_HIP
+#warning "DeviceLibrary_Hip"
+#define XPU_DEVICE_LIBRARY @DeviceLibrary@_Hip
 #else // XPU_IS_CPU
 #define XPU_DEVICE_LIBRARY @DeviceLibrary@_Cpu
 #endif
@@ -10,6 +15,7 @@
 @DeviceLibrary@ &@DeviceLibrary@::instance(xpu::driver type) {
     static @DeviceLibrary@_Cpu libCpu{};
     static std::unique_ptr<xpu::lib_obj<@DeviceLibrary@>> libCuda{};
+    static std::unique_ptr<xpu::lib_obj<@DeviceLibrary@>> libHip{};
 
     switch (type) {
         case xpu::driver::cpu:
@@ -19,6 +25,12 @@
                 libCuda.reset(new xpu::lib_obj<@DeviceLibrary@>{"lib@DeviceLibrary@_Cuda.so"});
             }
             return *libCuda->obj;
+        case xpu::driver::hip:
+            if (libHip == nullptr) {
+                libHip.reset(new xpu::lib_obj<@DeviceLibrary@>{"lib@DeviceLibrary@_Hip.so"});
+            }
+            return *libHip->obj;
+    
     }
 
     // unreachable
@@ -35,8 +47,8 @@ extern "C" void destroy(@DeviceLibrary@ *obj) {
 #endif
 
 #define XPU_KERNEL_DECL(...)
-#if XPU_IS_CUDA
-#include <xpu/driver/cuda/cmem_impl.h>
+#if XPU_IS_HIP_CUDA
+#include <xpu/driver/hip_cuda/cmem_impl.h>
 #else // XPU_IS_CPU
 #include <xpu/driver/cpu/cmem_impl.h>
 #endif

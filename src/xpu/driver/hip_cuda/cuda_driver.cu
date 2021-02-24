@@ -5,7 +5,7 @@
 class cuda_driver : public xpu::driver_interface {
 
 public:
-    xpu::error setup() override{
+    xpu::error setup() override {
         std::cout << "xpu: CUDA SETUP" << std::endl;
 
         xpu::error err;

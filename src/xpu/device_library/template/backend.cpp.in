@@ -1,9 +1,0 @@
-#include <@backendName@.h>
-
-extern "C" @libName@ *create() {
-    return new @backendName@{};
-}
-
-extern "C" void destroy(@libName@ *obj) {
-    delete obj;
-}

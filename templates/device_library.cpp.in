@@ -1,5 +1,11 @@
 #include "@DeviceLibrary@.h"
 
+#if XPU_IS_CUDA
+#define XPU_DEVICE_LIBRARY @DeviceLibrary@_Cuda
+#else // XPU_IS_CPU
+#define XPU_DEVICE_LIBRARY @DeviceLibrary@_Cpu
+#endif
+
 #if XPU_IS_CPU
 @DeviceLibrary@ &@DeviceLibrary@::instance(xpu::driver type) {
     static @DeviceLibrary@_Cpu libCpu{};
@@ -20,7 +26,7 @@
 }
 #else
 extern "C" @DeviceLibrary@ *create() {
-    return new @DeviceLibrary@_@DriverType@{};
+    return new XPU_DEVICE_LIBRARY{};
 }
 
 extern "C" void destroy(@DeviceLibrary@ *obj) {
@@ -30,13 +36,12 @@ extern "C" void destroy(@DeviceLibrary@ *obj) {
 
 #define XPU_KERNEL_DECL(...)
 #if XPU_IS_CUDA
-#define XPU_DEVICE_LIBRARY @DeviceLibrary@_Cuda
 #include <xpu/driver/cuda/cmem_impl.h>
 #else // XPU_IS_CPU
-#define XPU_DEVICE_LIBRARY @DeviceLibrary@_Cpu
 #include <xpu/driver/cpu/cmem_impl.h>
 #endif
 #include <@KernelDeclFullPath@>
 #undef XPU_CMEM_DECL
-#undef XPU_DEVICE_LIBRARY
 #undef XPU_KERNEL_DECL
+
+#undef XPU_DEVICE_LIBRARY

@@ -1,11 +1,10 @@
 project(@DeviceLibrary@_@DriverType@)
 cmake_minimum_required(VERSION 3.18)
 
-set(XPU_DRIVER_TYPE "@DriverType@")
-
-if (${XPU_DRIVER_TYPE} STREQUAL "Cuda")
+if (@DriverType@ STREQUAL "Cuda")
 enable_language(CUDA)
-set_source_files_properties(${DEVICE_LIBRARY_UNITY_SRC} PROPERTIES LANGUAGE CUDA)
+set_source_files_properties(@UnitySrcAbsolute@ PROPERTIES LANGUAGE CUDA)
 endif()
 
-add_library(@DeviceLibrary@_@DriverType@ MODULE ${DEVICE_LIBRARY_UNITY_SRC})
+include_directories(@IncludeDirectories@)
+add_library(@DeviceLibrary@_@DriverType@ MODULE @UnitySrcAbsolute@)

@@ -4,7 +4,7 @@
 #define XPU_CMEM_IDENTIFIER(name) XPU_CONCAT(xpu_cuda_driver_cmem_symbol_, name) 
 
 // TODO: don't hardcode block size
-#define XPU_KERNEL(name, sharedMemoryT, ...) \
+#define XPU_KERNEL(deviceLibrary, name, sharedMemoryT, ...) \
     __device__ void name ## _impl(XPU_PARAM_LIST((const xpu::kernel_info &) info, (sharedMemoryT &) smem, ##__VA_ARGS__)); \
     __global__ void name ## _entry(XPU_PARAM_LIST((char) /*dummyArg*/, ##__VA_ARGS__)) { \
         __shared__ sharedMemoryT shm; \
@@ -16,7 +16,7 @@
         }; \
         name ## _impl(XPU_PARAM_NAMES(() info, () shm, ##__VA_ARGS__)); \
     } \
-    xpu::error XPU_CONCAT(XPU_DEVICE_LIBRARY, XPU_DRIVER_NAME)::run_ ## name(XPU_PARAM_LIST((xpu::grid) params, ##__VA_ARGS__)) { \
+    xpu::error deviceLibrary##_Cuda::run_ ## name(XPU_PARAM_LIST((xpu::grid) params, ##__VA_ARGS__)) { \
         if (params.threads.x > -1) { \
             name ## _entry<<<(params.threads.x + 31) / 32, 32>>>(XPU_PARAM_NAMES(() 0, ##__VA_ARGS__)); \
         } else { \

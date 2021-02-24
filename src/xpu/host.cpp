@@ -20,7 +20,7 @@ namespace xpu {
             break;
         case driver::cuda:
             std::cout << "xpu: try to setup cuda driver" << std::endl;
-            theCUDABackend.reset(new lib_obj<driver_interface>("libXPUBackendCUDA.so"));
+            theCUDABackend.reset(new lib_obj<driver_interface>("libxpu_driver_Cuda.so"));
             xpu::error err = theCUDABackend->obj->setup();
             if (err != 0) {
                 throw exception{"Caught error " + std::to_string(err)};

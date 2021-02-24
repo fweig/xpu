@@ -1,4 +1,4 @@
-#include "test_kernels.h"
+#include "TestKernels.h"
 #include <xpu/host.h>
 #include <gtest/gtest.h>
 #include <cstdlib>
@@ -18,7 +18,7 @@ TEST(XPUTest, CanRunVectorAdd) {
     xpu::copy(dx, hx.data(), NElems);
     xpu::copy(dy, hy.data(), NElems);
 
-    xpu::run_kernel<test_kernels::vector_add>(xpu::grid::n_threads(NElems), dx, dy, dz, NElems);
+    xpu::run_kernel<TestKernels::vector_add>(xpu::grid::n_threads(NElems), dx, dy, dz, NElems);
 
     std::vector<float> hz(NElems);
     xpu::copy(hz.data(), dz, NElems);
@@ -60,7 +60,7 @@ TEST(XPUTest, CanSortFloats) {
 
     xpu::copy(ditems, items.data(), NElems);
 
-    xpu::run_kernel<test_kernels::sort_floats>(xpu::grid::n_threads(1), ditems, NElems);
+    xpu::run_kernel<TestKernels::sort_floats>(xpu::grid::n_threads(1), ditems, NElems);
 
     xpu::copy(items.data(), ditems, NElems);
 
@@ -78,9 +78,9 @@ TEST(XPUTest, CanSetAndReadCMem) {
     test_constants orig{1, 2, 3};
     xpu::hd_buffer<test_constants> out{1};
 
-    xpu::set_cmem<test_kernels>(orig);
+    xpu::set_cmem<TestKernels>(orig);
 
-    xpu::run_kernel<test_kernels::access_cmem>(xpu::grid::n_threads(1), out.device());
+    xpu::run_kernel<TestKernels::access_cmem>(xpu::grid::n_threads(1), out.device());
     xpu::copy(out, xpu::device_to_host);
 
     test_constants result = *out.host();

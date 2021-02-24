@@ -27,9 +27,9 @@ void run_cpu_kernel(int nBlocks, K kernel, Args... args) {
 
 } // namespace xpu
 
-#define XPU_KERNEL(name, sharedMemoryT, ...) \
+#define XPU_KERNEL(deviceLibrary, name, sharedMemoryT, ...) \
     void kernel_ ## name(XPU_PARAM_LIST((const xpu::kernel_info &) info, (sharedMemoryT &) smem, ##__VA_ARGS__)); \
-    xpu::error XPU_CONCAT(XPU_DEVICE_LIBRARY, XPU_DRIVER_NAME)::run_ ## name(XPU_PARAM_LIST((xpu::grid) params, ##__VA_ARGS__)) { \
+    xpu::error deviceLibrary##_Cpu::run_ ## name(XPU_PARAM_LIST((xpu::grid) params, ##__VA_ARGS__)) { \
         if (params.threads.x == -1) { \
             params.threads.x = params.blocks.x; \
         } \

@@ -1,0 +1,102 @@
+#ifndef @DeviceLibrary@_H
+#define @DeviceLibrary@_H
+
+#define XPU_INCLUDE
+#define XPU_KERNEL_DECL(...)
+#define XPU_CMEM_DECL(...)
+#include <@KernelDeclFullPath@>
+#undef XPU_CMEM_DECL
+#undef XPU_KERNEL_DECL
+#undef XPU_INCLUDE
+
+#include <xpu/host.h>
+#include <xpu/device.h>
+
+class @DeviceLibrary@ {
+
+public:
+    template<typename C>
+    struct cmem {};
+
+    #define XPU_KERNEL_DECL(name, ...) \
+        virtual xpu::error run_ ## name(xpu::grid, ## __VA_ARGS__) = 0; \
+        \
+        struct name : public xpu::kernel_dispatcher<name, @DeviceLibrary@> { \
+            template<typename... Args> \
+            static inline xpu::error dispatch_impl(@DeviceLibrary@ &lib, xpu::grid params, Args &&... args) { \
+                return lib.run_ ## name(params, std::forward<Args>(args)...); \
+            } \
+            static inline const char *name_impl() { \
+                return #name; \
+            } \
+        };
+    #define XPU_CMEM_DECL(type, id) \
+        virtual xpu::error set_cmem_ ## id(const type &) = 0;
+    #include <@KernelDeclFullPath@>
+    #undef XPU_CMEM_DECL
+    #undef XPU_KERNEL_DECL
+
+private:
+    template<typename, typename, typename...Args>
+    friend void xpu::run_kernel(xpu::grid, Args&&...);
+
+    template<typename DeviceLibrary, typename C>
+    friend void xpu::set_cmem(const C &);
+
+    static @DeviceLibrary@ &instance(xpu::driver type);
+
+};
+
+class @DeviceLibrary@_Cpu : public @DeviceLibrary@ {
+    #define XPU_KERNEL_DECL(name, ...) \
+        xpu::error run_ ## name(xpu::grid, ## __VA_ARGS__) override;
+    #define XPU_CMEM_DECL(type, id) \
+        xpu::error set_cmem_ ## id(const type &) override;
+    #include <@KernelDeclFullPath@>
+    #undef XPU_CMEM_DECL
+    #undef XPU_KERNEL_DECL
+};
+
+class @DeviceLibrary@_Cuda : public @DeviceLibrary@ {
+    #define XPU_KERNEL_DECL(name, ...) \
+        xpu::error run_ ## name(xpu::grid, ## __VA_ARGS__) override;
+    #define XPU_CMEM_DECL(type, id) \
+        xpu::error set_cmem_ ## id(const type &) override;
+    #include <@KernelDeclFullPath@>
+    #undef XPU_CMEM_DECL
+    #undef XPU_KERNEL_DECL
+};
+
+class @DeviceLibrary@_Hip : public @DeviceLibrary@ {
+    #define XPU_KERNEL_DECL(name, ...) \
+        xpu::error run_ ## name(xpu::grid, ## __VA_ARGS__) override;
+    #define XPU_CMEM_DECL(type, id) \
+        xpu::error set_cmem_ ## id(const type &) override;
+    #include <@KernelDeclFullPath@>
+    #undef XPU_CMEM_DECL
+    #undef XPU_KERNEL_DECL
+};
+
+#define XPU_KERNEL_DECL(...)
+#define XPU_CMEM_DECL(type, id) \
+    template<> \
+    struct @DeviceLibrary@::cmem<type> { \
+        static xpu::error set(@DeviceLibrary@ &lib, const type &val) { \
+            return lib.set_cmem_ ## id(val); \
+        } \
+    };
+#include <@KernelDeclFullPath@>
+#undef XPU_CMEM_DECL
+#undef XPU_KERNEL_DECL
+
+#define XPU_KERNEL_DECL(...)
+#if XPU_IS_CUDA
+#include <xpu/driver/cuda/cmem_decl.h>
+#else // XPU_IS_CPU
+#include <xpu/driver/cpu/cmem_decl.h>
+#endif
+#include <@KernelDeclFullPath@>
+#undef XPU_CMEM_DECL
+#undef XPU_KERNEL_DECL
+
+#endif

@@ -1,0 +1,42 @@
+#include "@DeviceLibrary@.h"
+
+#if XPU_IS_CPU
+@DeviceLibrary@ &@DeviceLibrary@::instance(xpu::driver type) {
+    static @DeviceLibrary@_Cpu libCpu{};
+    static std::unique_ptr<xpu::lib_obj<@DeviceLibrary@>> libCuda{};
+
+    switch (type) {
+        case xpu::driver::cpu:
+            return libCpu;
+        case xpu::driver::cuda:
+            if (libCuda == nullptr) {
+                libCuda.reset(new xpu::lib_obj<@DeviceLibrary@>{"lib@DeviceLibrary@_Cuda.so"});
+            }
+            return *libCuda->obj;
+    }
+
+    // unreachable
+    return libCpu;
+}
+#else
+extern "C" @DeviceLibrary@ *create() {
+    return new @DeviceLibrary@_@DriverType@{};
+}
+
+extern "C" void destroy(@DeviceLibrary@ *obj) {
+    delete obj;
+}
+#endif
+
+#define XPU_KERNEL_DECL(...)
+#if XPU_IS_CUDA
+#define XPU_DEVICE_LIBRARY @DeviceLibrary@_Cuda
+#include <xpu/driver/cuda/cmem_impl.h>
+#else // XPU_IS_CPU
+#define XPU_DEVICE_LIBRARY @DeviceLibrary@_Cpu
+#include <xpu/driver/cpu/cmem_impl.h>
+#endif
+#include <@KernelDeclFullPath@>
+#undef XPU_CMEM_DECL
+#undef XPU_DEVICE_LIBRARY
+#undef XPU_KERNEL_DECL

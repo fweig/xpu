@@ -60,16 +60,33 @@ include_directories(src)
 set_property(GLOBAL PROPERTY xpu_generate_script "${CMAKE_CURRENT_SOURCE_DIR}/generate_device_library_src.sh")
 set_property(GLOBAL PROPERTY xpu_root_dir "${CMAKE_CURRENT_SOURCE_DIR}")
 
-if (${XPU_ENABLE_CUDA})
-    function(xpu_attach_device_library libName)
-        set(srcs ${ARGN})
+function(xpu_attach_device_library Library DeviceLibrary KernelDecl)
+    set(oneValueArgs KERNEL_DECL)
+    set(multiValueArgs SRCS)
 
-        add_library(${libName}CUDA MODULE ${srcs})
-    endfunction()
-else()
-    function(xpu_attach_device_library libName)
-    endfunction()
-endif()
+    cmake_parse_arguments(DEV_LIB "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+    set(Srcs "${ARGN}")
+    set(UnitySrc "${DeviceLibrary}_Unity.cpp")
+
+    get_filename_component(KernelDeclFullPath "${KernelDecl}" REALPATH)
+
+    get_property(RootDir GLOBAL PROPERTY xpu_root_dir)
+
+    configure_file("${RootDir}/templates/device_library.h.in" "${DeviceLibrary}.h")
+    configure_file("${RootDir}/templates/device_library.cpp.in" "${DeviceLibrary}.cpp")
+
+    target_include_directories(${Library} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
+    target_sources(${Library} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}/${DeviceLibrary}.cpp")
+
+    foreach(File ${Srcs})
+        get_filename_component(FileAbsolute "${File}" REALPATH)
+        file (APPEND ${CMAKE_CURRENT_BINARY_DIR}/${UnitySrc}
+            "#include <${FileAbsolute}>\n"
+        )
+    endforeach()
+
+endfunction()
 
 function(xpu_add_device_library libName)
     set(oneValueArgs KERNEL_DEF INTERFACE_H)

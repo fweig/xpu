@@ -1,3 +1,11 @@
+#ifdef XPU_INCLUDE
+struct test_constants {
+    float x;
+    float y;
+    float z;
+};
+#endif
+
 XPU_KERNEL_DECL(empty_kernel)
 XPU_KERNEL_DECL(vector_add, const float *, const float *, float *, int)
 XPU_KERNEL_DECL(sort_floats, float *, int)

@@ -5,7 +5,6 @@ XPU_KERNEL(TestKernels, empty_kernel, xpu::no_smem) {
 }
 
 XPU_KERNEL(TestKernels, vector_add, xpu::no_smem, (const float *) x, (const float *) y, (float *) z, (int) N) {
-    printf("In Kernel vector_add\n");
     int iThread = info.i_block.x * info.n_threads.x + info.i_thread.x;
     if (iThread >= N) {
         return;
@@ -13,10 +12,25 @@ XPU_KERNEL(TestKernels, vector_add, xpu::no_smem, (const float *) x, (const floa
     z[iThread] = x[iThread] + y[iThread];
 }
 
-XPU_KERNEL(TestKernels, sort_floats, xpu::no_smem, (float *) items, (int) N) {
-    xpu::block_sort<float, 64>::storage_t st{};
+using block_sort_t = xpu::block_sort<unsigned int, 64, 1>;
+struct sort_floats_smem {
+    using sort_buf_t = typename block_sort_t::storage_t;
+    sort_buf_t sortbuf;
+};
+
+XPU_KERNEL(TestKernels, sort, sort_floats_smem, (unsigned int *) items, (int) N, (unsigned int *) buf, (unsigned int **) dst) {
     // printf("In sort\n");
-    xpu::block_sort<float, 64>(st).sort(items, N);
+    *dst = block_sort_t(shm.sortbuf).sort(items, N, buf);
+}
+
+using block_sort_kv_t = xpu::block_sort<key_value_t, 64, 1>;
+struct sort_kv_smem {
+    using sort_buf_kv_t = typename block_sort_kv_t::storage_t;
+    sort_buf_kv_t sortbuf;
+};
+
+XPU_KERNEL(TestKernels, sort_struct, sort_kv_smem, (key_value_t *) items, (int) N, (key_value_t *) buf, (key_value_t **) dst) {
+    *dst = block_sort_kv_t(shm.sortbuf).sort(items, N, buf);
 }
 
 XPU_KERNEL(TestKernels, access_cmem, xpu::no_smem, (test_constants *) out) {

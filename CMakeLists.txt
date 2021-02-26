@@ -62,10 +62,18 @@ function(xpu_create_subproject Library DeviceLibrary DriverType UnitySrcAbsolute
         "${RootDir}/templates/CMakeLists.txt.in" 
         "${SrcDir}/CMakeLists.txt"
     )
+
+    set(OutputDir ${CMAKE_CURRENT_BINARY_DIR})
+
+    # if (DEFINED CMAKE_INSTALL_LIBDIR)
+    #     set(OutputDir ${CMAKE_INSTALL_LIBDIR})
+    # else()
+    # endif()
+
     ExternalProject_Add(${DeviceLibrary}_${DriverType}
         SOURCE_DIR "${SrcDir}"
         CMAKE_ARGS  
-            -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=${CMAKE_CURRENT_BINARY_DIR}
+            -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=${OutputDir}
             -DCMAKE_CXX_COMPILER=${SubprojectCxx}
         BUILD_ALWAYS TRUE
         STEP_TARGETS build

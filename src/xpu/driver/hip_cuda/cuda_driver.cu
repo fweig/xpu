@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+#define CU_DEVICE 1
+
 class cuda_driver : public xpu::driver_interface {
 
 public:
@@ -10,14 +12,14 @@ public:
 
         xpu::error err;
         cudaDeviceProp props;
-        err = cudaGetDeviceProperties(&props, 0);
+        err = cudaGetDeviceProperties(&props, CU_DEVICE);
         if (err != 0) {
             return err;
         }
     
         std::cout << "xpu: selected cuda device " << props.name << "(" << props.major << props.minor << ")" << std::endl;
     
-        err = cudaSetDevice(0);
+        err = cudaSetDevice(CU_DEVICE);
         if (err != 0) {
             return err;
         }

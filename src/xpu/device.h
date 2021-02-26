@@ -95,16 +95,22 @@ XPU_D XPU_INLINE float max(float a, float b) { return impl::fmax(a, b); }
 XPU_D XPU_INLINE float sqrt(float x) { return impl::sqrt(x); }
 XPU_D XPU_INLINE float tan(float x) { return impl::tan(x); }
 
-template<typename T, int BlockSize>
+
+
+template<typename T, int BlockSize, int ItemsPerThread=8>
 class block_sort {
 
+    static_assert(sizeof(T) <= 8, "block_sort can only sort keys with up to 8 bytes...");
+
 public:
-    using impl_t = block_sort_impl<T, BlockSize>;
-    using storage_t = typename impl_t::storage;
+    using impl_t = block_sort_impl<T, BlockSize, ItemsPerThread>;
+    using storage_t = typename impl_t::storage_t;
 
     XPU_D XPU_INLINE block_sort(storage_t &storage) : impl(storage) {}
 
-    XPU_D XPU_INLINE void sort(T *vals, size_t N) { impl.sort(vals, N); }
+    XPU_D XPU_INLINE T *sort(T *vals, size_t N, T *buf) {
+        return impl.sort(vals, N, buf); 
+    }
 
 private:
     impl_t impl;

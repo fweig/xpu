@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 #include <cstdlib>
 #include <random>
+#include <unordered_set>
 #include <vector>
 
 TEST(XPUTest, CanRunVectorAdd) {
@@ -40,38 +41,125 @@ TEST(XPUTest, ThrowsExceptionsOnError) {
     // EXPECT_THROW(xpu::free(ptr), xpu::exception);
 }
 
-TEST(XPUTest, CanSortFloats) {
-    constexpr int NElems = 10;
+TEST(XPUTest, CanSortAny8ByteStruct) {
+
+    constexpr int NElems = 100000;
 
     std::mt19937 gen{1337};
-    std::uniform_real_distribution<float> dist{};
+    std::uniform_int_distribution<unsigned int> dist{0, 1000000};
 
-    std::vector<float> items{};
+    std::unordered_set<unsigned int> keys{};
+    while (keys.size() < NElems) {
+        keys.insert(dist(gen));
+    }
+
+    std::vector<key_value_t> items{};
+    for (auto key : keys) {
+        items.push_back({key, dist(gen)});
+    }
+
+    std::vector<key_value_t> itemsSorted = items;
+    std::sort(itemsSorted.begin(), itemsSorted.end(), [](key_value_t a, key_value_t b){
+        return a.key < b.key;
+    });
+
+    // for (auto &x : items) {
+    //     std::cout << x << " ";
+    // }
+    // std::cout << std::endl;
+
+    key_value_t *ditems = xpu::device_malloc<key_value_t>(NElems);
+    key_value_t *buf = xpu::device_malloc<key_value_t>(NElems);
+    key_value_t **dst = xpu::device_malloc<key_value_t *>(1);
+
+    xpu::copy(ditems, items.data(), NElems);
+
+    xpu::run_kernel<TestKernels::sort_struct>(xpu::grid::n_blocks(1), ditems, NElems, buf, dst);
+
+    key_value_t *hdst = nullptr;
+    xpu::copy(&hdst, dst, 1);
+    xpu::copy(items.data(), hdst, NElems);
+
+    // for (size_t i = 1; i < 220; i++) {
+    //     printf("gt %lu: %u, %u\n", i, itemsSorted[items.size()-i].key, itemsSorted[items.size()-i].value);
+    //     printf("gpu %lu: %u, %u\n", i, items[items.size()-i].key, items[items.size()-i].value);
+    // }
+
+    // int start = -1, startZero = -1;
+    // for (size_t i = 0; i < items.size(); i++) {
+    //     // if (i == 209) {
+    //     //     printf("i = 209, cpu key = %u, gpu key = %u\n", itemsSorted[i].key, items[i].key );
+    //     // }
+    //     if (items[i].key == 0 && startZero == -1) {
+    //         startZero = i;
+    //     }
+    //     if (items[i].key != 0 && startZero != -1) {
+    //         printf("Found Zero Seq fromt %u to %lu\n", startZero, i);
+    //         startZero = -1;
+    //     }
+    //     if (items[i].key != itemsSorted[i].key && start == -1) {
+    //         start = i;
+    //     }
+    //     if (items[i].key == itemsSorted[i].key && start != -1) {
+    //         printf("%lu: gt %u, gpu %u\n", i-2, itemsSorted[i-2].key, items[i-2].key);
+    //         printf("%lu: gt %u, gpu %u\n", i-1, itemsSorted[i-1].key, items[i-1].key);
+    //         printf("Seq from %d to %lu is different\n", start, i);
+    //         start = -1;
+    //     }
+    // }
+
+
+    for (size_t i = 0; i < NElems; i++) {
+        EXPECT_EQ(items[i].key, itemsSorted[i].key) << " with i = " << i;
+        ASSERT_EQ(items[i].value, itemsSorted[i].value);
+    }
+
+    // for (auto &x : items) {
+    //     std::cout << x << " ";
+    // }
+    // std::cout << std::endl;
+}
+
+TEST(XPUTest, CanSortFloatsShort) {
+
+    constexpr int NElems = 100000;
+
+    std::mt19937 gen{1337};
+    std::uniform_int_distribution<unsigned int> dist{0, 10000};
+
+    std::vector<unsigned int> items{};
     for (size_t i = 0; i < NElems; i++) {
         items.emplace_back(dist(gen));
     }
 
-    for (auto &x : items) {
-        std::cout << x << " ";
-    }
-    std::cout << std::endl;
+    std::vector<unsigned int> itemsSorted = items;
+    std::sort(itemsSorted.begin(), itemsSorted.end());
 
-    float *ditems = xpu::device_malloc<float>(NElems);
+    // for (auto &x : items) {
+    //     std::cout << x << " ";
+    // }
+    // std::cout << std::endl;
+
+    unsigned int *ditems = xpu::device_malloc<unsigned int>(NElems);
+    unsigned int *buf = xpu::device_malloc<unsigned int>(NElems);
+    unsigned int **dst = xpu::device_malloc<unsigned int *>(1);
 
     xpu::copy(ditems, items.data(), NElems);
 
-    xpu::run_kernel<TestKernels::sort_floats>(xpu::grid::n_threads(1), ditems, NElems);
+    xpu::run_kernel<TestKernels::sort>(xpu::grid::n_blocks(1), ditems, NElems, buf, dst);
 
-    xpu::copy(items.data(), ditems, NElems);
+    unsigned int *hdst = nullptr;
+    xpu::copy(&hdst, dst, 1);
+    xpu::copy(items.data(), hdst, NElems);
 
-    for (size_t i = 1; i < NElems; i++) {
-        EXPECT_LE(items[i-1], items[i]);
+    for (size_t i = 0; i < NElems; i++) {
+        ASSERT_EQ(items[i], itemsSorted[i]);
     }
 
-    for (auto &x : items) {
-        std::cout << x << " ";
-    }
-    std::cout << std::endl;
+    // for (auto &x : items) {
+    //     std::cout << x << " ";
+    // }
+    // std::cout << std::endl;
 }
 
 TEST(XPUTest, CanSetAndReadCMem) {

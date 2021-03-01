@@ -19,7 +19,7 @@
 #error "XPU_D not defined."
 #endif
 
-#ifndef XPU_INLINE
+#ifndef XPU_FORCE_INLINE
 #error "XPU_INLINE not defined."
 #endif
 

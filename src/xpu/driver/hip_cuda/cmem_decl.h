@@ -3,7 +3,7 @@
     __constant__ type XPU_CMEM_IDENTIFIER(id); \
     template<> \
     struct xpu::cmem_accessor<type> { \
-        __device__ static XPU_INLINE const type &get() { \
+        __device__ static XPU_FORCE_INLINE const type &get() { \
             return XPU_CMEM_IDENTIFIER(id); \
         } \
     };

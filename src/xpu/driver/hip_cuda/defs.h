@@ -23,7 +23,7 @@
 
 #define XPU_D __device__
 
-#define XPU_INLINE __forceinline__
+#define XPU_FORCE_INLINE __forceinline__
 
 #define XPU_NO_INLINE __noinline__
 

@@ -8,8 +8,8 @@
 
 namespace xpu {
 
-inline int thread_idx::x() { return 0; }
-inline int block_dim::x() { return 1; }
+XPU_FORCE_INLINE int thread_idx::x() { return 0; }
+XPU_FORCE_INLINE int block_dim::x() { return 1; }
 
 template<typename S, typename K, typename... Args>
 void run_cpu_kernel(int nBlocks, K kernel, Args... args) {
@@ -48,18 +48,18 @@ namespace xpu {
 
 // math functions
 namespace impl {
-constexpr float pi() { return static_cast<float>(M_PI); }
+XPU_FORCE_INLINE constexpr float pi() { return static_cast<float>(M_PI); }
 
-inline float ceil(float x) { return std::ceil(x); }
-inline float cos(float x) { return std::cos(x); }
-inline float fabs(float x) { return std::abs(x); }
-inline float fmin(float a, float b) { return std::min(a, b);}
-inline float fmax(float a, float b) { return std::max(a, b); }
-inline int   iabs(int a) { return std::abs(a); }
-inline int   imin(int a, int b) { return std::min(a, b); }
-inline int   imax(int a, int b) { return std::max(a, b); }
-inline float sqrt(float x) { return std::sqrt(x); }
-inline float tan(float x) { return std::tan(x); }
+XPU_FORCE_INLINE float ceil(float x) { return std::ceil(x); }
+XPU_FORCE_INLINE float cos(float x) { return std::cos(x); }
+XPU_FORCE_INLINE float fabs(float x) { return std::abs(x); }
+XPU_FORCE_INLINE float fmin(float a, float b) { return std::min(a, b);}
+XPU_FORCE_INLINE float fmax(float a, float b) { return std::max(a, b); }
+XPU_FORCE_INLINE int   iabs(int a) { return std::abs(a); }
+XPU_FORCE_INLINE int   imin(int a, int b) { return std::min(a, b); }
+XPU_FORCE_INLINE int   imax(int a, int b) { return std::max(a, b); }
+XPU_FORCE_INLINE float sqrt(float x) { return std::sqrt(x); }
+XPU_FORCE_INLINE float tan(float x) { return std::tan(x); }
 
 inline int atomic_add_block(int *addr, int val) {
     int old = *addr;

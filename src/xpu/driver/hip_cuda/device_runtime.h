@@ -58,37 +58,37 @@
 
 namespace xpu {
 
-XPU_D XPU_INLINE int thread_idx::x() { 
-    return XPU_CHOOSE(hipThreadIdx_x, threadIdx.x); 
+XPU_D XPU_FORCE_INLINE int thread_idx::x() {
+    return XPU_CHOOSE(hipThreadIdx_x, threadIdx.x);
 }
 
-XPU_D XPU_INLINE int block_dim::x() {
+XPU_D XPU_FORCE_INLINE int block_dim::x() {
     return XPU_CHOOSE(hipBlockDim_x, blockDim.x);
 }
 
-XPU_D XPU_INLINE int block_idx::x() {
+XPU_D XPU_FORCE_INLINE int block_idx::x() {
     return XPU_CHOOSE(hipBlockIdx_x, blockIdx.x);
 }
 
-XPU_D XPU_INLINE int grid_dim::x() {
+XPU_D XPU_FORCE_INLINE int grid_dim::x() {
     return XPU_CHOOSE(hipGridDim_x, gridDim.x);
 }
 
 namespace impl {
-__device__ __forceinline__ constexpr float pi() { return 3.14159265358979323846f; }
+XPU_D XPU_FORCE_INLINE constexpr float pi() { return 3.14159265358979323846f; }
 
-__device__ __forceinline__ float ceil(float x) { return ceilf(x); }
-__device__ __forceinline__ float cos(float x) { return cosf(x); }
-__device__ __forceinline__ float fabs(float x) { return fabsf(x); }
-__device__ __forceinline__ float fmin(float a, float b) { return fminf(a, b); }
-__device__ __forceinline__ float fmax(float a, float b) { return fmaxf(a, b); }
-__device__ __forceinline__ int   iabs(int a) { return abs(a); }
-__device__ __forceinline__ int   imin(int a, int b) { return min(a, b); }
-__device__ __forceinline__ int   imax(int a, int b) { return max(a, b); }
-__device__ __forceinline__ float sqrt(float x) { return sqrtf(x); }
-__device__ __forceinline__ float tan(float x) { return tanf(x); }
+XPU_D XPU_FORCE_INLINE float ceil(float x) { return ceilf(x); }
+XPU_D XPU_FORCE_INLINE float cos(float x) { return cosf(x); }
+XPU_D XPU_FORCE_INLINE float fabs(float x) { return fabsf(x); }
+XPU_D XPU_FORCE_INLINE float fmin(float a, float b) { return fminf(a, b); }
+XPU_D XPU_FORCE_INLINE float fmax(float a, float b) { return fmaxf(a, b); }
+XPU_D XPU_FORCE_INLINE int   iabs(int a) { return abs(a); }
+XPU_D XPU_FORCE_INLINE int   imin(int a, int b) { return min(a, b); }
+XPU_D XPU_FORCE_INLINE int   imax(int a, int b) { return max(a, b); }
+XPU_D XPU_FORCE_INLINE float sqrt(float x) { return sqrtf(x); }
+XPU_D XPU_FORCE_INLINE float tan(float x) { return tanf(x); }
 
-__device__ __forceinline__ int atomic_add_block(int *addr, int val) { return atomicAdd(addr, val); }
+XPU_D XPU_FORCE_INLINE int atomic_add_block(int *addr, int val) { return atomicAdd(addr, val); }
 } // namespace impl
 
 template<typename C>
@@ -103,16 +103,16 @@ struct sort_key<T, 8> {
     using type = unsigned long long int;
     static __device__ constexpr type max() { return 0xFFFFFFFFFFFFFFFFul; }
 
-    static __device__ __forceinline__ bool cmp(type a, type b) {
+    static __device__ XPU_FORCE_INLINE bool cmp(type a, type b) {
         return (unsigned int)(a & 0xFFFFFFFF) < (unsigned int)(b & 0xFFFFFFFF);
-    } 
+    }
 };
 
 template<typename T>
 struct sort_key<T, 4> {
     using type = unsigned int;
     static __device__ constexpr type max() { return 0xFFFFFFFF; }
-    static __device__ __forceinline__ bool cmp(type a, type b) {
+    static __device__ XPU_FORCE_INLINE bool cmp(type a, type b) {
         return a < b;
     }
 };
@@ -121,7 +121,7 @@ template<>
 struct sort_key<float> {
     using type = float;
     static __device__ constexpr type max() { return INFINITY; }
-    static __device__ __forceinline__ bool cmp(type a, type b) {
+    static __device__ XPU_FORCE_INLINE bool cmp(type a, type b) {
         return a < b;
     }
 };
@@ -250,7 +250,7 @@ private:
 
                 // if (thread_idx::x() == 0 && blockSize2 != blockSize) {
                 //     printf("BEFORE MERGING: ItemsPerBlock = %d,  block_size1 = %llu, st1 = %llu, block_size2 = %llu, st2 = %llu\n",
-                //         ItemsPerBlock, blockSize, st, blockSize2, st2); 
+                //         ItemsPerBlock, blockSize, st, blockSize2, st2);
 
                 //     // for (size_t i = st; i < st+10; i++) {
                 //     //     printf("%llu: %u\n", i, (unsigned int)(src[i] & 0xFFFFFFFFul));
@@ -290,7 +290,7 @@ private:
         if (thread_idx::x() > 0) {
             return;
         }
-        
+
         size_t i1 = 0;
         size_t i2 = 0;
         size_t i_out = 0;
@@ -307,7 +307,7 @@ private:
         }
 
         // if (block_size1 != block_size2) {
-        //     printf("MERGING: block_size1 = %llu, i1 = %llu, block_size2 = %llu, i2 = %llu, i_out = %llu\n", 
+        //     printf("MERGING: block_size1 = %llu, i1 = %llu, block_size2 = %llu, i2 = %llu, i_out = %llu\n",
         //         block_size1, i1, block_size2, i2, i_out);
         // }
 
@@ -335,7 +335,7 @@ private:
                 for (size_t i = thread_idx::x(); i < N; i += block_dim::x()) {
                     size_t l = i^j;
                     if (l > i && l < N) {
-                        if (((i & k) == 0 && data[i] > data[l]) 
+                        if (((i & k) == 0 && data[i] > data[l])
                                 || ((i & k) != 0 && data[i] < data[l])) {
                             T tmp = data[i];
                             data[i] = data[l];
@@ -350,7 +350,7 @@ private:
 
     __device__  inline size_t next_power_of_2(size_t N) {
         return N == 1 ? 1 : 1<<(64-__clzll(N-1));
-    } 
+    }
 
     __device__ void selection_sort(T *data, size_t N) {
         for (int i = 0 ; i < N ; ++i) {

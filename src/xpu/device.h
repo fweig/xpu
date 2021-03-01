@@ -26,7 +26,7 @@
 
 // Transforms a list of form '(type1) name1, (type2) name2, ...' into 'type1 name1, type2 name2, ...'
 #define XPU_PARAM_LIST(...) XPU_FOR_EACH(XPU_STRIP_TYPE_BRACKET, ##__VA_ARGS__)
-// Transforms a list of form '(type1) name1, (type2) name2, ...' into 'name1, name2, ...' 
+// Transforms a list of form '(type1) name1, (type2) name2, ...' into 'name1, name2, ...'
 #define XPU_PARAM_NAMES(...) XPU_FOR_EACH(XPU_EAT_TYPE, ##__VA_ARGS__)
 
 #define XPU_STRINGIZE_I(val) #val
@@ -41,22 +41,22 @@ namespace xpu {
 
 struct thread_idx {
     thread_idx() = delete;
-    XPU_D static XPU_INLINE int x();
+    XPU_D static XPU_FORCE_INLINE int x();
 };
 
 struct block_dim {
     block_dim() = delete;
-    XPU_D static XPU_INLINE int x();
+    XPU_D static XPU_FORCE_INLINE int x();
 };
 
 struct block_idx {
     block_idx() = delete;
-    XPU_D static XPU_INLINE int x();
+    XPU_D static XPU_FORCE_INLINE int x();
 };
 
 struct grid_dim {
     grid_dim() = delete;
-    XPU_D static XPU_INLINE int x();
+    XPU_D static XPU_FORCE_INLINE int x();
 };
 
 } // namespace xpu
@@ -79,23 +79,23 @@ namespace xpu {
 
 struct no_smem {};
 
-template<typename C> XPU_D XPU_INLINE const C &cmem() { return cmem_accessor<C>::get(); }
+template<typename C> XPU_D XPU_FORCE_INLINE const C &cmem() { return cmem_accessor<C>::get(); }
 
-XPU_D XPU_INLINE constexpr float pi() { return impl::pi(); }
-XPU_D XPU_INLINE constexpr float deg_to_rad() { return pi() / 180.f; }
+XPU_D XPU_FORCE_INLINE constexpr float pi() { return impl::pi(); }
+XPU_D XPU_FORCE_INLINE constexpr float deg_to_rad() { return pi() / 180.f; }
 
-XPU_D XPU_INLINE int   abs(int x) { return impl::iabs(x); }
-XPU_D XPU_INLINE float abs(float x) { return impl::fabs(x); }
-XPU_D XPU_INLINE float ceil(float x) { return impl::ceil(x); }
-XPU_D XPU_INLINE float cos(float x) { return impl::cos(x); }
-XPU_D XPU_INLINE int   min(int a, int b) { return impl::imin(a, b); }
-XPU_D XPU_INLINE float min(float a, float b) { return impl::fmin(a, b); }
-XPU_D XPU_INLINE int   max(int a, int b) { return impl::imax(a, b); }
-XPU_D XPU_INLINE float max(float a, float b) { return impl::fmax(a, b); }
-XPU_D XPU_INLINE float sqrt(float x) { return impl::sqrt(x); }
-XPU_D XPU_INLINE float tan(float x) { return impl::tan(x); }
+XPU_D XPU_FORCE_INLINE int   abs(int x) { return impl::iabs(x); }
+XPU_D XPU_FORCE_INLINE float abs(float x) { return impl::fabs(x); }
+XPU_D XPU_FORCE_INLINE float ceil(float x) { return impl::ceil(x); }
+XPU_D XPU_FORCE_INLINE float cos(float x) { return impl::cos(x); }
+XPU_D XPU_FORCE_INLINE int   min(int a, int b) { return impl::imin(a, b); }
+XPU_D XPU_FORCE_INLINE float min(float a, float b) { return impl::fmin(a, b); }
+XPU_D XPU_FORCE_INLINE int   max(int a, int b) { return impl::imax(a, b); }
+XPU_D XPU_FORCE_INLINE float max(float a, float b) { return impl::fmax(a, b); }
+XPU_D XPU_FORCE_INLINE float sqrt(float x) { return impl::sqrt(x); }
+XPU_D XPU_FORCE_INLINE float tan(float x) { return impl::tan(x); }
 
-XPU_D XPU_INLINE int atomic_add_block(int *addr, int val) { return impl::atomic_add_block(addr, val); }
+XPU_D XPU_FORCE_INLINE int atomic_add_block(int *addr, int val) { return impl::atomic_add_block(addr, val); }
 
 
 template<typename T, int BlockSize, int ItemsPerThread=8>
@@ -107,11 +107,9 @@ public:
     using impl_t = block_sort_impl<T, BlockSize, ItemsPerThread>;
     using storage_t = typename impl_t::storage_t;
 
-    XPU_D XPU_INLINE block_sort(storage_t &storage) : impl(storage) {}
+    XPU_D XPU_FORCE_INLINE block_sort(storage_t &storage) : impl(storage) {}
 
-    XPU_D XPU_INLINE T *sort(T *vals, size_t N, T *buf) {
-        return impl.sort(vals, N, buf); 
-    }
+    XPU_D XPU_FORCE_INLINE T *sort(T *vals, size_t N, T *buf) { return impl.sort(vals, N, buf); }
 
 private:
     impl_t impl;

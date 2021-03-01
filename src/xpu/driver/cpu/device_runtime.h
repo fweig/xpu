@@ -9,6 +9,7 @@
 namespace xpu {
 
 inline int thread_idx::x() { return 0; }
+inline int block_dim::x() { return 1; }
 
 template<typename S, typename K, typename... Args>
 void run_cpu_kernel(int nBlocks, K kernel, Args... args) {
@@ -59,6 +60,13 @@ inline int   imin(int a, int b) { return std::min(a, b); }
 inline int   imax(int a, int b) { return std::max(a, b); }
 inline float sqrt(float x) { return std::sqrt(x); }
 inline float tan(float x) { return std::tan(x); }
+
+inline int atomic_add_block(int *addr, int val) {
+    int old = *addr;
+    *addr += val;
+    return old;
+}
+
 } // namespace impl
 
 template<typename T, size_t N = sizeof(T)>
@@ -93,7 +101,7 @@ public:
 
     block_sort_impl(storage_t &) {}
 
-    T *sort(T *vals, size_t N, T *) { 
+    T *sort(T *vals, size_t N, T *) {
         compare_lower_4_byte<T> comp{};
         std::sort(vals, &vals[N], [&](T a, T b) {
             return comp(a, b);

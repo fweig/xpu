@@ -87,6 +87,8 @@ __device__ __forceinline__ int   imin(int a, int b) { return min(a, b); }
 __device__ __forceinline__ int   imax(int a, int b) { return max(a, b); }
 __device__ __forceinline__ float sqrt(float x) { return sqrtf(x); }
 __device__ __forceinline__ float tan(float x) { return tanf(x); }
+
+__device__ __forceinline__ int atomic_add_block(int *addr, int val) { return atomicAdd(addr, val); }
 } // namespace impl
 
 template<typename C>

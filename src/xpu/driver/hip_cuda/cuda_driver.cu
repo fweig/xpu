@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-#define CU_DEVICE 1
+#define CU_DEVICE 0
 
 class cuda_driver : public xpu::driver_interface {
 

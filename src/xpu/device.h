@@ -95,6 +95,7 @@ XPU_D XPU_INLINE float max(float a, float b) { return impl::fmax(a, b); }
 XPU_D XPU_INLINE float sqrt(float x) { return impl::sqrt(x); }
 XPU_D XPU_INLINE float tan(float x) { return impl::tan(x); }
 
+XPU_D XPU_INLINE int atomic_add_block(int *addr, int val) { return impl::atomic_add_block(addr, val); }
 
 
 template<typename T, int BlockSize, int ItemsPerThread=8>

@@ -1,11 +1,6 @@
 #include "VectorOps.h"
-#include <xpu/device.h>
 
-#define XPU_KERNEL_DECL_DEF <VectorOps.def>
-#include <xpu/device_library_cpp.def>
-#undef XPU_KERNEL_DECL_DEF
-
-XPU_KERNEL(add, xpu::no_smem, (const float *) x, (const float *) y, (float *) z, (size_t) N) {
+XPU_KERNEL(VectorOps, add, xpu::no_smem, (const float *) x, (const float *) y, (float *) z, (size_t) N) {
     unsigned int iThread = info.i_block.x * info.n_threads.x + info.i_thread.x;
     if (iThread >= N) {
         return;

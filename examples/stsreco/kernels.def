@@ -1,1 +1,0 @@
-XPU_KERNEL_DECL(sortDigis, StsDataContainer<StsDigi>)

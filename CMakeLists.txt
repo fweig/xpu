@@ -101,12 +101,12 @@ function(xpu_attach_device_library Library DeviceLibrary KernelDecl)
     get_property(EnableHip GLOBAL PROPERTY XpuHipCxx SET)
 
     configure_file("${RootDir}/templates/device_library.h.in" "${DeviceLibrary}.h")
-    configure_file("${RootDir}/templates/device_library.cpp.in" "${DeviceLibrary}.cpp")
+    configure_file("${RootDir}/templates/device_library.cpp.in" "${DeviceLibrary}_Xpu_runtime.cpp")
     set(DeviceSrcs "${CMAKE_CURRENT_BINARY_DIR}/${DeviceLibrary}.cpp" ${DeviceSrcs})
 
     target_include_directories(${Library} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
     message(STATUS "Adding source ${CMAKE_CURRENT_BINARY_DIR}/${DeviceLibrary}.cpp to target ${Library}")
-    target_sources(${Library} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/${DeviceLibrary}.cpp")
+    target_sources(${Library} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/${DeviceLibrary}_Xpu_runtime.cpp")
 
     file(REMOVE ${UnitySrcAbsolute})
     foreach(File ${DeviceSrcs})

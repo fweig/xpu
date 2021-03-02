@@ -1,13 +1,15 @@
+#include "../../detail/driver_interface.h"
+
 #include <hip/hip_runtime_api.h>
 
-#include <xpu/host.h>
+using xpu::detail::error;
 
-class hip_driver : public xpu::driver_interface {
+class hip_driver : public xpu::detail::driver_interface {
 
 public:
-    xpu::error setup() override {
-        xpu::error err;
-        
+    error setup() override {
+        error err;
+
         hipDeviceProp_t props;
         err = hipGetDeviceProperties(&props, 0);
         if (err != 0) {
@@ -25,30 +27,30 @@ public:
         return err;
     }
 
-    xpu::error device_malloc(void **ptr, size_t bytes) override {
+    error device_malloc(void **ptr, size_t bytes) override {
         return hipMalloc(ptr, bytes);
     }
 
-    xpu::error free(void *ptr) override {
+    error free(void *ptr) override {
         return hipFree(ptr);
     }
 
-    xpu::error memcpy(void *dst, const void *src, size_t bytes) override {
-        xpu::error err = hipMemcpy(dst, src, bytes, hipMemcpyDefault);
+    error memcpy(void *dst, const void *src, size_t bytes) override {
+        error err = hipMemcpy(dst, src, bytes, hipMemcpyDefault);
         hipDeviceSynchronize();
         return err;
     }
 
-    xpu::error memset(void *dst, int ch, size_t bytes) override {
+    error memset(void *dst, int ch, size_t bytes) override {
         return hipMemset(dst, ch, bytes);
     }
 
 };
 
-extern "C" xpu::driver_interface *create() {
+extern "C" xpu::detail::driver_interface *create() {
     return new hip_driver{};
 }
 
-extern "C" void destroy(xpu::driver_interface *b) {
+extern "C" void destroy(xpu::detail::driver_interface *b) {
     delete b;
 }

@@ -3,18 +3,18 @@
 
 #include <memory>
 
-static std::unique_ptr<xpu::driver_interface> theCPUBackend;
-static std::unique_ptr<xpu::lib_obj<xpu::driver_interface>> theCUDABackend;
-static std::unique_ptr<xpu::lib_obj<xpu::driver_interface>> theHIPBackend;
-static xpu::driver_interface *activeBackendInst = nullptr;
+static std::unique_ptr<xpu::detail::driver_interface> theCPUBackend;
+static std::unique_ptr<xpu::lib_obj<xpu::detail::driver_interface>> theCUDABackend;
+static std::unique_ptr<xpu::lib_obj<xpu::detail::driver_interface>> theHIPBackend;
+static xpu::detail::driver_interface *activeBackendInst = nullptr;
 
-static xpu::driver activeBackendType; 
+static xpu::driver activeBackendType;
 
 namespace xpu {
     void initialize(xpu::driver t) {
-        theCPUBackend = std::unique_ptr<driver_interface>(new cpu_driver{});
+        theCPUBackend = std::unique_ptr<detail::driver_interface>(new cpu_driver{});
         theCPUBackend->setup();
-        xpu::error err = 0;
+        detail::error err = 0;
         switch (t) {
         case driver::cpu:
             activeBackendInst = theCPUBackend.get();
@@ -22,7 +22,7 @@ namespace xpu {
             break;
         case driver::cuda:
             std::cout << "xpu: try to setup cuda driver" << std::endl;
-            theCUDABackend.reset(new lib_obj<driver_interface>("libxpu_driver_Cuda.so"));
+            theCUDABackend.reset(new lib_obj<detail::driver_interface>("libxpu_driver_Cuda.so"));
             err = theCUDABackend->obj->setup();
             if (err != 0) {
                 throw exception{"Caught error " + std::to_string(err)};
@@ -32,7 +32,7 @@ namespace xpu {
             break;
         case driver::hip:
             std::cout << "xpu: try to setup hip driver" << std::endl;
-            theHIPBackend.reset(new lib_obj<driver_interface>("libxpu_driver_Hip.so"));
+            theHIPBackend.reset(new lib_obj<detail::driver_interface>("libxpu_driver_Hip.so"));
             err = theHIPBackend->obj->setup();
             if (err != 0) {
                 throw exception{"Caught error " + std::to_string(err)};
@@ -46,7 +46,7 @@ namespace xpu {
 
     void *host_malloc(size_t bytes) {
         void *ptr = nullptr;
-        error err = theCPUBackend->device_malloc(&ptr, bytes);
+        detail::error err = theCPUBackend->device_malloc(&ptr, bytes);
         if (err != 0) {
             throw exception{"Caught error " + err};
         }
@@ -56,8 +56,7 @@ namespace xpu {
 
     void *device_malloc(size_t bytes) {
         void *ptr = nullptr;
-        // TODO: check for errors
-        error err = activeBackendInst->device_malloc(&ptr, bytes);
+        detail::error err = activeBackendInst->device_malloc(&ptr, bytes);
         if (err != 0) {
             throw exception{"Caught error " + std::to_string(err)};
         }
@@ -66,21 +65,21 @@ namespace xpu {
     }
 
     void free(void *ptr) {
-        error err = activeBackendInst->free(ptr);
+        detail::error err = activeBackendInst->free(ptr);
         if (err != 0) {
             throw exception{"Caught error " + std::to_string(err)};
         }
     }
 
     void memcpy(void *dst, const void *src, size_t bytes) {
-        error err = activeBackendInst->memcpy(dst, src, bytes);
+        detail::error err = activeBackendInst->memcpy(dst, src, bytes);
         if (err != 0) {
             throw exception{"Caught error " + std::to_string(err)};
         }
     }
 
     void memset(void *dst, int ch, size_t bytes) {
-        error err = activeBackendInst->memset(dst, ch, bytes);
+        detail::error err = activeBackendInst->memset(dst, ch, bytes);
         if (err != 0) {
             throw exception{"Caught error " + std::to_string(err)};
         }

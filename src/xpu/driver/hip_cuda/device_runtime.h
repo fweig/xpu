@@ -38,7 +38,7 @@
         }; \
         name ## _impl(XPU_PARAM_NAMES(() info, () shm, ##__VA_ARGS__)); \
     } \
-    xpu::error XPU_CONCAT(deviceLibrary, XPU_INTERNAL_SUFFIX)::run_ ## name(XPU_PARAM_LIST((xpu::grid) params, ##__VA_ARGS__)) { \
+    xpu::detail::error XPU_CONCAT(deviceLibrary, XPU_INTERNAL_SUFFIX)::run_ ## name(XPU_PARAM_LIST((xpu::grid) params, ##__VA_ARGS__)) { \
         printf("Running Kernel " #name "\n"); \
         if (params.threads.x > -1) { \
             XPU_INTERNAL_LAUNCH_KERNEL(name ## _entry, (params.threads.x + 63) / 64, 64, ##__VA_ARGS__); \

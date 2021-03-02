@@ -30,7 +30,7 @@
                 libHip.reset(new xpu::lib_obj<@DeviceLibrary@>{"lib@DeviceLibrary@_Hip.so"});
             }
             return *libHip->obj;
-    
+
     }
 
     // unreachable

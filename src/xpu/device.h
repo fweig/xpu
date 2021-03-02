@@ -1,8 +1,8 @@
 #ifndef XPU_DEVICE_H
 #define XPU_DEVICE_H
 
-#include "defs.h"
-#include "host.h"
+#include "defines.h"
+#include "common.h"
 
 #define XPU_FE_0(action)
 #define XPU_FE_1(action, x, ...) action(x)

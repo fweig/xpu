@@ -1,9 +1,14 @@
 #ifndef XPU_DRIVER_CPU_DEVICE_RUNTIME
 #define XPU_DRIVER_CPU_DEVICE_RUNTIME
 
+#ifndef XPU_DEVICE_H
+#error "This header should not be included directly. Include xpu/device.h instead."
+#endif
+
+#include "../../detail/macros.h"
+
 #include <algorithm>
 #include <cassert>
-#define _USE_MATH_DEFINES
 #include <cmath>
 
 namespace xpu {
@@ -30,7 +35,7 @@ void run_cpu_kernel(int nBlocks, K kernel, Args... args) {
 
 } // namespace xpu
 
-#define XPU_KERNEL(deviceLibrary, name, sharedMemoryT, ...) \
+#define XPU_DETAIL_KERNEL(deviceLibrary, name, sharedMemoryT, ...) \
     void kernel_ ## name(XPU_PARAM_LIST((const xpu::kernel_info &) info, (sharedMemoryT &) smem, ##__VA_ARGS__)); \
     xpu::detail::error deviceLibrary##_Cpu::run_ ## name(XPU_PARAM_LIST((xpu::grid) params, ##__VA_ARGS__)) { \
         if (params.threads.x == -1) { \
@@ -42,22 +47,21 @@ void run_cpu_kernel(int nBlocks, K kernel, Args... args) {
     \
     void kernel_ ## name(XPU_PARAM_LIST((__attribute__((unused)) const xpu::kernel_info &) info, (__attribute__((unused)) sharedMemoryT &) shm, ##__VA_ARGS__))
 
-#define XPU_ASSERT(x) assert(x)
+#define XPU_DETAIL_ASSERT(x) assert(x)
 
 namespace xpu {
 
 // math functions
-namespace impl {
-XPU_FORCE_INLINE constexpr float pi() { return static_cast<float>(M_PI); }
-
 XPU_FORCE_INLINE float ceil(float x) { return std::ceil(x); }
 XPU_FORCE_INLINE float cos(float x) { return std::cos(x); }
-XPU_FORCE_INLINE float fabs(float x) { return std::abs(x); }
-XPU_FORCE_INLINE float fmin(float a, float b) { return std::min(a, b);}
-XPU_FORCE_INLINE float fmax(float a, float b) { return std::max(a, b); }
-XPU_FORCE_INLINE int   iabs(int a) { return std::abs(a); }
-XPU_FORCE_INLINE int   imin(int a, int b) { return std::min(a, b); }
-XPU_FORCE_INLINE int   imax(int a, int b) { return std::max(a, b); }
+XPU_FORCE_INLINE float abs(float x) { return std::abs(x); }
+XPU_FORCE_INLINE float min(float a, float b) { return std::min(a, b);}
+XPU_FORCE_INLINE float max(float a, float b) { return std::max(a, b); }
+XPU_FORCE_INLINE int   abs(int a) { return std::abs(a); }
+XPU_FORCE_INLINE int   min(int a, int b) { return std::min(a, b); }
+XPU_FORCE_INLINE unsigned long long int min(unsigned long long int a, unsigned long long int b) { return std::min(a, b); }
+XPU_FORCE_INLINE long long int min(long long int a, long long int b) { return std::min(a, b); }
+XPU_FORCE_INLINE int   max(int a, int b) { return std::max(a, b); }
 XPU_FORCE_INLINE float sqrt(float x) { return std::sqrt(x); }
 XPU_FORCE_INLINE float tan(float x) { return std::tan(x); }
 
@@ -66,50 +70,6 @@ inline int atomic_add_block(int *addr, int val) {
     *addr += val;
     return old;
 }
-
-} // namespace impl
-
-template<typename T, size_t N = sizeof(T)>
-struct compare_lower_4_byte {};
-
-template<typename T>
-struct compare_lower_4_byte<T, 4> {
-    inline bool operator()(T a, T b) {
-        return a < b;
-    }
-};
-
-template<typename T>
-struct compare_lower_4_byte<T, 8> {
-    union as_llu {
-        T val;
-        unsigned long long int llu;
-    };
-
-    inline bool operator()(T a, T b) {
-        as_llu a_{.val = a};
-        as_llu b_{.val = b};
-        return (a_.llu & 0xFFFFFFFFul) < (b_.llu & 0xFFFFFFFFul);
-    }
-};
-
-template<typename T, int BlockSize, int ItemsPerThread>
-class block_sort_impl {
-
-public:
-    struct storage_t {};
-
-    block_sort_impl(storage_t &) {}
-
-    T *sort(T *vals, size_t N, T *) {
-        compare_lower_4_byte<T> comp{};
-        std::sort(vals, &vals[N], [&](T a, T b) {
-            return comp(a, b);
-        });
-        return vals;
-    }
-
-};
 
 // internal class used to handle constant memory
 template<typename C>
@@ -122,6 +82,8 @@ struct cmem_accessor {
 
 template<typename C>
 C cmem_accessor<C>::symbol;
+
+template<typename C> XPU_FORCE_INLINE const C &cmem() { return cmem_accessor<C>::get(); }
 
 } // namespace xpu
 

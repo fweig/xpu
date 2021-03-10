@@ -1,99 +1,11 @@
-#ifndef XPU_DRIVER_CUDA_DEVICE_RUNTIME_H
-#define XPU_DRIVER_CUDA_DEVICE_RUNTIME_H
+#ifndef XPU_DRIVER_CUDA_BLOCK_OPS_H
+#define XPU_DRIVER_CUDA_BLOCK_OPS_H
 
 #include <cub/cub.cuh>
 
-#define XPU_CMEM_IDENTIFIER(name) XPU_CONCAT(xpu_cuda_driver_cmem_symbol_, name)
-
-#if XPU_IS_CUDA
-#define XPU_CHOOSE(hip, cuda) cuda
-#else
-#define XPU_CHOOSE(hip, cuda) hip
-#endif
-
-#if XPU_IS_CUDA
-#define XPU_INTERNAL_LAUNCH_KERNEL(name, nBlocks, nThreads, ...) \
-    name<<<(nBlocks), (nThreads)>>>(XPU_PARAM_NAMES(() 0, ##__VA_ARGS__))
-#else
-#define XPU_INTERNAL_LAUNCH_KERNEL(name, nBlocks, nThreads, ...) \
-    hipLaunchKernelGGL(name, dim3(nBlocks), dim3(nThreads), 0, 0, XPU_PARAM_NAMES(() 0, ##__VA_ARGS__))
-#endif
-
-#if XPU_IS_CUDA
-#define XPU_INTERNAL_SUFFIX _Cuda
-#else
-#define XPU_INTERNAL_SUFFIX _Hip
-#endif
-
-// TODO: don't hardcode block size
-#define XPU_KERNEL(deviceLibrary, name, sharedMemoryT, ...) \
-    __device__ void name ## _impl(XPU_PARAM_LIST((const xpu::kernel_info &) info, (sharedMemoryT &) smem, ##__VA_ARGS__)); \
-    __global__ void name ## _entry(XPU_PARAM_LIST((char) /*dummyArg*/, ##__VA_ARGS__)) { \
-        __shared__ sharedMemoryT shm; \
-        xpu::kernel_info info{ \
-            .i_thread = xpu::dim{xpu::thread_idx::x(), 0, 0}, \
-            .n_threads  = xpu::dim{xpu::block_dim::x(), 0, 0}, \
-            .i_block  = xpu::dim{xpu::block_idx::x(), 0, 0}, \
-            .n_blocks   = xpu::dim{xpu::grid_dim::x(), 0, 0} \
-        }; \
-        name ## _impl(XPU_PARAM_NAMES(() info, () shm, ##__VA_ARGS__)); \
-    } \
-    xpu::detail::error XPU_CONCAT(deviceLibrary, XPU_INTERNAL_SUFFIX)::run_ ## name(XPU_PARAM_LIST((xpu::grid) params, ##__VA_ARGS__)) { \
-        printf("Running Kernel " #name "\n"); \
-        if (params.threads.x > -1) { \
-            XPU_INTERNAL_LAUNCH_KERNEL(name ## _entry, (params.threads.x + 63) / 64, 64, ##__VA_ARGS__); \
-        } else { \
-            XPU_INTERNAL_LAUNCH_KERNEL(name ## _entry, params.blocks.x, 64, ##__VA_ARGS__); \
-        } \
-        auto err = XPU_CHOOSE(hipDeviceSynchronize(), cudaDeviceSynchronize()); \
-        if (err != 0) { \
-            printf("Kernel Error: %s\n", XPU_CHOOSE(hipGetErrorString(err), cudaGetErrorString(err))); \
-        } \
-        return err; \
-    } \
-    __device__ inline void name ## _impl( XPU_PARAM_LIST((const xpu::kernel_info &) info, (sharedMemoryT &) shm, ##__VA_ARGS__))
-
-#define XPU_ASSERT(x) static_cast<void>(0)
-
+#include "../../device.h"
 
 namespace xpu {
-
-XPU_D XPU_FORCE_INLINE int thread_idx::x() {
-    return XPU_CHOOSE(hipThreadIdx_x, threadIdx.x);
-}
-
-XPU_D XPU_FORCE_INLINE int block_dim::x() {
-    return XPU_CHOOSE(hipBlockDim_x, blockDim.x);
-}
-
-XPU_D XPU_FORCE_INLINE int block_idx::x() {
-    return XPU_CHOOSE(hipBlockIdx_x, blockIdx.x);
-}
-
-XPU_D XPU_FORCE_INLINE int grid_dim::x() {
-    return XPU_CHOOSE(hipGridDim_x, gridDim.x);
-}
-
-namespace impl {
-XPU_D XPU_FORCE_INLINE constexpr float pi() { return 3.14159265358979323846f; }
-
-XPU_D XPU_FORCE_INLINE float ceil(float x) { return ceilf(x); }
-XPU_D XPU_FORCE_INLINE float cos(float x) { return cosf(x); }
-XPU_D XPU_FORCE_INLINE float fabs(float x) { return fabsf(x); }
-XPU_D XPU_FORCE_INLINE float fmin(float a, float b) { return fminf(a, b); }
-XPU_D XPU_FORCE_INLINE float fmax(float a, float b) { return fmaxf(a, b); }
-XPU_D XPU_FORCE_INLINE int   iabs(int a) { return abs(a); }
-XPU_D XPU_FORCE_INLINE int   imin(int a, int b) { return min(a, b); }
-XPU_D XPU_FORCE_INLINE int   imax(int a, int b) { return max(a, b); }
-XPU_D XPU_FORCE_INLINE float sqrt(float x) { return sqrtf(x); }
-XPU_D XPU_FORCE_INLINE float tan(float x) { return tanf(x); }
-
-XPU_D XPU_FORCE_INLINE int atomic_add_block(int *addr, int val) { return atomicAdd(addr, val); }
-} // namespace impl
-
-template<typename C>
-struct cmem_accessor {
-};
 
 template<typename T, size_t N = sizeof(T)>
 struct sort_key {};
@@ -148,9 +60,6 @@ public:
     __device__ block_sort_impl(storage_t &storage_) : storage(storage_) {}
 
     __device__ T *sort(T *data, size_t N, T *buf) {
-        // if (xpu::thread_idx::x() == 0) {
-        //     selection_sort(data, N);
-        // }
         return radix_sort(data, N, buf);
     }
 
@@ -170,7 +79,7 @@ private:
         for (size_t i = 0; i < nItemBlocks; i++) {
             size_t start = i * ItemsPerBlock;
             for (size_t b = 0; b < ItemsPerThread; b++) {
-                size_t idx = start + b * ItemsPerThread + thread_idx::x();
+                size_t idx = start + b * ItemsPerThread + xpu::thread_idx::x();
                 if (idx < N) {
                     tmp_local[b] = data[idx];
                 } else {
@@ -245,11 +154,12 @@ private:
             size_t carryStart = 0;
             for (size_t st = 0; st + blockSize < N; st += 2 * blockSize) {
                 size_t st2 = st + blockSize;
-                size_t blockSize2 = min(N - st2, blockSize);
+                // if (thread_idx::x() == 0 && N == 100) printf("N = %llu, N-st2 = %llu, blockSize = %llu\n", N, N-st2, blockSize);
+                size_t blockSize2 = min((unsigned long long int)(N - st2), (unsigned long long int)blockSize);
                 carryStart = st2 + blockSize2;
 
-                // if (thread_idx::x() == 0 && blockSize2 != blockSize) {
-                //     printf("BEFORE MERGING: ItemsPerBlock = %d,  block_size1 = %llu, st1 = %llu, block_size2 = %llu, st2 = %llu\n",
+                // if (thread_idx::x() == 0 && N == 100) {
+                //     printf("BEFORE MERGING 2: ItemsPerBlock = %d,  block_size1 = %llu, st1 = %llu, block_size2 = %llu, st2 = %llu\n",
                 //         ItemsPerBlock, blockSize, st, blockSize2, st2);
 
                 //     // for (size_t i = st; i < st+10; i++) {

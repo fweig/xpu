@@ -1,9 +1,9 @@
-#include "host.h"
+#include "dl_utils.h"
 
 #include <dlfcn.h>
 #include <iostream>
 
-using namespace xpu;
+using namespace xpu::detail;
 
 library_loader::library_loader(const std::string &libname) {
     handle = dlopen(libname.c_str(), RTLD_LAZY);

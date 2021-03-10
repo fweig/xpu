@@ -1,5 +1,7 @@
 #include "@DeviceLibrary@.h"
 
+#include <xpu/detail/dl_utils.h>
+
 #include <memory>
 
 #if XPU_IS_CUDA
@@ -14,20 +16,20 @@
 #if XPU_IS_CPU
 @DeviceLibrary@ &@DeviceLibrary@::instance(xpu::driver type) {
     static @DeviceLibrary@_Cpu libCpu{};
-    static std::unique_ptr<xpu::lib_obj<@DeviceLibrary@>> libCuda{};
-    static std::unique_ptr<xpu::lib_obj<@DeviceLibrary@>> libHip{};
+    static std::unique_ptr<xpu::detail::lib_obj<@DeviceLibrary@>> libCuda{};
+    static std::unique_ptr<xpu::detail::lib_obj<@DeviceLibrary@>> libHip{};
 
     switch (type) {
         case xpu::driver::cpu:
             return libCpu;
         case xpu::driver::cuda:
             if (libCuda == nullptr) {
-                libCuda.reset(new xpu::lib_obj<@DeviceLibrary@>{"lib@DeviceLibrary@_Cuda.so"});
+                libCuda.reset(new xpu::detail::lib_obj<@DeviceLibrary@>{"lib@DeviceLibrary@_Cuda.so"});
             }
             return *libCuda->obj;
         case xpu::driver::hip:
             if (libHip == nullptr) {
-                libHip.reset(new xpu::lib_obj<@DeviceLibrary@>{"lib@DeviceLibrary@_Hip.so"});
+                libHip.reset(new xpu::detail::lib_obj<@DeviceLibrary@>{"lib@DeviceLibrary@_Hip.so"});
             }
             return *libHip->obj;
 

@@ -124,7 +124,7 @@ include_directories(src)
 
 add_library(xpu SHARED
     src/xpu/host.cpp
-    src/xpu/dl_utils.cpp
+    src/xpu/detail/dl_utils.cpp
     src/xpu/driver/cpu/cpu_driver.cpp
 )
 target_link_libraries(xpu dl)
@@ -151,3 +151,4 @@ endif()
 if (XPU_BUILD_EXAMPLES)
     add_subdirectory(examples/vector_add)
 endif()
+

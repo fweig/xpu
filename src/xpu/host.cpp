@@ -1,11 +1,12 @@
 #include "host.h"
+#include "detail/dl_utils.h"
 #include "driver/cpu/cpu_driver.h"
 
 #include <memory>
 
 static std::unique_ptr<xpu::detail::driver_interface> theCPUBackend;
-static std::unique_ptr<xpu::lib_obj<xpu::detail::driver_interface>> theCUDABackend;
-static std::unique_ptr<xpu::lib_obj<xpu::detail::driver_interface>> theHIPBackend;
+static std::unique_ptr<xpu::detail::lib_obj<xpu::detail::driver_interface>> theCUDABackend;
+static std::unique_ptr<xpu::detail::lib_obj<xpu::detail::driver_interface>> theHIPBackend;
 static xpu::detail::driver_interface *activeBackendInst = nullptr;
 
 static xpu::driver activeBackendType;
@@ -22,7 +23,7 @@ namespace xpu {
             break;
         case driver::cuda:
             std::cout << "xpu: try to setup cuda driver" << std::endl;
-            theCUDABackend.reset(new lib_obj<detail::driver_interface>("libxpu_driver_Cuda.so"));
+            theCUDABackend.reset(new detail::lib_obj<detail::driver_interface>("libxpu_driver_Cuda.so"));
             err = theCUDABackend->obj->setup();
             if (err != 0) {
                 throw exception{"Caught error " + std::to_string(err)};
@@ -32,7 +33,7 @@ namespace xpu {
             break;
         case driver::hip:
             std::cout << "xpu: try to setup hip driver" << std::endl;
-            theHIPBackend.reset(new lib_obj<detail::driver_interface>("libxpu_driver_Hip.so"));
+            theHIPBackend.reset(new detail::lib_obj<detail::driver_interface>("libxpu_driver_Hip.so"));
             err = theHIPBackend->obj->setup();
             if (err != 0) {
                 throw exception{"Caught error " + std::to_string(err)};

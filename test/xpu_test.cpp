@@ -122,7 +122,7 @@ TEST(XPUTest, CanSortAny8ByteStruct) {
 
 TEST(XPUTest, CanSortFloatsShort) {
 
-    constexpr int NElems = 100000;
+    constexpr int NElems = 100;
 
     std::mt19937 gen{1337};
     std::uniform_int_distribution<unsigned int> dist{0, 10000};
@@ -152,14 +152,15 @@ TEST(XPUTest, CanSortFloatsShort) {
     xpu::copy(&hdst, dst, 1);
     xpu::copy(items.data(), hdst, NElems);
 
-    for (size_t i = 0; i < NElems; i++) {
-        ASSERT_EQ(items[i], itemsSorted[i]);
-    }
-
     // for (auto &x : items) {
     //     std::cout << x << " ";
     // }
     // std::cout << std::endl;
+
+    for (size_t i = 0; i < NElems; i++) {
+        ASSERT_EQ(items[i], itemsSorted[i]);
+    }
+
 }
 
 TEST(XPUTest, CanSetAndReadCMem) {

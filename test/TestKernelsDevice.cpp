@@ -42,5 +42,6 @@ XPU_KERNEL(TestKernels, access_cmem, xpu::no_smem, (test_constants *) out) {
 }
 
 XPU_KERNEL(TestKernels, get_thread_idx, xpu::no_smem, (int *) idx) {
-    idx[info.i_thread.x] = xpu::thread_idx::x();
+    int iThread = info.i_block.x * info.n_threads.x + info.i_thread.x;
+    idx[iThread] = xpu::thread_idx::x();
 }

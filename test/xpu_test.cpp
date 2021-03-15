@@ -190,7 +190,11 @@ TEST(XPUTest, CanGetThreadIdx) {
     xpu::copy(idx, xpu::device_to_host);
 
     for (int i = 0; i < 64; i++) {
-        EXPECT_EQ(idx.host()[i], i);
+        if (xpu::active_driver() == xpu::driver::cpu) {
+            EXPECT_EQ(idx.host()[i], 0) << " with i = " << i;
+        } else {
+            EXPECT_EQ(idx.host()[i], i);
+        }
     }
 }
 

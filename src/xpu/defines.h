@@ -11,6 +11,8 @@
 
 #define XPU_FORCE_INLINE XPU_DETAIL_FORCE_INLINE
 
+#define XPU_COMPILATION_TARGET XPU_DETAIL_COMPILATION_TARGET
+
 #include "detail/defines.h"
 
 #endif

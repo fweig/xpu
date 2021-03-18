@@ -9,14 +9,17 @@
 #define XPU_DETAIL_IS_CUDA 1
 #define XPU_DETAIL_IS_HIP 0
 #define XPU_DETAIL_IS_CPU 0
+#define XPU_DETAIL_COMPILATION_TARGET (xpu::driver::cuda)
 #elif defined(__HIPCC__)
 #define XPU_DETAIL_IS_CUDA 0
 #define XPU_DETAIL_IS_HIP 1
 #define XPU_DETAIL_IS_CPU 0
+#define XPU_DETAIL_COMPILATION_TARGET (xpu::driver::hip)
 #else
 #define XPU_DETAIL_IS_CUDA 0
 #define XPU_DETAIL_IS_HIP 0
 #define XPU_DETAIL_IS_CPU 1
+#define XPU_DETAIL_COMPILATION_TARGET (xpu::driver::cpu)
 #endif
 
 #if XPU_IS_CUDA || XPU_IS_HIP

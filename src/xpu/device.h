@@ -55,9 +55,18 @@ XPU_D XPU_FORCE_INLINE float tan(float x);
 
 XPU_D XPU_FORCE_INLINE int atomic_add_block(int *addr, int val);
 
-} // namespace xpu
+template<typename T, int BlockSize, int ItemsPerThread=8, xpu::driver Driver=XPU_COMPILATION_TARGET>
+class block_sort {
 
-#include "block_ops.h"
+    static_assert(sizeof(T) <= 8, "block_sort can only sort keys with up to 8 bytes...");
+
+public:
+    struct storage_t {};
+    XPU_D block_sort(storage_t &);
+    XPU_D T *sort(T *vals, size_t N, T *buf);
+};
+
+} // namespace xpu
 
 #if XPU_IS_HIP_CUDA
 #include "driver/hip_cuda/device.h"

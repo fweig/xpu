@@ -20,17 +20,17 @@ struct sort_floats_smem {
 
 XPU_KERNEL(TestKernels, sort, sort_floats_smem, (unsigned int *) items, (int) N, (unsigned int *) buf, (unsigned int **) dst) {
     // printf("In sort\n");
-    *dst = block_sort_t(shm.sortbuf).sort(items, N, buf);
+    *dst = block_sort_t(shm.sortbuf).sort(items, N, buf, [](const unsigned int &x) { return x; });
 }
 
-using block_sort_kv_t = xpu::block_sort<key_value_t, 64, 1>;
+using block_sort_kv_t = xpu::block_sort<unsigned int, 64, 1>;
 struct sort_kv_smem {
     using sort_buf_kv_t = typename block_sort_kv_t::storage_t;
     sort_buf_kv_t sortbuf;
 };
 
 XPU_KERNEL(TestKernels, sort_struct, sort_kv_smem, (key_value_t *) items, (int) N, (key_value_t *) buf, (key_value_t **) dst) {
-    *dst = block_sort_kv_t(shm.sortbuf).sort(items, N, buf);
+    *dst = block_sort_kv_t(shm.sortbuf).sort(items, N, buf, [](const key_value_t &pair) { return pair.key; });
 }
 
 XPU_KERNEL(TestKernels, access_cmem, xpu::no_smem, (test_constants *) out) {

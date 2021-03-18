@@ -55,15 +55,16 @@ XPU_D XPU_FORCE_INLINE float tan(float x);
 
 XPU_D XPU_FORCE_INLINE int atomic_add_block(int *addr, int val);
 
-template<typename T, int BlockSize, int ItemsPerThread=8, xpu::driver Driver=XPU_COMPILATION_TARGET>
+template<typename Key, int BlockSize, int ItemsPerThread=8, xpu::driver Impl=XPU_COMPILATION_TARGET>
 class block_sort {
-
-    static_assert(sizeof(T) <= 8, "block_sort can only sort keys with up to 8 bytes...");
 
 public:
     struct storage_t {};
+
     XPU_D block_sort(storage_t &);
-    XPU_D T *sort(T *vals, size_t N, T *buf);
+
+    template<typename T, typename KeyGetter>
+    XPU_D T *sort(T *vals, size_t N, T *buf, KeyGetter &&getKey);
 };
 
 } // namespace xpu

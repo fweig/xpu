@@ -109,18 +109,18 @@ struct compare_lower_4_byte<T, 8> {
     }
 };
 
-template<typename T, int BlockSize, int ItemsPerThread>
-class block_sort<T, BlockSize, ItemsPerThread, xpu::driver::cpu> {
+template<typename Key, int BlockSize, int ItemsPerThread>
+class block_sort<Key, BlockSize, ItemsPerThread, xpu::driver::cpu> {
 
 public:
     struct storage_t {};
 
     block_sort(storage_t &) {}
 
-    T *sort(T *vals, size_t N, T *) {
-        compare_lower_4_byte<T> comp{};
-        std::sort(vals, &vals[N], [&](T a, T b) {
-            return comp(a, b);
+    template<typename T, typename KeyGetter>
+    T *sort(T *vals, size_t N, T *, KeyGetter &&getKey) {
+        std::sort(vals, &vals[N], [&](const T &a, const T &b) {
+            return getKey(a) < getKey(b);
         });
         return vals;
     }

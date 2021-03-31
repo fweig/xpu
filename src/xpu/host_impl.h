@@ -58,6 +58,7 @@ xpu::hd_buffer<T> &xpu::hd_buffer<T>::operator=(hd_buffer<T> &&other)  {
 
     other._size = 0;
     other.hostdata = other.devicedata = nullptr;
+    return *this;
 }
 
 template<typename T>
@@ -78,6 +79,7 @@ xpu::d_buffer<T> &xpu::d_buffer<T>::operator=(xpu::d_buffer<T> &&other) {
 
     other._size = 0;
     other.devicedata = nullptr;
+    return *this;
 }
 
 template<typename T>

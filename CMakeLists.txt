@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.11)
 
 project(xpu)
 
@@ -11,12 +11,7 @@ if (NOT DEFINED XPU_BUILD_EXAMPLES)
 endif()
 
 if (NOT DEFINED XPU_ENABLE_CUDA)
-check_language(CUDA)
-if (${CMAKE_CUDA_COMPILER})
-    set(XPU_ENABLE_CUDA ON)
-else()
     set(XPU_ENABLE_CUDA OFF)
-endif()
 endif()
 
 if( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR )
@@ -59,7 +54,7 @@ function(xpu_create_subproject Library DeviceLibrary DriverType UnitySrcAbsolute
 
     file(MAKE_DIRECTORY ${SrcDir})
     configure_file(
-        "${RootDir}/templates/CMakeLists.txt.in" 
+        "${RootDir}/templates/CMakeLists.txt.in"
         "${SrcDir}/CMakeLists.txt"
     )
 
@@ -72,7 +67,7 @@ function(xpu_create_subproject Library DeviceLibrary DriverType UnitySrcAbsolute
 
     ExternalProject_Add(${DeviceLibrary}_${DriverType}
         SOURCE_DIR "${SrcDir}"
-        CMAKE_ARGS  
+        CMAKE_ARGS
             -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=${OutputDir}
             -DCMAKE_CXX_COMPILER=${SubprojectCxx}
         BUILD_ALWAYS TRUE
@@ -102,7 +97,7 @@ function(xpu_attach_device_library Library DeviceLibrary KernelDecl)
 
     configure_file("${RootDir}/templates/device_library.h.in" "${DeviceLibrary}.h")
     configure_file("${RootDir}/templates/device_library.cpp.in" "${DeviceLibrary}_Xpu_runtime.cpp")
-    set(DeviceSrcs "${CMAKE_CURRENT_BINARY_DIR}/${DeviceLibrary}.cpp" ${DeviceSrcs})
+    set(DeviceSrcs "${CMAKE_CURRENT_BINARY_DIR}/${DeviceLibrary}_Xpu_runtime.cpp" ${DeviceSrcs})
 
     target_include_directories(${Library} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
     message(STATUS "Adding source ${CMAKE_CURRENT_BINARY_DIR}/${DeviceLibrary}.cpp to target ${Library}")
@@ -134,7 +129,6 @@ add_library(xpu SHARED
 )
 target_link_libraries(xpu dl)
 
-
 if (XPU_ENABLE_CUDA)
     enable_language(CUDA)
     xpu_create_subproject(
@@ -150,7 +144,6 @@ if (DEFINED XPU_HIP_CXX)
     )
 endif()
 
-
 if (XPU_BUILD_TESTS)
     add_subdirectory(test)
 endif()
@@ -158,4 +151,3 @@ endif()
 if (XPU_BUILD_EXAMPLES)
     add_subdirectory(examples/vector_add)
 endif()
-# add_subdirectory(examples/stsreco)

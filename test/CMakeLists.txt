@@ -1,7 +1,23 @@
-find_package(GTest REQUIRED)
+include(FetchContent)
+
+FetchContent_Declare(
+  googletest
+  GIT_REPOSITORY https://github.com/google/googletest.git
+  GIT_TAG        release-1.10.0
+)
+FetchContent_GetProperties(googletest)
+if(NOT googletest_POPULATED)
+  FetchContent_Populate(googletest)
+  set(WARN_DEPRECATED_BACK ${CMAKE_WARN_DEPRECATED})
+  set(CMAKE_WARN_DEPRECATED FALSE)
+  set(BUILD_GMOCK OFF)
+  add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR})
+  set(CMAKE_WARN_DEPRECATED ${WARN_DEPRECATED_BACK})
+endif()
+
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 set(deviceSrcs TestKernelsDevice.cpp)
 add_library(TestKernels ${deviceSrcs})
 xpu_attach_device_library(TestKernels TestKernels "TestKernels.def" ${deviceSrcs})
 add_executable(xpu_test xpu_test.cpp)
-target_link_libraries(xpu_test xpu TestKernels GTest::GTest)
+target_link_libraries(xpu_test xpu TestKernels gtest)

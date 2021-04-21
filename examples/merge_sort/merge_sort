@@ -1,0 +1,13 @@
+# 1 "/home/tequilian/SourceCode/MasterArbeit/xpu/examples/merge_sort/merge_sort.cpp"
+# 1 "/home/tequilian/SourceCode/MasterArbeit/xpu//"
+# 1 "<built-in>"
+# 1 "<command-line>"
+# 1 "/usr/include/stdc-predef.h" 1 3 4
+# 1 "<command-line>" 2
+# 1 "/home/tequilian/SourceCode/MasterArbeit/xpu/examples/merge_sort/merge_sort.cpp"
+# 10 "/home/tequilian/SourceCode/MasterArbeit/xpu/examples/merge_sort/merge_sort.cpp"
+int main() {
+# 34 "/home/tequilian/SourceCode/MasterArbeit/xpu/examples/merge_sort/merge_sort.cpp"
+    std::cout << "HELLO WORLD" << std::endl;
+    return 0;
+}

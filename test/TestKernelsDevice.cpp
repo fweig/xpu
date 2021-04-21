@@ -12,15 +12,15 @@ XPU_KERNEL(TestKernels, vector_add, xpu::no_smem, (const float *) x, (const floa
     z[iThread] = x[iThread] + y[iThread];
 }
 
-using block_sort_t = xpu::block_sort<unsigned int, 64, 1>;
+using block_sort_t = xpu::block_sort<float, 64, 1>;
 struct sort_floats_smem {
     using sort_buf_t = typename block_sort_t::storage_t;
     sort_buf_t sortbuf;
 };
 
-XPU_KERNEL(TestKernels, sort, sort_floats_smem, (unsigned int *) items, (int) N, (unsigned int *) buf, (unsigned int **) dst) {
+XPU_KERNEL(TestKernels, sort_float, sort_floats_smem, (float *) items, (int) N, (float *) buf, (float **) dst) {
     // printf("In sort\n");
-    *dst = block_sort_t(shm.sortbuf).sort(items, N, buf, [](const unsigned int &x) { return x; });
+    *dst = block_sort_t(shm.sortbuf).sort(items, N, buf, [](const float &x) { return x; });
 }
 
 using block_sort_kv_t = xpu::block_sort<unsigned int, 64, 1>;

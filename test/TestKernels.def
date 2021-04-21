@@ -15,7 +15,7 @@ XPU_CMEM_DECL(test_constants, test_constants)
 
 XPU_KERNEL_DECL(empty_kernel)
 XPU_KERNEL_DECL(vector_add, const float *, const float *, float *, int)
-XPU_KERNEL_DECL(sort, unsigned int *, int, unsigned int *, unsigned int **)
+XPU_KERNEL_DECL(sort_float, float *, int, float *, float **)
 XPU_KERNEL_DECL(sort_struct, key_value_t *, int, key_value_t *, key_value_t **)
 XPU_KERNEL_DECL(access_cmem, test_constants *)
 XPU_KERNEL_DECL(get_thread_idx, int *)

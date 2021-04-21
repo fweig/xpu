@@ -33,15 +33,7 @@ TEST(XPUTest, CanRunVectorAdd) {
     xpu::free(dz);
 }
 
-TEST(XPUTest, ThrowsExceptionsOnError) {
-    // EXPECT_THROW(xpu::memcpy(nullptr, nullptr, 5), xpu::exception);
-
-    // float *ptr = xpu::device_malloc<float>(10);
-    // xpu::free(ptr);
-    // EXPECT_THROW(xpu::free(ptr), xpu::exception);
-}
-
-TEST(XPUTest, CanSortAny8ByteStruct) {
+TEST(XPUTest, CanSortStruct) {
 
     constexpr int NElems = 100000;
 
@@ -125,14 +117,14 @@ TEST(XPUTest, CanSortFloatsShort) {
     constexpr int NElems = 100;
 
     std::mt19937 gen{1337};
-    std::uniform_int_distribution<unsigned int> dist{0, 10000};
+    std::uniform_real_distribution<float> dist{0, 10000};
 
-    std::vector<unsigned int> items{};
+    std::vector<float> items{};
     for (size_t i = 0; i < NElems; i++) {
         items.emplace_back(dist(gen));
     }
 
-    std::vector<unsigned int> itemsSorted = items;
+    std::vector<float> itemsSorted = items;
     std::sort(itemsSorted.begin(), itemsSorted.end());
 
     // for (auto &x : items) {
@@ -140,15 +132,15 @@ TEST(XPUTest, CanSortFloatsShort) {
     // }
     // std::cout << std::endl;
 
-    unsigned int *ditems = xpu::device_malloc<unsigned int>(NElems);
-    unsigned int *buf = xpu::device_malloc<unsigned int>(NElems);
-    unsigned int **dst = xpu::device_malloc<unsigned int *>(1);
+    float *ditems = xpu::device_malloc<float>(NElems);
+    float *buf = xpu::device_malloc<float>(NElems);
+    float **dst = xpu::device_malloc<float *>(1);
 
     xpu::copy(ditems, items.data(), NElems);
 
-    xpu::run_kernel<TestKernels::sort>(xpu::grid::n_blocks(1), ditems, NElems, buf, dst);
+    xpu::run_kernel<TestKernels::sort_float>(xpu::grid::n_blocks(1), ditems, NElems, buf, dst);
 
-    unsigned int *hdst = nullptr;
+    float *hdst = nullptr;
     xpu::copy(&hdst, dst, 1);
     xpu::copy(items.data(), hdst, NElems);
 

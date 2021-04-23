@@ -114,7 +114,7 @@ TEST(XPUTest, CanSortStruct) {
 
 TEST(XPUTest, CanSortFloatsShort) {
 
-    constexpr int NElems = 100;
+    constexpr int NElems = 128;
 
     std::mt19937 gen{1337};
     std::uniform_real_distribution<float> dist{0, 10000};

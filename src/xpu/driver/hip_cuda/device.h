@@ -128,8 +128,6 @@ public:
 
     using storage_t = typename block_radix_sort::TempStorage;
 
-    static_assert(ItemsPerThread == 1, "Can only sort with one item per thread at the moment...");
-
     __device__ block_sort(storage_t &storage_) : storage(storage_) {}
 
     template<typename T, typename KeyGetter>
@@ -144,7 +142,7 @@ private:
     __device__ T *radix_sort(T *data, size_t N, T *buf, KeyGetter &&getKey) {
         const int ItemsPerBlock = BlockSize * ItemsPerThread;
 
-        size_t nItemBlocks = N / ItemsPerBlock + 1;
+        size_t nItemBlocks = N / ItemsPerBlock + (N % ItemsPerBlock > 0 ? 1 : 0);
 
         Key keys_local[ItemsPerThread];
         short index_local[ItemsPerThread];
@@ -162,33 +160,26 @@ private:
                 index_local[b] = idx;
             }
 
-            __syncthreads();
-            // FIXME: this call fails with ItemsPerThread > 1!!
             block_radix_sort(storage).Sort(keys_local, index_local);
+
+            T tmp[ItemsPerThread];
+
+            for (size_t b = 0; b < ItemsPerThread; b++) {
+                size_t from = start + index_local[b];
+                if (from < N) {
+                    tmp[b] = data[from];
+                }
+            }
             __syncthreads();
 
             for (size_t b = 0; b < ItemsPerThread; b++) {
-
-                T tmp;
-
-                size_t from = start + index_local[b];
                 size_t to = start + thread_idx::x() * ItemsPerThread + b;
-
-                // FIXME this can fail if detail::numeric_limits<Key>::max_or_inf() appears in user data
-                assert((from < N) == (to < N));
-
-                if (from < N) {
-                    tmp = data[from];
-                }
-
-                __syncthreads();
-
                 if (to < N) {
-                    data[to] = tmp;
+                    data[to] = tmp[b];
                 }
-
-                __syncthreads();
             }
+            __syncthreads();
+
         }
 
         __syncthreads();

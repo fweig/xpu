@@ -30,6 +30,8 @@ int main() {
     // std::cout << "3" << std::endl;
     // xpu::copy(ditems, items.data(), NElems);
 
+
+
     // xpu::run_kernel<mergeSortOps::sort>(xpu::grid::n_blocks(1), ditems, NElems, buf, dst);
 
     // unsigned int *hdst = nullptr;

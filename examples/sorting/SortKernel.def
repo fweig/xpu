@@ -1,0 +1,5 @@
+#ifdef XPU_INCLUDE
+#include "KeyValuePair.h"
+#endif
+
+XPU_KERNEL_DECL(gpuSort, KeyValuePair *, KeyValuePair *, KeyValuePair **, size_t);

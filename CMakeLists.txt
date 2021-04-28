@@ -150,5 +150,5 @@ endif()
 
 if (XPU_BUILD_EXAMPLES)
     add_subdirectory(examples/vector_add)
-    add_subdirectory(examples/sort_struct)
+    add_subdirectory(examples/sorting)
 endif()

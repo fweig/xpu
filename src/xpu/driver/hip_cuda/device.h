@@ -13,6 +13,8 @@
 #include <hipcub/hipcub.hpp>
 #endif
 
+#include <iostream>
+
 #if XPU_IS_CUDA
 #define XPU_CHOOSE(hip, cuda) cuda
 #else
@@ -77,6 +79,7 @@ struct numeric_limits<unsigned int> {
 
 } // namespace detail
 
+<<<<<<< HEAD
 template<typename Key, int BlockSize, int ItemsPerThread>
 class block_sort<Key, BlockSize, ItemsPerThread, XPU_COMPILATION_TARGET> {
 
@@ -84,20 +87,48 @@ public:
     using block_radix_sort = detail::cub::BlockRadixSort<Key, BlockSize, ItemsPerThread, short>;
 
     using storage_t = typename block_radix_sort::TempStorage;
+=======
+template<typename C> XPU_D XPU_FORCE_INLINE const C &cmem() { return cmem_accessor<C>::get(); }
+
+template<typename Key, typename KeyValueType, int BlockSize, int ItemsPerThread>
+class block_sort<Key, KeyValueType, BlockSize, ItemsPerThread, xpu::driver::cuda> {
+
+public:
+    using block_radix_sort = cub::BlockRadixSort<Key, BlockSize, ItemsPerThread, short>;
+    using tempStorage = typename block_radix_sort::TempStorage;
+    //using storage_t = typename block_radix_sort::TempStorage;
+
+    struct storage_t{
+        tempStorage sharedSortMem;
+        KeyValueType sharedMergeMem[BlockSize*ItemsPerThread];
+        int indices[BlockSize*ItemsPerThread];
+    };
+>>>>>>> establish all merge functions and rewriting TypeDefs
 
     __device__ block_sort(storage_t &storage_) : storage(storage_) {}
 
-    template<typename T, typename KeyGetter>
-    __device__ T *sort(T *data, size_t N, T *buf, KeyGetter &&getKey) {
+    //KHUN
+    template<typename KeyGetter>
+    __device__ KeyValueType *sort(KeyValueType *data, size_t N, KeyValueType *buf, KeyGetter &&getKey) {
         return radix_sort(data, N, buf, getKey);
     }
+
+    //     template<typename T, typename KeyGetter>
+    // __device__ T *sort(T *data, size_t N, T *buf, int* indices, T* shared_keys, KeyGetter &&getKey) {
+    //     return radix_sort(data, N, buf, getKey);
+    // }
 
 private:
     storage_t &storage;
 
-    template<typename T, typename KeyGetter>
-    __device__ T *radix_sort(T *data, size_t N, T *buf, KeyGetter &&getKey) {
+
+
+    template<typename KeyGetter>
+     __device__ KeyValueType *radix_sort(KeyValueType *data, size_t N, KeyValueType *buf, KeyGetter &&getKey) {
         const int ItemsPerBlock = BlockSize * ItemsPerThread;
+
+    // __device__ T *radix_sort(T *data, size_t N, T *buf, KeyGetter &&getKey) {
+    //     const int ItemsPerBlock = BlockSize * ItemsPerThread;
 
         size_t nItemBlocks = N / ItemsPerBlock + (N % ItemsPerBlock > 0 ? 1 : 0);
 
@@ -117,9 +148,9 @@ private:
                 index_local[b] = idx;
             }
 
-            block_radix_sort(storage).Sort(keys_local, index_local);
+            block_radix_sort(storage.sharedSortMem).Sort(keys_local, index_local);
 
-            T tmp[ItemsPerThread];
+            KeyValueType tmp[ItemsPerThread];
 
             for (size_t b = 0; b < ItemsPerThread; b++) {
                 size_t from = start + index_local[b];
@@ -141,8 +172,8 @@ private:
 
         __syncthreads();
 
-        T *src = data;
-        T *dst = buf;
+        KeyValueType *src = data;
+        KeyValueType *dst = buf;
 
         for (size_t blockSize = ItemsPerBlock; blockSize < N; blockSize *= 2) {
 
@@ -152,7 +183,17 @@ private:
                 size_t blockSize2 = min((unsigned long long int)(N - st2), (unsigned long long int)blockSize);
                 carryStart = st2 + blockSize2;
 
-                merge(&src[st], &src[st2], blockSize, blockSize2, &dst[st], getKey);
+                //merge(&src[st], &src[st2], blockSize, blockSize2, &dst[st], getKey);
+
+                int4 range;
+                range.x = st;
+                range.y = st + blockSize;
+                range.z = st2;
+                range.w = st2 + blockSize2;
+                int tid = 0;
+                // int indices[32];
+                // KeyValueType *strg;
+                DeviceMergeKeysIndices<10,10>(src, src, range, tid, storage.sharedMergeMem, &dst[st], storage.indices, [&](KeyValueType &tOne, KeyValueType  &tTwo){ return (getKey(tOne) >= getKey(tTwo));} );
             }
 
             for (size_t i = carryStart + thread_idx::x(); i < N; i += block_dim::x()) {
@@ -161,7 +202,7 @@ private:
 
             __syncthreads();
 
-            T *tmp = src;
+            KeyValueType *tmp = src;
             src = dst;
             dst = tmp;
         }
@@ -169,8 +210,8 @@ private:
         return src;
     }
 
-    template<typename T, typename KeyGetter>
-    __device__ void merge(const T *block1, const T *block2, size_t block_size1, size_t block_size2, T *out, KeyGetter &&getKey) {
+    template<typename KeyGetter>
+    __device__ void merge(const KeyValueType *block1, const KeyValueType *block2, size_t block_size1, size_t block_size2, KeyValueType *out, KeyGetter &&getKey) {
         if (thread_idx::x() > 0) {
             return;
         }
@@ -192,13 +233,169 @@ private:
 
         size_t r_i = (i1 < block_size1 ? i1 : i2);
         size_t r_size = (i1 < block_size1 ? block_size1 : block_size2);
-        const T *r_block = (i1 < block_size1 ? block1 : block2);
+        const KeyValueType *r_block = (i1 < block_size1 ? block1 : block2);
         for (; r_i < r_size; r_i++, i_out++) {
             out[i_out] = r_block[r_i];
         }
     }
 
+
+
+
+    /*********************************************** KHUN BEGIN *******************************************************/
+
+    enum MgpuBounds {
+        MgpuBoundsLower,
+        MgpuBoundsUpper
+    };
+
+    template<int NT, int VT, typename It1, typename It2, typename Compare>
+    __device__ void DeviceMergeKeysIndices(It1 a_global, It2 b_global, int4 range,
+    int tid, KeyValueType* keys_shared, KeyValueType* results, int *indices, Compare &&comp) {
+
+        int a0 = range.x;
+        int a1 = range.y;
+        int b0 = range.z;
+        int b1 = range.w;
+        int aCount = a1 - a0;
+        int bCount = b1 - b0;
+
+        // Load the data into shared memory.
+        DeviceLoad2ToShared<NT, VT, VT+1>(a_global + a0, aCount, b_global + b0,
+            bCount, tid, keys_shared,true);
+
+
+        // Run a merge path to find the start of the serial merge for each thread.
+        int diag = VT * tid;
+        // int mp = MergePath<MgpuBoundsLower>(keys_shared, aCount,
+        //     keys_shared + aCount, bCount, diag, comp);
+
+        int mp = MergePath<MgpuBoundsLower>(a_global, aCount,
+            a_global + aCount, bCount, diag, comp);
+
+        // Compute the ranges of the sources in shared memory.
+        int a0tid = mp;
+        int a1tid = aCount;
+        int b0tid = aCount + diag - mp;
+        int b1tid = aCount + bCount;
+
+        // Serial merge into register.
+        SerialMerge<VT, true>(a_global, a0tid, a1tid, b0tid, b1tid, results,
+            indices, comp);
+    }
+
+    template<int VT, bool RangeCheck, typename Compare>
+    __device__ void SerialMerge(const KeyValueType* keys_shared, int aBegin,  int aEnd,
+                                 int bBegin, int bEnd, KeyValueType* results, int* indices, Compare &&comp) {
+
+
+
+        KeyValueType aKey = keys_shared[aBegin];
+        KeyValueType bKey = keys_shared[bBegin];
+
+        #pragma unroll
+        for(int i = 0; i < VT; ++i) {
+            bool p;
+            if(RangeCheck)
+                p = (bBegin >= bEnd) || ((aBegin < aEnd) && !comp(bKey, aKey));
+            else
+                p = !comp(bKey, aKey);
+
+            results[i] = p ? aKey : bKey;
+            indices[i] = p ? aBegin : bBegin - !RangeCheck;
+
+            if(p) aKey = keys_shared[++aBegin];
+            else bKey = keys_shared[++bBegin];
+        }
+        __syncthreads();
+
+    }
+
+
+    template<int NT, int VT, typename OutputIt>
+    __device__ void DeviceRegToShared(const KeyValueType* reg, int tid,
+                                       OutputIt dest, bool sync) {
+
+        typedef typename std::iterator_traits<OutputIt>::value_type T2;
+        #pragma unroll
+        for(int i = 0; i < VT; ++i)
+            dest[NT * i + tid] = (T2)reg[i];
+
+        if(sync) __syncthreads();
+    }
+
+
+    template<MgpuBounds Bounds, typename It1, typename It2, typename Compare>
+    __device__ int MergePath(It1 a, int aCount, It2 b, int bCount, int diag,
+                                   Compare &&comp) {
+
+        typedef typename std::iterator_traits<It1>::value_type Tb;
+        int begin = max(0, diag - bCount);
+        int end = min(diag, aCount);
+
+        while(begin < end) {
+            int mid = (begin + end)>> 1;
+            Tb aKey = a[mid];
+            Tb bKey = b[diag - 1 - mid];
+            bool pred = (MgpuBoundsUpper == Bounds) ?
+                        comp(aKey, bKey) :
+                        !comp(bKey, aKey);
+            // bool pred = (MgpuBoundsUpper == Bounds) ?
+            //              (getKey(aKey) <= getKey(bKey)) :
+            //              !(getKey(bKey) <= getKey(aKey));
+            if(pred) begin = mid + 1;
+            else end = mid;
+        }
+        return begin;
+    }
+
+
+        template<int NT, int VT0, int VT1, typename InputIt1, typename InputIt2>
+    __device__ void DeviceLoad2ToReg(InputIt1 a_global, int aCount,
+                                      InputIt2 b_global, int bCount, int tid, KeyValueType* reg, bool sync)  {
+
+        b_global -= aCount;
+        int total = aCount + bCount;
+        if(total >= NT * VT0) {
+            #pragma unroll
+            for(int i = 0; i < VT0; ++i) {
+                int index = NT * i + tid;
+                if(index < aCount) reg[i] = a_global[index];
+                else reg[i] = b_global[index];
+            }
+        } else {
+            #pragma unroll
+            for(int i = 0; i < VT0; ++i) {
+                int index = NT * i + tid;
+                if(index < aCount) reg[i] = a_global[index];
+                else if(index < total) reg[i] = b_global[index];
+            }
+        }
+            #pragma unroll
+        for(int i = VT0; i < VT1; ++i) {
+            int index = NT * i + tid;
+            if(index < aCount) reg[i] = a_global[index];
+            else if(index < total) reg[i] = b_global[index];
+        }
+    }
+
+    template<int NT, int VT0, int VT1, typename InputIt1, typename InputIt2>
+    __device__ void DeviceLoad2ToShared(InputIt1 a_global, int aCount,
+                                         InputIt2 b_global, int bCount, int tid, KeyValueType* shared, bool sync) {
+
+        KeyValueType reg[VT1];
+        DeviceLoad2ToReg<NT, VT0, VT1>(a_global, aCount, b_global, bCount, tid,
+                                       reg, false);
+        DeviceRegToShared<NT, VT1>(reg, tid, shared, sync);
+    }
+
+    /************************************************ KHUN END ********************************************************/
+
+
+
 };
+
+
 
 } // namespace xpu
 

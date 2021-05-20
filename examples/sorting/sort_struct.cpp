@@ -13,7 +13,7 @@
 int main() {
 
     // Number of elements to sort.
-    constexpr size_t NumElems = 10000;
+    constexpr size_t NumElems = 1000;
 
     // Initialize the xpu runtime and select cuda backend.
     xpu::initialize(xpu::driver::cuda);
@@ -45,7 +45,10 @@ int main() {
     xpu::copy(inputD, itemsH.data(), NumElems);
 
     // Run kernel that performs the sorting.
-    xpu::run_kernel<GpuSort>(xpu::grid::n_blocks(1), inputD, bufD, outD, NumElems);
+    //xpu::run_kernel<SortKernel::gpuSort>(xpu::grid::n_blocks(1), inputD, bufD, outD, indices, shared_keys, NumElems);
+    //KHUN BEGIN
+    xpu::run_kernel<SortKernel::gpuSort>(xpu::grid::n_blocks(1), inputD, bufD, outD, NumElems);
+    //KHUN END
 
     // Get the buffer that contains the sorted data.
     KeyValuePair *outH = nullptr;
@@ -57,7 +60,11 @@ int main() {
     // Check if data is sorted.
     bool ok = true;
     for (size_t i = 1; i < itemsH.size(); i++) {
-        ok &= (itemsH[i-1].key <= itemsH[i].key);
+        auto faa =  (itemsH[i-1].key <= itemsH[i].key);
+        ok &= faa;
+        if(faa == false){
+            std::cout << i << std::endl;
+        }
     }
 
     if (ok) {
@@ -66,10 +73,21 @@ int main() {
         std::cout << "Error: Data is not sorted!" << std::endl;
     }
 
+    // for(int i = 0; i<((int)NumElems/10); i++){
+    //     for(int j = 0; j<10; j++){
+    //         std::cout << itemsH[i*1+j].key << ", ";
+    //     }
+    //     std::cout << std::endl;
+    // }
+    std::cout << "Cleaning" << std::endl;
+
     // Cleanup: Free data allocated on GPU.
     xpu::free(inputD);
     xpu::free(bufD);
     xpu::free(outD);
+
+
+
 
     return 0;
 }

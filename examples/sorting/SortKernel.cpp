@@ -10,7 +10,7 @@ XPU_IMAGE(SortKernel);
 // size of the gpu block (currently hard-coded at 64 threads)
 // and the number of keys that are sorted by each thread with
 // the underlying cub::BlockRadixSort implementation.
-using SortT = xpu::block_sort<float, 64, 4>;
+using SortT = xpu::block_sort<float,KeyValuePair, 64, 4>;
 
 // Define type that is used to allocate shared memory.
 // In this case only shared memory for the underlying cub::BlockRadixSort is needed.
@@ -23,7 +23,7 @@ XPU_KERNEL(GpuSort, GpuSortSmem, KeyValuePair *data, KeyValuePair *buf, KeyValue
     // Call the sort function. Along the two buffers and the number of elements, a function that
     // extracts the key from the struct has to be passed.
     // Returns the buffer that contains the sorted data (either data or buf).
-    *out = SortT(smem.sortBuf).sort<KeyValuePair>(
+    *out = SortT(smem.sortBuf).sort(
         data, numElems, buf,
         [](const KeyValuePair &dat) { return dat.key; }
     );

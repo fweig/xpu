@@ -69,7 +69,7 @@ XPU_D XPU_FORCE_INLINE float tan(float x);
 
 XPU_D XPU_FORCE_INLINE int atomic_add_block(int *addr, int val);
 
-template<typename Key, int BlockSize, int ItemsPerThread=8, xpu::driver Impl=XPU_COMPILATION_TARGET>
+template<typename Key, typename KeyValueType, int BlockSize, int ItemsPerThread=8, xpu::driver Impl=XPU_COMPILATION_TARGET>
 class block_sort {
 
 public:
@@ -77,8 +77,8 @@ public:
 
     XPU_D block_sort(storage_t &);
 
-    template<typename T, typename KeyGetter>
-    XPU_D T *sort(T *vals, size_t N, T *buf, KeyGetter &&getKey);
+    template<typename KeyGetter>
+    XPU_D KeyValueType *sort(KeyValueType *vals, size_t N, KeyValueType *buf, KeyGetter &&getKey);
 };
 
 } // namespace xpu

@@ -1,4 +1,3 @@
-#ifndef XPU_DRIVER_CPU_DEVICE_RUNTIME
 #define XPU_DRIVER_CPU_DEVICE_RUNTIME
 
 #ifndef XPU_DEVICE_H
@@ -41,7 +40,7 @@ inline int atomic_add_block(int *addr, int val) {
     return old;
 }
 
-template<typename Key, int BlockSize, int ItemsPerThread>
+template<typename Key, typename KeyValueType, int BlockSize, int ItemsPerThread>
 class block_sort<Key, BlockSize, ItemsPerThread, driver::cpu> {
 
 public:
@@ -49,9 +48,9 @@ public:
 
     block_sort(storage_t &) {}
 
-    template<typename T, typename KeyGetter>
-    T *sort(T *vals, size_t N, T *, KeyGetter &&getKey) {
-        std::sort(vals, &vals[N], [&](const T &a, const T &b) {
+    template<typename KeyGetter>
+    KeyValueType *sort(KeyValueType *vals, size_t N, KeyValueType *, KeyGetter &&getKey) {
+        std::sort(vals, &vals[N], [&](const KeyValueType &a, const KeyValueType &b) {
             return getKey(a) < getKey(b);
         });
         return vals;

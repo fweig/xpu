@@ -14,12 +14,6 @@
 
 namespace xpu {
 
-enum class driver {
-    cpu,
-    cuda,
-    hip,
-};
-
 enum direction {
     host_to_device,
     device_to_host,
@@ -28,7 +22,6 @@ enum direction {
 template<class Kernel>
 struct is_kernel : std::is_base_of<detail::kernel_dispatcher, Kernel> {};
 
-// library interface
 class exception : public std::exception {
 
 public:
@@ -61,16 +54,16 @@ void free(void *);
 void memcpy(void *, const void *, size_t);
 void memset(void *, int, size_t);
 
-driver active_driver();
+xpu::driver active_driver();
 
-template<typename Kernel, typename = typename std::enable_if<is_kernel<Kernel>::value>::type>
+template<typename Kernel>
 const char *get_name();
 
-template<typename Kernel, typename = typename std::enable_if<is_kernel<Kernel>::value>::type, typename... Args>
+template<typename Kernel, typename... Args>
 void run_kernel(grid params, Args&&... args);
 
-template<typename DeviceLibrary, typename C>
-void set_cmem(const C &symbol);
+template<typename C>
+void set_constant(const typename C::data_t &symbol);
 
 template<typename T>
 class hd_buffer {

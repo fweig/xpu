@@ -1,5 +1,5 @@
 project(@DeviceLibrary@_@DriverType@)
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.11)
 
 if (@DriverType@ STREQUAL "Cuda")
 enable_language(CUDA)
@@ -14,4 +14,4 @@ endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include_directories(@IncludeDirectories@)
-add_library(@DeviceLibrary@_@DriverType@ MODULE @UnitySrcAbsolute@)
+add_library(@Library@_@DriverType@ MODULE @UnitySrcAbsolute@)

@@ -19,7 +19,7 @@ TEST(XPUTest, CanRunVectorAdd) {
     xpu::copy(dx, hx.data(), NElems);
     xpu::copy(dy, hy.data(), NElems);
 
-    xpu::run_kernel<TestKernels::vector_add>(xpu::grid::n_threads(NElems), dx, dy, dz, NElems);
+    xpu::run_kernel<vector_add>(xpu::grid::n_threads(NElems), dx, dy, dz, NElems);
 
     std::vector<float> hz(NElems);
     xpu::copy(hz.data(), dz, NElems);
@@ -66,7 +66,7 @@ TEST(XPUTest, CanSortStruct) {
 
     xpu::copy(ditems, items.data(), NElems);
 
-    xpu::run_kernel<TestKernels::sort_struct>(xpu::grid::n_blocks(1), ditems, NElems, buf, dst);
+    xpu::run_kernel<sort_struct>(xpu::grid::n_blocks(1), ditems, NElems, buf, dst);
 
     key_value_t *hdst = nullptr;
     xpu::copy(&hdst, dst, 1);
@@ -138,7 +138,7 @@ TEST(XPUTest, CanSortFloatsShort) {
 
     xpu::copy(ditems, items.data(), NElems);
 
-    xpu::run_kernel<TestKernels::sort_float>(xpu::grid::n_blocks(1), ditems, NElems, buf, dst);
+    xpu::run_kernel<sort_float>(xpu::grid::n_blocks(1), ditems, NElems, buf, dst);
 
     float *hdst = nullptr;
     xpu::copy(&hdst, dst, 1);
@@ -156,15 +156,15 @@ TEST(XPUTest, CanSortFloatsShort) {
 }
 
 TEST(XPUTest, CanSetAndReadCMem) {
-    test_constants orig{1, 2, 3};
-    xpu::hd_buffer<test_constants> out{1};
+    float3_ orig{1, 2, 3};
+    xpu::hd_buffer<float3_> out{1};
 
-    xpu::set_cmem<TestKernels>(orig);
+    xpu::set_constant<test_constants>(orig);
 
-    xpu::run_kernel<TestKernels::access_cmem>(xpu::grid::n_threads(1), out.device());
+    xpu::run_kernel<access_cmem>(xpu::grid::n_threads(1), out.device());
     xpu::copy(out, xpu::device_to_host);
 
-    test_constants result = *out.host();
+    float3_ result = *out.host();
     EXPECT_EQ(orig.x, result.x);
     EXPECT_EQ(orig.y, result.y);
     EXPECT_EQ(orig.z, result.z);
@@ -179,7 +179,7 @@ TEST(XPUTest, CanSetAndReadCMem) {
 TEST(XPUTest, CanGetThreadIdx) {
     xpu::hd_buffer<int> idx{64};
 
-    xpu::run_kernel<TestKernels::get_thread_idx>(xpu::grid::n_threads(64), idx.device());
+    xpu::run_kernel<get_thread_idx>(xpu::grid::n_threads(64), idx.device());
     xpu::copy(idx, xpu::device_to_host);
 
     for (int i = 0; i < 64; i++) {

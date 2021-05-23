@@ -1,4 +1,5 @@
 #include "VectorOps.h"
+
 #include <xpu/host.h>
 
 #include <cassert>
@@ -20,7 +21,7 @@ int main() {
     xpu::copy(x, xpu::host_to_device);
     xpu::copy(y, xpu::host_to_device);
 
-    xpu::run_kernel<VectorOps::add>(xpu::grid::n_threads(NElems), x.device(), y.device(), z.device(), NElems);
+    xpu::run_kernel<VectorAdd>(xpu::grid::n_threads(NElems), x.device(), y.device(), z.device(), NElems);
 
     xpu::copy(z, xpu::device_to_host);
 

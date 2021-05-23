@@ -45,7 +45,7 @@ int main() {
     xpu::copy(inputD, itemsH.data(), NumElems);
 
     // Run kernel that performs the sorting.
-    xpu::run_kernel<SortKernel::gpuSort>(xpu::grid::n_blocks(1), inputD, bufD, outD, NumElems);
+    xpu::run_kernel<GpuSort>(xpu::grid::n_blocks(1), inputD, bufD, outD, NumElems);
 
     // Get the buffer that contains the sorted data.
     KeyValuePair *outH = nullptr;

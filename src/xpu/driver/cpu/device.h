@@ -6,50 +6,20 @@
 #endif
 
 #include "../../detail/macros.h"
+#include "this_thread.h"
 
 #include <algorithm>
 #include <cassert>
 #include <cmath>
 
+#define XPU_DETAIL_ASSERT(x) assert(x)
+
 namespace xpu {
 
 XPU_FORCE_INLINE int thread_idx::x() { return 0; }
 XPU_FORCE_INLINE int block_dim::x() { return 1; }
-
-template<typename S, typename K, typename... Args>
-void run_cpu_kernel(int nBlocks, K kernel, Args... args) {
-    #ifdef _OPENMP
-    #pragma omp parallel for schedule(dynamic)
-    #endif
-    for (int i = 0; i < nBlocks; i++) {
-        S smem{};
-        xpu::kernel_info info{
-            .i_thread = {0, 0, 0},
-            .n_threads = {1, 0, 0},
-            .i_block = {i, 0, 0},
-            .n_blocks = {nBlocks, 0, 0},
-        };
-        kernel(info, smem, std::forward<Args>(args)...);
-    }
-}
-
-} // namespace xpu
-
-#define XPU_DETAIL_KERNEL(deviceLibrary, name, sharedMemoryT, ...) \
-    void kernel_ ## name(XPU_PARAM_LIST((const xpu::kernel_info &) info, (sharedMemoryT &) smem, ##__VA_ARGS__)); \
-    xpu::detail::error deviceLibrary##_Cpu::run_ ## name(XPU_PARAM_LIST((xpu::grid) params, ##__VA_ARGS__)) { \
-        if (params.threads.x == -1) { \
-            params.threads.x = params.blocks.x; \
-        } \
-        xpu::run_cpu_kernel<sharedMemoryT>(XPU_PARAM_NAMES(() params.threads.x, () kernel_ ## name, ##__VA_ARGS__)); \
-        return 0; \
-    } \
-    \
-    void kernel_ ## name(XPU_PARAM_LIST((__attribute__((unused)) const xpu::kernel_info &) info, (__attribute__((unused)) sharedMemoryT &) shm, ##__VA_ARGS__))
-
-#define XPU_DETAIL_ASSERT(x) assert(x)
-
-namespace xpu {
+XPU_FORCE_INLINE int block_idx::x() { return detail::this_thread::block_idx.x; }
+XPU_FORCE_INLINE int grid_dim::x() { return detail::this_thread::grid_dim.x; }
 
 // math functions
 XPU_FORCE_INLINE float ceil(float x) { return std::ceil(x); }
@@ -70,20 +40,6 @@ inline int atomic_add_block(int *addr, int val) {
     *addr += val;
     return old;
 }
-
-// internal class used to handle constant memory
-template<typename C>
-struct cmem_accessor {
-
-    static C symbol;
-
-    static C &get() { return symbol; }
-};
-
-template<typename C>
-C cmem_accessor<C>::symbol;
-
-template<typename C> XPU_FORCE_INLINE const C &cmem() { return cmem_accessor<C>::get(); }
 
 template<typename T, size_t N = sizeof(T)>
 struct compare_lower_4_byte {};
@@ -110,7 +66,7 @@ struct compare_lower_4_byte<T, 8> {
 };
 
 template<typename Key, int BlockSize, int ItemsPerThread>
-class block_sort<Key, BlockSize, ItemsPerThread, xpu::driver::cpu> {
+class block_sort<Key, BlockSize, ItemsPerThread, driver::cpu> {
 
 public:
     struct storage_t {};

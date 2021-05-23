@@ -7,24 +7,50 @@
 
 #include "host.h"
 
-template<typename Kernel, typename = typename std::enable_if<xpu::is_kernel<Kernel>::value>::type>
+#include "detail/runtime.h"
+#include "detail/type_info.h"
+
+void xpu::initialize(xpu::driver driver) {
+    detail::runtime::instance().initialize(driver);
+}
+
+void *xpu::host_malloc(size_t bytes) {
+    return detail::runtime::instance().host_malloc(bytes);
+}
+
+void *xpu::device_malloc(size_t bytes) {
+    return detail::runtime::instance().device_malloc(bytes);
+}
+
+void xpu::free(void *ptr) {
+    detail::runtime::instance().free(ptr);
+}
+
+void xpu::memcpy(void *dst, const void *src, size_t bytes) {
+    return detail::runtime::instance().memcpy(dst, src, bytes);
+}
+
+void xpu::memset(void *dst, int ch, size_t bytes) {
+    return detail::runtime::instance().memset(dst, ch, bytes);
+}
+
+xpu::driver xpu::active_driver() {
+    return detail::runtime::instance().active_driver();
+}
+
+template<typename Kernel>
 const char *xpu::get_name() {
-    return Kernel::get_name();
+    return detail::type_name<Kernel>();
 }
 
-template<typename Kernel, typename = typename std::enable_if<xpu::is_kernel<Kernel>::value>::type, typename... Args>
+template<typename Kernel, typename... Args>
 void xpu::run_kernel(grid params, Args&&... args) {
-    std::string backend = "CPU";
-    if (active_driver() == driver::cuda) {
-        backend = "CUDA";
-    }
-    std::cout << "Running kernel " << get_name<Kernel>() << " on backend " << backend << std::endl;
-    Kernel::dispatch(Kernel::library_type::instance(active_driver()), params, std::forward<Args>(args)...);
+    detail::runtime::instance().run_kernel<Kernel>(params, std::forward<Args>(args)...);
 }
 
-template<typename DeviceLibrary, typename C>
-void xpu::set_cmem(const C &symbol) {
-    DeviceLibrary::template cmem<C>::set(DeviceLibrary::instance(active_driver()), symbol);
+template<typename C>
+void xpu::set_constant(const typename C::data_t &symbol) {
+    detail::runtime::instance().set_constant<C>(symbol);
 }
 
 template<typename T>
@@ -116,7 +142,6 @@ template<typename T>
 void xpu::memset(d_buffer<T> &buf, int ch) {
     xpu::memset(buf.data(), ch, sizeof(T) * buf.size());
 }
-
 
 // Define host specialization for constant memory helpers only here.
 // They shouldn't be available for device code.

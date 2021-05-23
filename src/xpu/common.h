@@ -5,11 +5,18 @@
 
 namespace xpu {
 
+enum class driver {
+    cpu,
+    cuda,
+    hip,
+};
+
 struct dim {
     int x = 0;
     int y = 0;
     int z = 0;
 
+    dim() = default;
     XPU_D dim(int _x) : x(_x) {}
     XPU_D dim(int _x, int _y) : x(_x), y(_y) {}
     XPU_D dim(int _x, int _y, int _z) : x(_x), y(_y), z(_z) {}

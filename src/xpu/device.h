@@ -8,8 +8,10 @@
 #include <cmath>
 
 
-#define XPU_KERNEL(DeviceLibrary, Kernel, Smem, ...) XPU_DETAIL_KERNEL(DeviceLibrary, Kernel, Smem, ##__VA_ARGS__)
+// #define XPU_KERNEL(DeviceLibrary, Kernel, Smem, ...) XPU_DETAIL_KERNEL(DeviceLibrary, Kernel, Smem, ##__VA_ARGS__)
 #define XPU_ASSERT(x) XPU_DETAIL_ASSERT(x)
+
+#define XPU_T(...) __VA_ARGS__
 
 namespace xpu {
 
@@ -35,7 +37,7 @@ struct grid_dim {
 
 struct no_smem {};
 
-template<typename C> XPU_D XPU_FORCE_INLINE const C &cmem();
+template<typename C> XPU_D XPU_FORCE_INLINE const typename C::data_t &cmem() { return C::get(); }
 
 XPU_D XPU_FORCE_INLINE constexpr float pi() { return M_PIf32; }
 XPU_D XPU_FORCE_INLINE constexpr float deg_to_rad() { return pi() / 180.f; }
@@ -68,6 +70,8 @@ public:
 };
 
 } // namespace xpu
+
+#include "detail/dynamic_loader.h"
 
 #if XPU_IS_HIP_CUDA
 #include "driver/hip_cuda/device.h"

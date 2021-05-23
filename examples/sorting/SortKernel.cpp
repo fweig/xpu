@@ -1,5 +1,8 @@
-// Include auto-generated header, where the kernel is declared.
+// Include header where the kernel is declared.
 #include "SortKernel.h"
+
+// Initialize the xpu image. This macro must be placed once somewhere in the device sources.
+XPU_IMAGE(SortKernel);
 
 // Optional shorthand for the sorting class.
 //
@@ -16,11 +19,11 @@ struct GpuSortSmem {
 };
 
 // Kernel implementation.
-XPU_KERNEL(SortKernel, gpuSort, GpuSortSmem, (KeyValuePair *) data, (KeyValuePair *) buf, (KeyValuePair **) out, (size_t) numElems) {
+XPU_KERNEL(GpuSort, GpuSortSmem, KeyValuePair *data, KeyValuePair *buf, KeyValuePair **out, size_t numElems) {
     // Call the sort function. Along the two buffers and the number of elements, a function that
     // extracts the key from the struct has to be passed.
     // Returns the buffer that contains the sorted data (either data or buf).
-    *out = SortT(shm.sortBuf).sort<KeyValuePair>(
+    *out = SortT(smem.sortBuf).sort<KeyValuePair>(
         data, numElems, buf,
         [](const KeyValuePair &dat) { return dat.key; }
     );

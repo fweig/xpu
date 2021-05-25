@@ -36,13 +36,6 @@ private:
 
 };
 
-struct kernel_info {
-    dim i_thread;
-    dim n_threads;
-    dim i_block;
-    dim n_blocks;
-};
-
 enum class side {
     host,
     device,

@@ -8,10 +8,23 @@ set_source_files_properties(@UnitySrcAbsolute@ PROPERTIES LANGUAGE CUDA)
 endif()
 
 if ("@DriverType@" STREQUAL "Hip")
-set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} --amdgpu-target=gfx906")
+set(GPU_TARGETS "gfx906" CACHE STRING "AMD GPU targets to compile for")
+list(APPEND CMAKE_PREFIX_PATH /opt/rocm/hip /opt/rocm)
+find_package(hip)
+
+# On ROCm hipCUB requires rocPRIM
+find_package(rocprim REQUIRED CONFIG PATHS "/opt/rocm/rocprim")
+
+# "/opt/rocm" - default install prefix
+find_package(hipcub REQUIRED CONFIG PATHS "/opt/rocm/hipcub")
+# set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} --amdgpu-target=gfx906")
 endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include_directories(@IncludeDirectories@)
 add_library(@Library@_@DriverType@ MODULE @UnitySrcAbsolute@)
+
+if ("@DriverType@" STREQUAL "Hip")
+target_link_libraries(@Library@_@DriverType@ hip::device hip::hipcub)
+endif()

@@ -30,4 +30,8 @@
 #define XPU_DETAIL_DEVICE_SPEC
 #endif
 
+#if XPU_IS_HIP
+#include <hip/hip_runtime.h>
+#endif
+
 #endif

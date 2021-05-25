@@ -2,6 +2,8 @@
 
 #include <hip/hip_runtime_api.h>
 
+#include <iostream>
+
 using xpu::detail::error;
 
 class hip_driver : public xpu::detail::driver_interface {

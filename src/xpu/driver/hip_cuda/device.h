@@ -7,7 +7,11 @@
 
 #include "../../detail/macros.h"
 
+#if XPU_IS_CUDA
 #include <cub/cub.cuh>
+#else // XPU_IS_HIP
+#include <hipcub/hipcub.hpp>
+#endif
 
 #if XPU_IS_CUDA
 #define XPU_CHOOSE(hip, cuda) cuda
@@ -52,6 +56,12 @@ XPU_D XPU_FORCE_INLINE int atomic_add_block(int *addr, int val) { return atomicA
 
 namespace detail {
 
+#if XPU_IS_CUDA
+namespace cub = ::cub;
+#else // XPU_IS_HIP
+namespace cub = ::hipcub;
+#endif
+
 template<typename T>
 struct numeric_limits {};
 
@@ -68,10 +78,10 @@ struct numeric_limits<unsigned int> {
 } // namespace detail
 
 template<typename Key, int BlockSize, int ItemsPerThread>
-class block_sort<Key, BlockSize, ItemsPerThread, xpu::driver::cuda> {
+class block_sort<Key, BlockSize, ItemsPerThread, XPU_COMPILATION_TARGET> {
 
 public:
-    using block_radix_sort = cub::BlockRadixSort<Key, BlockSize, ItemsPerThread, short>;
+    using block_radix_sort = detail::cub::BlockRadixSort<Key, BlockSize, ItemsPerThread, short>;
 
     using storage_t = typename block_radix_sort::TempStorage;
 

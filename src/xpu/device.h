@@ -7,8 +7,19 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 
+#define XPU_IMAGE(image) XPU_DETAIL_IMAGE(image)
 
-// #define XPU_KERNEL(DeviceLibrary, Kernel, Smem, ...) XPU_DETAIL_KERNEL(DeviceLibrary, Kernel, Smem, ##__VA_ARGS__)
+#define XPU_EXPORT_CONSTANT(image, type_, name) XPU_DETAIL_EXPORT_CONSTANT(image, type_, name)
+#define XPU_EXPORT_FUNC(image, name, ...) XPU_DETAIL_EXPORT_FUNC(image, name, ##__VA_ARGS__)
+#define XPU_EXPORT_KERNEL(image, name, ...) XPU_DETAIL_EXPORT_KERNEL(image, name, ##__VA_ARGS__)
+
+#define XPU_CONSTANT(name) XPU_DETAIL_CONSTANT(name)
+#define XPU_FUNC(name, ...) XPU_DETAIL_FUNC(name, ##__VA_ARGS__)
+#define XPU_FUNC_T(name, ...) XPU_DETAIL_FUNC_T(name, ##__VA_ARGS__)
+#define XPU_FUNC_TI(name) XPU_DETAIL_FUNC_TI(name)
+#define XPU_FUNC_TS(name, ...) XPU_DETAIL_FUNC_TS(name, ##__VA_ARGS__)
+#define XPU_KERNEL(name, shared_memory, ...) XPU_DETAIL_KERNEL(name, shared_memory, ##__VA_ARGS__)
+
 #define XPU_ASSERT(x) XPU_DETAIL_ASSERT(x)
 
 #define XPU_T(...) __VA_ARGS__
@@ -37,7 +48,8 @@ struct grid_dim {
 
 struct no_smem {};
 
-template<typename C> XPU_D XPU_FORCE_INLINE const typename C::data_t &cmem() { return C::get(); }
+template<typename C>
+XPU_D XPU_FORCE_INLINE const typename C::data_t &cmem() { return C::get(); }
 
 XPU_D XPU_FORCE_INLINE constexpr float pi() { return M_PIf32; }
 XPU_D XPU_FORCE_INLINE constexpr float deg_to_rad() { return pi() / 180.f; }

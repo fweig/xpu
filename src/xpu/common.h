@@ -17,9 +17,9 @@ struct dim {
     int z = 0;
 
     dim() = default;
-    XPU_D dim(int _x) : x(_x) {}
-    XPU_D dim(int _x, int _y) : x(_x), y(_y) {}
-    XPU_D dim(int _x, int _y, int _z) : x(_x), y(_y), z(_z) {}
+    dim(int _x) : x(_x) {}
+    dim(int _x, int _y) : x(_x), y(_y) {}
+    dim(int _x, int _y, int _z) : x(_x), y(_y), z(_z) {}
 };
 
 struct grid {

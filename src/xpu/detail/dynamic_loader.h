@@ -7,6 +7,10 @@
 #include "../driver/cpu/this_thread.h"
 #include "type_info.h"
 
+#if XPU_IS_HIP
+#include <hip/hip_runtime_api.h>
+#endif
+
 #include <dlfcn.h>
 
 #include <cassert>
@@ -184,13 +188,17 @@ struct action_runner<Tag, F, void(*)(Args...)> {
 template<typename F>
 struct action_runner<F> : action_runner<typename F::tag, F, decltype(&F::impl)> {};
 
-#if XPU_IS_CUDA
+#if XPU_IS_HIP_CUDA
 
 template<typename F, typename S, typename... Args>
 __global__ void kernel_entry(Args... args) {
     __shared__ S smem;
     F::impl(smem, args...);
 }
+
+#endif
+
+#if XPU_IS_CUDA
 
 template<typename K, typename S, typename... Args>
 struct action_runner<kernel_tag, K, S, void(*)(S &, Args...)> {
@@ -209,7 +217,20 @@ struct action_runner<kernel_tag, K, S, void(*)(S &, Args...)> {
 
 #elif XPU_IS_HIP
 
-#error "Hip kernel runner not implemented!"
+template<typename K, typename S, typename... Args>
+struct action_runner<kernel_tag, K, S, void(*)(S &, Args...)> {
+
+    using my_type = action_runner<kernel_tag, K, S, void(*)(S &, Args...)>;
+
+    static void call(grid g, Args... args) {
+        if (g.blocks.x == -1) {
+            g.blocks.x = (g.threads.x + 63) / 64;
+        }
+        hipLaunchKernelGGL(HIP_KERNEL_NAME(kernel_entry<K, S, Args...>), dim3(g.blocks.x), dim3(64), 0, 0, args...);
+        hipDeviceSynchronize();
+    }
+
+};
 
 #else // XPU_IS_CPU
 
@@ -268,7 +289,7 @@ struct register_kernel {
 #define XPU_DETAIL_TYPE_ID_MAP(image)
 #endif
 
-#define XPU_IMAGE(image) \
+#define XPU_DETAIL_IMAGE(image) \
     XPU_DETAIL_TYPE_ID_MAP(image); \
     template<> \
     xpu::detail::image_context<image> *xpu::detail::image_context<image>::instance() { \
@@ -279,19 +300,19 @@ struct register_kernel {
         return xpu::detail::image_context<image>::instance(); \
     }
 
-#define XPU_EXPORT_FUNC(image, name, ...) \
+#define XPU_DETAIL_EXPORT_FUNC(image, name, ...) \
     struct name : xpu::detail::action<image, xpu::detail::function_tag> { \
         static void impl(__VA_ARGS__); \
     }
 
-#define XPU_EXPORT_CONSTANT(image, type_, name) \
+#define XPU_DETAIL_EXPORT_CONSTANT(image, type_, name) \
     struct name : xpu::detail::action<image, xpu::detail::constant_tag> { \
         using data_t = type_; \
         static void impl(const data_t &); \
         static XPU_D const data_t &get(); \
     }
 
-#define XPU_EXPORT_KERNEL(image, name, ...) \
+#define XPU_DETAIL_EXPORT_KERNEL(image, name, ...) \
     struct name : xpu::detail::action<image, xpu::detail::kernel_tag> { \
         template<typename S> \
         static XPU_D void impl(S &, ##__VA_ARGS__); \
@@ -299,7 +320,7 @@ struct register_kernel {
 
 #if XPU_IS_CUDA
 
-#define XPU_CONSTANT(name) \
+#define XPU_DETAIL_CONSTANT(name) \
     __constant__ typename name::data_t XPU_MAGIC_NAME(xpu_detail_constant); \
     \
     void name::impl(const typename name::data_t &val) { \
@@ -314,11 +335,22 @@ struct register_kernel {
 
 #elif XPU_IS_HIP
 
-#error "XPU_CONSTANT is not implemented for HIP."
+#define XPU_DETAIL_CONSTANT(name) \
+    __constant__ typename name::data_t XPU_MAGIC_NAME(xpu_detail_constant); \
+    \
+    void name::impl(const typename name::data_t &val) { \
+        hipMemcpyToSymbol(HIP_SYMBOL(XPU_MAGIC_NAME(xpu_detail_constant)), &val, sizeof(name::data_t)); \
+    } \
+    \
+    XPU_D const typename name::data_t &name::get() { \
+        return XPU_MAGIC_NAME(xpu_detail_constant); \
+    } \
+    \
+    static xpu::detail::register_action<name> XPU_MAGIC_NAME(xpu_detail_register_action){}
 
 #else // XPU_IS_CPU
 
-#define XPU_CONSTANT(name) \
+#define XPU_DETAIL_CONSTANT(name) \
     static typename name::data_t XPU_MAGIC_NAME(xpu_detail_constant); \
     \
     void name::impl(const typename name::data_t &val) { \
@@ -333,21 +365,21 @@ struct register_kernel {
 
 #endif
 
-#define XPU_FUNC(name, ...) \
+#define XPU_DETAIL_FUNC(name, ...) \
     static xpu::detail::register_action<name> XPU_MAGIC_NAME(xpu_detail_register_action){}; \
     void name::impl(__VA_ARGS__)
 
-#define XPU_FUNC_T(name, ...) \
+#define XPU_DETAIL_FUNC_T(name, ...) \
     void xpu::detail::impl(__VA_ARGS__)
 
-#define XPU_FUNC_TI(name) \
+#define XPU_DETAIL_FUNC_TI(name) \
     static xpu::detail::register_action<name> XPU_MAGIC_NAME(xpu_detail_register_action){}
 
-#define XPU_FUNC_TS(name, ...) \
+#define XPU_DETAIL_FUNC_TS(name, ...) \
     static xpu::detail::register_action<name> XPU_MAGIC_NAME(xpu_detail_register_action){}; \
     template<> void name::impl(__VA_ARGS__)
 
-#define XPU_KERNEL(name, shared_memory, ...) \
+#define XPU_DETAIL_KERNEL(name, shared_memory, ...) \
     static xpu::detail::register_kernel<name, shared_memory> XPU_MAGIC_NAME(xpu_detail_register_action){}; \
     template<> XPU_D void name::impl<shared_memory>(XPU_MAYBE_UNUSED shared_memory &smem, ##__VA_ARGS__)
 

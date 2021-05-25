@@ -47,9 +47,12 @@ function(xpu_create_subproject Library DriverType UnitySrcAbsolute)
     get_property(HipCxx GLOBAL PROPERTY XpuHipCxx)
 
     if (DriverType STREQUAL "Hip")
-        set(SubprojectCxx ${HipCxx})
+        # HipCxx should point hip-clang, so add the prefix for c++
+        set(SubprojectCxx ${HipCxx}++)
+        set(SubprojectC ${HipCxx})
     else()
         set(SubprojectCxx ${CMAKE_CXX_COMPILER})
+        set(SubprojectC ${CMAKE_C_COMPILER})
     endif()
 
     file(MAKE_DIRECTORY ${SrcDir})
@@ -60,11 +63,14 @@ function(xpu_create_subproject Library DriverType UnitySrcAbsolute)
 
     set(OutputDir ${CMAKE_CURRENT_BINARY_DIR})
 
+    # TODO replace with custom implementation that calls cmake at build generation:
+    # https://stackoverflow.com/questions/31274577/custom-target-as-a-target-library-in-cmake
     ExternalProject_Add(${Library}_${DriverType}
         SOURCE_DIR "${SrcDir}"
         CMAKE_ARGS
             -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=${OutputDir}
             -DCMAKE_CXX_COMPILER=${SubprojectCxx}
+            -DCMAKE_C_COMPILER=${SubprojectC}
         BUILD_ALWAYS TRUE
         STEP_TARGETS build
         EXCLUDE_FROM_ALL TRUE

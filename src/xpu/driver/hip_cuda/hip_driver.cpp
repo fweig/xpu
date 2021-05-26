@@ -5,9 +5,10 @@
 
 #include <iostream>
 
-using xpu::detail::error;
+namespace xpu {
+namespace detail {
 
-class hip_driver : public xpu::detail::driver_interface {
+class hip_driver : public driver_interface {
 
 public:
     virtual ~hip_driver() {}
@@ -57,8 +58,11 @@ public:
 
 };
 
+} // namespace detail
+} // namespace xpu
+
 extern "C" xpu::detail::driver_interface *create() {
-    return new hip_driver{};
+    return new xpu::detail::hip_driver{};
 }
 
 extern "C" void destroy(xpu::detail::driver_interface *b) {

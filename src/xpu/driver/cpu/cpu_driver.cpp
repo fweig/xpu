@@ -3,28 +3,28 @@
 #include <cstdlib>
 #include <cstring>
 
-using namespace xpu;
+using namespace xpu::detail;
 
-detail::error cpu_driver::setup() {
+error cpu_driver::setup() {
     return 0;
 }
 
-detail::error cpu_driver::device_malloc(void ** ptr, size_t bytes) {
+error cpu_driver::device_malloc(void ** ptr, size_t bytes) {
     *ptr = std::malloc(bytes);
     return *ptr == nullptr;
 }
 
-detail::error cpu_driver::free(void *ptr) {
+error cpu_driver::free(void *ptr) {
     std::free(ptr);
     return 0;
 }
 
-detail::error cpu_driver::memcpy(void *dst, const void *src, size_t bytes) {
+error cpu_driver::memcpy(void *dst, const void *src, size_t bytes) {
     std::memcpy(dst, src, bytes);
     return 0;
 }
 
-detail::error cpu_driver::memset(void *dst, int ch, size_t bytes) {
+error cpu_driver::memset(void *dst, int ch, size_t bytes) {
     std::memset(dst, ch, bytes);
     return 0;
 }

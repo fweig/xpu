@@ -5,9 +5,10 @@
 
 #define CU_DEVICE 0
 
-using xpu::detail::error;
+namespace xpu {
+namespace detail {
 
-class cuda_driver : public xpu::detail::driver_interface {
+class cuda_driver : public driver_interface {
 
 public:
     virtual ~cuda_driver() {}
@@ -56,8 +57,11 @@ public:
 
 };
 
+} // namespace detail
+} // namespace xpu
+
 extern "C" xpu::detail::driver_interface *create() {
-    return new cuda_driver{};
+    return new xpu::detail::cuda_driver{};
 }
 
 extern "C" void destroy(xpu::detail::driver_interface *b) {

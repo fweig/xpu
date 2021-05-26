@@ -4,8 +4,9 @@
 #include "../../detail/driver_interface.h"
 
 namespace xpu {
+namespace detail {
 
-class cpu_driver : public detail::driver_interface {
+class cpu_driver : public driver_interface {
 
 public:
     virtual ~cpu_driver() {}
@@ -17,6 +18,7 @@ public:
     detail::error memset(void *, int, size_t) override;
 };
 
-}
+} // namespace detail
+} // namespace xpu
 
 #endif

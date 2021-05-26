@@ -10,6 +10,8 @@ using xpu::detail::error;
 class hip_driver : public xpu::detail::driver_interface {
 
 public:
+    virtual ~hip_driver() {}
+
     error setup() override {
         error err;
 

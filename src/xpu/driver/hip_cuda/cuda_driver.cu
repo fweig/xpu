@@ -10,6 +10,8 @@ using xpu::detail::error;
 class cuda_driver : public xpu::detail::driver_interface {
 
 public:
+    virtual ~cuda_driver() {}
+
     error setup() override {
         error err;
         cudaDeviceProp props;

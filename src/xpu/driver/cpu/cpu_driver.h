@@ -8,6 +8,8 @@ namespace xpu {
 class cpu_driver : public detail::driver_interface {
 
 public:
+    virtual ~cpu_driver() {}
+
     detail::error setup() override;
     detail::error device_malloc(void **, size_t) override;
     detail::error free(void *) override;

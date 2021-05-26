@@ -320,7 +320,7 @@ struct register_kernel {
 #if XPU_IS_CUDA
 
 #define XPU_DETAIL_CONSTANT(name) \
-    __constant__ typename name::data_t XPU_MAGIC_NAME(xpu_detail_constant); \
+    static __constant__ typename name::data_t XPU_MAGIC_NAME(xpu_detail_constant); \
     \
     void name::impl(const typename name::data_t &val) { \
         cudaMemcpyToSymbol(XPU_MAGIC_NAME(xpu_detail_constant), &val, sizeof(name::data_t)); \
@@ -335,7 +335,7 @@ struct register_kernel {
 #elif XPU_IS_HIP
 
 #define XPU_DETAIL_CONSTANT(name) \
-    __constant__ typename name::data_t XPU_MAGIC_NAME(xpu_detail_constant); \
+    static __constant__ typename name::data_t XPU_MAGIC_NAME(xpu_detail_constant); \
     \
     void name::impl(const typename name::data_t &val) { \
         hipMemcpyToSymbol(HIP_SYMBOL(XPU_MAGIC_NAME(xpu_detail_constant)), &val, sizeof(name::data_t)); \

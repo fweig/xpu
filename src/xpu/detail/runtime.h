@@ -5,6 +5,7 @@
 #include "../driver/cpu/cpu_driver.h"
 #include "dl_utils.h"
 #include "dynamic_loader.h"
+#include "log.h"
 
 #include <memory>
 
@@ -57,6 +58,7 @@ public:
 
     template<typename Kernel, typename... Args>
     void run_kernel(grid g, Args&&... args) {
+        XPU_LOG("Calling kernel '%s' with %s driver.", type_name<Kernel>(), driver_str(active_driver_type));
         get_image<Kernel>()->template run_kernel<Kernel>(g, std::forward<Args>(args)...);
     };
 
@@ -81,7 +83,7 @@ private:
             img = load_image<typename A::image>(active_driver_type);
         }
         if (img == nullptr) {
-            std::cout << "Failed to load image for " << type_name<A>() << std::endl;
+            XPU_LOG("Failed to load image for kernel '%s'.", type_name<A>());
             std::abort();
         }
         return img;
@@ -104,6 +106,8 @@ private:
     }
 
     std::string complete_file_name(const char *, driver) const;
+
+    const char *driver_str(driver) const;
 };
 
 } // namespace detail

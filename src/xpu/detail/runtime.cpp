@@ -1,6 +1,8 @@
 #include "runtime.h"
 #include "../host.h"
 
+#include <cstdlib>
+
 using namespace xpu::detail;
 
 runtime &runtime::instance() {
@@ -9,36 +11,41 @@ runtime &runtime::instance() {
 }
 
 void runtime::initialize(driver t) {
-    this->the_cpu_driver = std::unique_ptr<cpu_driver>(new cpu_driver{});
+    const char *use_logger = std::getenv("XPU_VERBOSE");
+    bool verbose = (use_logger != nullptr) && (std::string{use_logger} != "0");
+
+    if (verbose) {
+        logger::instance().initialize([](const char *msg) {
+            std::cerr << msg << std::endl;
+        });
+    }
+
+    this->the_cpu_driver.reset(new cpu_driver{});
     this->the_cpu_driver->setup();
     error err = 0;
     switch (t) {
     case driver::cpu:
         active_driver_inst = the_cpu_driver.get();
-        std::cout << "xpu: set cpu as active driver" << std::endl;
         break;
     case driver::cuda:
-        std::cout << "xpu: try to setup cuda driver" << std::endl;
         the_cuda_driver.reset(new lib_obj<driver_interface>{"libxpu_Cuda.so"});
         err = the_cuda_driver->obj->setup();
         if (err != 0) {
             throw exception{"Caught error " + std::to_string(err)};
         }
         active_driver_inst = the_cuda_driver->obj;
-        std::cout << "xpu: set cuda as active driver" << std::endl;
         break;
     case driver::hip:
-        std::cout << "xpu: try to setup hip driver" << std::endl;
         the_hip_driver.reset(new lib_obj<driver_interface>{"libxpu_Hip.so"});
         err = the_hip_driver->obj->setup();
         if (err != 0) {
             throw exception{"Caught error " + std::to_string(err)};
         }
         active_driver_inst = the_hip_driver->obj;
-        std::cout << "xpu: set hip as active driver" << std::endl;
         break;
     }
     active_driver_type = t;
+    XPU_LOG("Set %s as active driver.", driver_str(t));
 }
 
 void *runtime::host_malloc(size_t bytes) {
@@ -93,4 +100,13 @@ std::string runtime::complete_file_name(const char *fname, driver d) const {
     case xpu::driver::cpu:  suffix = ".so"; break;
     }
     return prefix + std::string{fname} + suffix;
+}
+
+const char *runtime::driver_str(driver d) const {
+    switch (d) {
+    case driver::cpu: return "CPU";
+    case driver::cuda: return "CUDA";
+    case driver::hip: return "HIP";
+    }
+    return "UNKNOWN";
 }

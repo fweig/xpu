@@ -1,4 +1,5 @@
 #include "../../detail/driver_interface.h"
+#include "../../detail/log.h"
 
 #include <iostream>
 
@@ -10,8 +11,6 @@ class cuda_driver : public xpu::detail::driver_interface {
 
 public:
     error setup() override {
-        std::cout << "xpu: CUDA SETUP" << std::endl;
-
         error err;
         cudaDeviceProp props;
         err = cudaGetDeviceProperties(&props, CU_DEVICE);
@@ -19,7 +18,7 @@ public:
             return err;
         }
 
-        std::cout << "xpu: selected cuda device " << props.name << "(" << props.major << props.minor << ")" << std::endl;
+        XPU_LOG("Selected %s(arch = %d%d) as active device.", props.name, props.major, props.minor);
 
         err = cudaSetDevice(CU_DEVICE);
         if (err != 0) {
@@ -33,8 +32,9 @@ public:
     error device_malloc(void **ptr, size_t bytes) override {
         size_t free, total;
         cudaMemGetInfo(&free, &total);
-        std::cout << "cuda driver: free memory = " << free << "; total = " << total << std::endl;
-        std::cout << "cuda driver: allocating " << bytes << " bytes" << std::endl;
+
+        XPU_LOG("Allocating %lu bytes on active CUDA device. (%lu / %lu free)", bytes, free, total);
+
         return cudaMalloc(ptr, bytes);
     }
 

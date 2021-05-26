@@ -1,4 +1,5 @@
 #include "../../detail/driver_interface.h"
+#include "../../detail/log.h"
 
 #include <hip/hip_runtime_api.h>
 
@@ -18,7 +19,7 @@ public:
             return err;
         }
 
-        std::cout << "xpu: selected hip device " << props.name << "(" << props.major << props.minor << ")" << std::endl;
+        XPU_LOG("Selected %s(arch = %d%d) as active device.", props.name, props.major, props.minor);
 
         err = hipSetDevice(0);
         if (err != 0) {
@@ -30,6 +31,11 @@ public:
     }
 
     error device_malloc(void **ptr, size_t bytes) override {
+        size_t free, total;
+        hipMemGetInfo(&free, &total);
+
+        XPU_LOG("Allocating %lu bytes on active HIP device. (%lu / %lu free)", bytes, free, total);
+
         return hipMalloc(ptr, bytes);
     }
 

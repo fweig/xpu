@@ -55,7 +55,6 @@ void xpu::set_constant(const typename C::data_t &symbol) {
 
 template<typename T>
 xpu::hd_buffer<T>::hd_buffer(size_t N) {
-    std::cout << "Allocate hd_buffer with " << N << " elems of size " << sizeof(T) << std::endl;
     _size = N;
     hostdata = static_cast<T *>(std::malloc(sizeof(T) * N));
 
@@ -131,7 +130,6 @@ void xpu::copy(hd_buffer<T> &buf, direction dir) {
 
 template<typename T>
 void xpu::memset(hd_buffer<T> &buf, int ch) {
-    std::cout << "xpu::memset: sizeof(T) = "<< sizeof(T) << "; size = " << buf.size() << std::endl;
     std::memset(buf.host(), ch, sizeof(T) * buf.size());
     if (buf.copy_required()) {
         xpu::memset(buf.device(), ch, sizeof(T) * buf.size());

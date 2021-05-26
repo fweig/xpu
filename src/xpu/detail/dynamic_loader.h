@@ -3,8 +3,9 @@
 
 #include "../common.h"
 #include "../defines.h"
-#include "macros.h"
 #include "../driver/cpu/this_thread.h"
+#include "log.h"
+#include "macros.h"
 #include "type_info.h"
 
 #if XPU_IS_HIP
@@ -107,7 +108,7 @@ public:
     image(const char *name) {
         handle = dlopen(name, RTLD_LAZY | RTLD_DEEPBIND);
         if (handle == nullptr) {
-            std::cout << "Error openening " << name << ": " << dlerror() << std::endl; 
+            XPU_LOG("Error opening '%s: %s", name, dlerror());
         }
         assert(handle != nullptr);
         auto *get_context = reinterpret_cast<image_context<I> *(*)()>(dlsym(handle, "xpu_detail_get_context"));
@@ -149,14 +150,13 @@ public:
 
     void dump_symbols() {
         for (auto it : context->get_symbols()) {
-            std::cout << it.first << ": " << it.second << std::endl;
+            XPU_LOG("%s: %p", it.first.c_str(), it.second);
         }
     }
 
 private:
     template<typename F, typename... Args>
     void call_action(Args... args) {
-        std::cout << "Calling kernel " << type_name<F>() << std::endl;
         auto *symbols = &context->get_symbols();
         size_t id = type_id<F, typename F::image>::get();
         if (id >= symbols->size()) {
@@ -180,7 +180,6 @@ struct action_runner<Tag, F, void(*)(Args...)> {
     using my_type = action_runner<Tag, F, void(*)(Args...)>;
 
     static void call(Args... args) {
-        printf("My type is: %s\n", type_name<my_type>());
         F::impl(args...);
     }
 };

@@ -60,12 +60,13 @@ int main() {
     // Check if data is sorted.
     bool ok = true;
     for (size_t i = 1; i < itemsH.size(); i++) {
-        auto faa =  (itemsH[i-1].key <= itemsH[i].key);
+        auto faa = (itemsH[i-1].key <= itemsH[i].key);
         ok &= faa;
         if(faa == false){
             std::cout << i << std::endl;
         }
     }
+    std::cout << itemsH.size() << std::endl;
 
     if (ok) {
         std::cout << "Data is sorted!" << std::endl;

@@ -1,5 +1,8 @@
+
 #ifndef XPU_DRIVER_CUDA_DEVICE_RUNTIME_H
 #define XPU_DRIVER_CUDA_DEVICE_RUNTIME_H
+
+
 
 #ifndef XPU_DEVICE_H
 #error "This header should not be included directly. Include xpu/device.h instead."
@@ -79,15 +82,6 @@ struct numeric_limits<unsigned int> {
 
 } // namespace detail
 
-<<<<<<< HEAD
-template<typename Key, int BlockSize, int ItemsPerThread>
-class block_sort<Key, BlockSize, ItemsPerThread, XPU_COMPILATION_TARGET> {
-
-public:
-    using block_radix_sort = detail::cub::BlockRadixSort<Key, BlockSize, ItemsPerThread, short>;
-
-    using storage_t = typename block_radix_sort::TempStorage;
-=======
 template<typename C> XPU_D XPU_FORCE_INLINE const C &cmem() { return cmem_accessor<C>::get(); }
 
 template<typename Key, typename KeyValueType, int BlockSize, int ItemsPerThread>
@@ -100,10 +94,9 @@ public:
 
     struct storage_t{
         tempStorage sharedSortMem;
-        KeyValueType sharedMergeMem[BlockSize*ItemsPerThread];
-        int indices[BlockSize*ItemsPerThread];
+        KeyValueType sharedMergeMem[1000];
+        int indices[1000];
     };
->>>>>>> establish all merge functions and rewriting TypeDefs
 
     __device__ block_sort(storage_t &storage_) : storage(storage_) {}
 
@@ -131,7 +124,6 @@ private:
     //     const int ItemsPerBlock = BlockSize * ItemsPerThread;
 
         size_t nItemBlocks = N / ItemsPerBlock + (N % ItemsPerBlock > 0 ? 1 : 0);
-
         Key keys_local[ItemsPerThread];
         short index_local[ItemsPerThread];
 
@@ -184,16 +176,51 @@ private:
                 carryStart = st2 + blockSize2;
 
                 //merge(&src[st], &src[st2], blockSize, blockSize2, &dst[st], getKey);
+                constexpr int vt_var = 4;
+                KeyValueType results[vt_var];
+                int indices[vt_var];
 
                 int4 range;
                 range.x = st;
                 range.y = st + blockSize;
                 range.z = st2;
                 range.w = st2 + blockSize2;
-                int tid = 0;
+                //int cnt = 10;
+                //int sze = blockSize;
+
+                // printf("%d range.x: %d \n", threadIdx.x, range.x);
+                // printf("%d range.y: %d \n", threadIdx.x, range.y);
+                // printf("%d blockSize: %d \n", threadIdx.x, range.y-range.x);
                 // int indices[32];
                 // KeyValueType *strg;
-                DeviceMergeKeysIndices<10,10>(src, src, range, tid, storage.sharedMergeMem, &dst[st], storage.indices, [&](KeyValueType &tOne, KeyValueType  &tTwo){ return (getKey(tOne) >= getKey(tTwo));} );
+
+                DeviceMergeKeysIndices<BlockSize,vt_var>(src, range, threadIdx.x, storage.sharedMergeMem, results, indices, [&](KeyValueType &tOne, KeyValueType  &tTwo){ return (getKey(tOne) >= getKey(tTwo));} );
+
+                DeviceThreadToShared<vt_var>(results, threadIdx.x, storage.sharedMergeMem, true);
+
+                // Store merged keys to global memory.
+                int aCount = range.y - range.x;
+                int bCount = range.w - range.z;
+                DeviceSharedToGlobal<BlockSize, vt_var>(aCount + bCount, storage.sharedMergeMem, threadIdx.x, &dst[st] + BlockSize * vt_var * 0, true);
+
+                //printf("%d blockSizeInLoop: %d \n", threadIdx.x, blockSize); = 64
+                // if(true){
+                //     // for(int i = st; i < sze; i++){
+                //     //     printf("%d, ", i);
+                //     // }
+                //     for(int i = st; i < sze; i++){
+                //         auto arr = getKey(dst[i]) <= getKey(dst[i+1]);
+                //         // printf("%d, ", dst[i]);
+                //         // if(i == 10){
+                //         //     printf("\n");
+                //         // }
+                //         if(arr == false){
+                //             printf("%d ErrorPosition: %d -> %d > %d \n", threadIdx.x, i, getKey(dst[i]), getKey(dst[i+1]));
+                //             break;
+                //         }
+                //     }
+                // }
+
             }
 
             for (size_t i = carryStart + thread_idx::x(); i < N; i += block_dim::x()) {
@@ -210,38 +237,6 @@ private:
         return src;
     }
 
-    template<typename KeyGetter>
-    __device__ void merge(const KeyValueType *block1, const KeyValueType *block2, size_t block_size1, size_t block_size2, KeyValueType *out, KeyGetter &&getKey) {
-        if (thread_idx::x() > 0) {
-            return;
-        }
-
-        size_t i1 = 0;
-        size_t i2 = 0;
-        size_t i_out = 0;
-
-        while (i1 < block_size1 && i2 < block_size2) {
-            if (getKey(block1[i1]) < getKey(block2[i2])) {
-                out[i_out] = block1[i1];
-                i1++;
-            } else {
-                out[i_out] = block2[i2];
-                i2++;
-            }
-            i_out++;
-        }
-
-        size_t r_i = (i1 < block_size1 ? i1 : i2);
-        size_t r_size = (i1 < block_size1 ? block_size1 : block_size2);
-        const KeyValueType *r_block = (i1 < block_size1 ? block1 : block2);
-        for (; r_i < r_size; r_i++, i_out++) {
-            out[i_out] = r_block[r_i];
-        }
-    }
-
-
-
-
     /*********************************************** KHUN BEGIN *******************************************************/
 
     enum MgpuBounds {
@@ -249,8 +244,14 @@ private:
         MgpuBoundsUpper
     };
 
-    template<int NT, int VT, typename It1, typename It2, typename Compare>
-    __device__ void DeviceMergeKeysIndices(It1 a_global, It2 b_global, int4 range,
+    template<typename T>
+    struct DevicePair {
+        T x, y;
+    };
+
+
+    template<int NT, int VT, typename It1, typename Compare>
+    __device__ void DeviceMergeKeysIndices(It1 data, int4 range,
     int tid, KeyValueType* keys_shared, KeyValueType* results, int *indices, Compare &&comp) {
 
         int a0 = range.x;
@@ -261,12 +262,13 @@ private:
         int bCount = b1 - b0;
 
         // Load the data into shared memory.
-        DeviceLoad2ToShared<NT, VT, VT+1>(a_global + a0, aCount, b_global + b0,
+        DeviceLoad2ToShared<NT, VT, VT+1>(data + a0, aCount, data + b0,
             bCount, tid, keys_shared,true);
-
-
         // Run a merge path to find the start of the serial merge for each thread.
         int diag = VT * tid;
+        int mp = MergePath<MgpuBoundsLower>(keys_shared, aCount,
+            keys_shared + aCount, bCount, diag, comp);
+
         // int mp = MergePath<MgpuBoundsLower>(keys_shared, aCount,
         //     keys_shared + aCount, bCount, diag, comp);
 
@@ -278,10 +280,30 @@ private:
         int a1tid = aCount;
         int b0tid = aCount + diag - mp;
         int b1tid = aCount + bCount;
-
         // Serial merge into register.
-        SerialMerge<VT, true>(a_global, a0tid, a1tid, b0tid, b1tid, results,
+        SerialMerge<VT, true>(keys_shared, a0tid, a1tid, b0tid, b1tid, results,
             indices, comp);
+
+        // if(threadIdx.x==0){
+        //     auto errFound = false;
+        //     //printf("%d aBegin: %d, aEnd %d, Range: %d\n", threadIdx.x, a0tid, a1tid, a1tid-a0tid);
+        //     for(int i = 0; i< range.y - range.x; i++){
+        //         if(!comp(results[i+1], results[i])){
+        //             errFound = true;
+        //             printf("Last ErrorPosition: %d\n", i);
+        //         }
+        //     }
+        //     // for(int i = 0; i < 999; i++){
+        //     //     if(!comp(keys_shared[indices[i+1]], keys_shared[indices[i]])){
+        //     //         errFound = true;
+        //     //         printf("Last ErrorPosition: %d\n", i);
+        //     //     }
+        //     // }
+
+        //     if(!errFound){
+        //         printf("No Error \n");
+        //     }
+        // }
     }
 
     template<int VT, bool RangeCheck, typename Compare>
@@ -292,7 +314,6 @@ private:
 
         KeyValueType aKey = keys_shared[aBegin];
         KeyValueType bKey = keys_shared[bBegin];
-
         #pragma unroll
         for(int i = 0; i < VT; ++i) {
             bool p;
@@ -302,12 +323,13 @@ private:
                 p = !comp(bKey, aKey);
 
             results[i] = p ? aKey : bKey;
-            indices[i] = p ? aBegin : bBegin - !RangeCheck;
+            indices[i] = p ? aBegin : bBegin;
 
             if(p) aKey = keys_shared[++aBegin];
             else bKey = keys_shared[++bBegin];
         }
         __syncthreads();
+
 
     }
 
@@ -389,7 +411,79 @@ private:
         DeviceRegToShared<NT, VT1>(reg, tid, shared, sync);
     }
 
+        template<int VT, typename T>
+    __device__ void DeviceThreadToShared(const T* threadReg, int tid, T* shared,
+        bool sync) {
+
+        if(1 & VT) {
+            // Odd grain size. Store as type T.
+            #pragma unroll
+            for(int i = 0; i < VT; ++i)
+                shared[VT * tid + i] = threadReg[i];
+        } else {
+            // Even grain size. Store as DevicePair<T>. This lets us exploit the
+            // 8-byte shared memory mode on Kepler.
+            DevicePair<T>* dest = (DevicePair<T>*)(shared + VT * tid);
+            #pragma unroll
+            for(int i = 0; i < VT / 2; ++i)
+                dest[i] = MakeDevicePair(threadReg[2 * i], threadReg[2 * i + 1]);
+        }
+        if(sync) __syncthreads();
+    }
+
+    template<typename T>
+    __device__ DevicePair<T> MakeDevicePair(T x, T y) {
+	    DevicePair<T> p = { x, y };
+	    return p;
+    }
+
+    template<int NT, int VT, typename T, typename OutputIt>
+    __device__ void DeviceSharedToGlobal(int count, const T* source, int tid,
+        OutputIt dest, bool sync) {
+
+        typedef typename std::iterator_traits<OutputIt>::value_type T2;
+        #pragma unroll
+        for(int i = 0; i < VT; ++i) {
+            int index = NT * i + tid;
+            if(index < count) dest[index] = (T2)source[index];
+        }
+        if(sync) __syncthreads();
+    }
+
+
     /************************************************ KHUN END ********************************************************/
+
+
+
+    template<typename KeyGetter>
+    __device__ void merge(const KeyValueType *block1, const KeyValueType *block2, size_t block_size1, size_t block_size2, KeyValueType *out, KeyGetter &&getKey) {
+        if (thread_idx::x() > 0) {
+            return;
+        }
+
+        size_t i1 = 0;
+        size_t i2 = 0;
+        size_t i_out = 0;
+
+        while (i1 < block_size1 && i2 < block_size2) {
+            if (getKey(block1[i1]) < getKey(block2[i2])) {
+                out[i_out] = block1[i1];
+                i1++;
+            } else {
+                out[i_out] = block2[i2];
+                i2++;
+            }
+            i_out++;
+        }
+
+        size_t r_i = (i1 < block_size1 ? i1 : i2);
+        size_t r_size = (i1 < block_size1 ? block_size1 : block_size2);
+        const KeyValueType *r_block = (i1 < block_size1 ? block1 : block2);
+        for (; r_i < r_size; r_i++, i_out++) {
+            out[i_out] = r_block[r_i];
+        }
+    }
+
 
 
 

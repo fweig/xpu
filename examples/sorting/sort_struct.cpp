@@ -47,7 +47,7 @@ int main() {
     // Run kernel that performs the sorting.
     //xpu::run_kernel<SortKernel::gpuSort>(xpu::grid::n_blocks(1), inputD, bufD, outD, indices, shared_keys, NumElems);
     //KHUN BEGIN
-    xpu::run_kernel<SortKernel::gpuSort>(xpu::grid::n_blocks(1), inputD, bufD, outD, NumElems);
+    xpu::run_kernel<GpuSort>(xpu::grid::n_blocks(1), inputD, bufD, outD, NumElems);
     //KHUN END
 
     // Get the buffer that contains the sorted data.
@@ -86,9 +86,6 @@ int main() {
     xpu::free(inputD);
     xpu::free(bufD);
     xpu::free(outD);
-
-
-
 
     return 0;
 }

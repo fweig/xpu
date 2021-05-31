@@ -142,7 +142,7 @@ if (XPU_BUILD_TESTS)
 endif()
 
 if (XPU_BUILD_EXAMPLES)
+    add_subdirectory(examples/merging)
     add_subdirectory(examples/vector_add)
     add_subdirectory(examples/sorting)
-    add_subdirectory(examples/merge_sort)
 endif()

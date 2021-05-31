@@ -18,6 +18,14 @@
 
 #include <iostream>
 
+#if 0
+#define PRINT_B(message, ...) if (xpu::thread_idx::x() == 0) printf("t 0: " message "\n", ##__VA_ARGS__)
+#define PRINT_T(message, ...) do { printf("t %d: " message "\n", xpu::thread_idx::x(), ##__VA_ARGS__); } while (0)
+#else
+#define PRINT_B(...) ((void)0)
+#define PRINT_T(...) ((void)0)
+#endif
+
 #if XPU_IS_CUDA
 #define XPU_CHOOSE(hip, cuda) cuda
 #else
@@ -82,27 +90,29 @@ struct numeric_limits<unsigned int> {
 
 } // namespace detail
 
-template<typename C> XPU_D XPU_FORCE_INLINE const C &cmem() { return cmem_accessor<C>::get(); }
-
-template<typename Key, typename KeyValueType, int BlockSize, int ItemsPerThread>
-class block_sort<Key, KeyValueType, BlockSize, ItemsPerThread, xpu::driver::cuda> {
+template<typename Key, typename T, int BlockSize, int ItemsPerThread>
+class block_sort<Key, T, BlockSize, ItemsPerThread, XPU_COMPILATION_TARGET> {
 
 public:
-    using block_radix_sort = cub::BlockRadixSort<Key, BlockSize, ItemsPerThread, short>;
+    using block_radix_sort = detail::cub::BlockRadixSort<Key, BlockSize, ItemsPerThread, short>;
     using tempStorage = typename block_radix_sort::TempStorage;
+    using key_t = Key;
+    using data_t = T;
+    using block_merge_t = block_merge<data_t, BlockSize, ItemsPerThread>;
     //using storage_t = typename block_radix_sort::TempStorage;
 
-    struct storage_t{
+    union storage_t {
         tempStorage sharedSortMem;
-        KeyValueType sharedMergeMem[1000];
-        int indices[1000];
+        #ifndef SEQ_MERGE
+        typename block_merge_t::storage_t sharedMergeMem;
+        #endif
     };
 
     __device__ block_sort(storage_t &storage_) : storage(storage_) {}
 
     //KHUN
     template<typename KeyGetter>
-    __device__ KeyValueType *sort(KeyValueType *data, size_t N, KeyValueType *buf, KeyGetter &&getKey) {
+    __device__ data_t *sort(data_t *data, size_t N, data_t *buf, KeyGetter &&getKey) {
         return radix_sort(data, N, buf, getKey);
     }
 
@@ -114,10 +124,8 @@ public:
 private:
     storage_t &storage;
 
-
-
     template<typename KeyGetter>
-     __device__ KeyValueType *radix_sort(KeyValueType *data, size_t N, KeyValueType *buf, KeyGetter &&getKey) {
+     __device__ data_t *radix_sort(data_t *data, size_t N, data_t *buf, KeyGetter &&getKey) {
         const int ItemsPerBlock = BlockSize * ItemsPerThread;
 
     // __device__ T *radix_sort(T *data, size_t N, T *buf, KeyGetter &&getKey) {
@@ -142,7 +150,7 @@ private:
 
             block_radix_sort(storage.sharedSortMem).Sort(keys_local, index_local);
 
-            KeyValueType tmp[ItemsPerThread];
+            data_t tmp[ItemsPerThread];
 
             for (size_t b = 0; b < ItemsPerThread; b++) {
                 size_t from = start + index_local[b];
@@ -164,8 +172,8 @@ private:
 
         __syncthreads();
 
-        KeyValueType *src = data;
-        KeyValueType *dst = buf;
+        data_t *src = data;
+        data_t *dst = buf;
 
         for (size_t blockSize = ItemsPerBlock; blockSize < N; blockSize *= 2) {
 
@@ -175,52 +183,12 @@ private:
                 size_t blockSize2 = min((unsigned long long int)(N - st2), (unsigned long long int)blockSize);
                 carryStart = st2 + blockSize2;
 
-                //merge(&src[st], &src[st2], blockSize, blockSize2, &dst[st], getKey);
-                constexpr int vt_var = 4;
-                KeyValueType results[vt_var];
-                int indices[vt_var];
-
-                int4 range;
-                range.x = st;
-                range.y = st + blockSize;
-                range.z = st2;
-                range.w = st2 + blockSize2;
-                //int cnt = 10;
-                //int sze = blockSize;
-
-                // printf("%d range.x: %d \n", threadIdx.x, range.x);
-                // printf("%d range.y: %d \n", threadIdx.x, range.y);
-                // printf("%d blockSize: %d \n", threadIdx.x, range.y-range.x);
-                // int indices[32];
-                // KeyValueType *strg;
-
-                DeviceMergeKeysIndices<BlockSize,vt_var>(src, range, threadIdx.x, storage.sharedMergeMem, results, indices, [&](KeyValueType &tOne, KeyValueType  &tTwo){ return (getKey(tOne) >= getKey(tTwo));} );
-
-                DeviceThreadToShared<vt_var>(results, threadIdx.x, storage.sharedMergeMem, true);
-
-                // Store merged keys to global memory.
-                int aCount = range.y - range.x;
-                int bCount = range.w - range.z;
-                DeviceSharedToGlobal<BlockSize, vt_var>(aCount + bCount, storage.sharedMergeMem, threadIdx.x, &dst[st] + BlockSize * vt_var * 0, true);
-
-                //printf("%d blockSizeInLoop: %d \n", threadIdx.x, blockSize); = 64
-                // if(true){
-                //     // for(int i = st; i < sze; i++){
-                //     //     printf("%d, ", i);
-                //     // }
-                //     for(int i = st; i < sze; i++){
-                //         auto arr = getKey(dst[i]) <= getKey(dst[i+1]);
-                //         // printf("%d, ", dst[i]);
-                //         // if(i == 10){
-                //         //     printf("\n");
-                //         // }
-                //         if(arr == false){
-                //             printf("%d ErrorPosition: %d -> %d > %d \n", threadIdx.x, i, getKey(dst[i]), getKey(dst[i+1]));
-                //             break;
-                //         }
-                //     }
-                // }
-
+                #ifdef SEQ_MERGE
+                seq_merge(&src[st], &src[st2], blockSize, blockSize2, &dst[st], getKey);
+                #else
+                auto comp = [&](const data_t &a, const data_t &b) { return getKey(a) < getKey(b); };
+                block_merge_t(storage.sharedMergeMem).merge(&src[st], blockSize, &src[st2], blockSize2, &dst[st], comp);
+                #endif
             }
 
             for (size_t i = carryStart + thread_idx::x(); i < N; i += block_dim::x()) {
@@ -229,7 +197,7 @@ private:
 
             __syncthreads();
 
-            KeyValueType *tmp = src;
+            data_t *tmp = src;
             src = dst;
             dst = tmp;
         }
@@ -237,226 +205,8 @@ private:
         return src;
     }
 
-    /*********************************************** KHUN BEGIN *******************************************************/
-
-    enum MgpuBounds {
-        MgpuBoundsLower,
-        MgpuBoundsUpper
-    };
-
-    template<typename T>
-    struct DevicePair {
-        T x, y;
-    };
-
-
-    template<int NT, int VT, typename It1, typename Compare>
-    __device__ void DeviceMergeKeysIndices(It1 data, int4 range,
-    int tid, KeyValueType* keys_shared, KeyValueType* results, int *indices, Compare &&comp) {
-
-        int a0 = range.x;
-        int a1 = range.y;
-        int b0 = range.z;
-        int b1 = range.w;
-        int aCount = a1 - a0;
-        int bCount = b1 - b0;
-
-        // Load the data into shared memory.
-        DeviceLoad2ToShared<NT, VT, VT+1>(data + a0, aCount, data + b0,
-            bCount, tid, keys_shared,true);
-        // Run a merge path to find the start of the serial merge for each thread.
-        int diag = VT * tid;
-        int mp = MergePath<MgpuBoundsLower>(keys_shared, aCount,
-            keys_shared + aCount, bCount, diag, comp);
-
-        // int mp = MergePath<MgpuBoundsLower>(keys_shared, aCount,
-        //     keys_shared + aCount, bCount, diag, comp);
-
-        int mp = MergePath<MgpuBoundsLower>(a_global, aCount,
-            a_global + aCount, bCount, diag, comp);
-
-        // Compute the ranges of the sources in shared memory.
-        int a0tid = mp;
-        int a1tid = aCount;
-        int b0tid = aCount + diag - mp;
-        int b1tid = aCount + bCount;
-        // Serial merge into register.
-        SerialMerge<VT, true>(keys_shared, a0tid, a1tid, b0tid, b1tid, results,
-            indices, comp);
-
-        // if(threadIdx.x==0){
-        //     auto errFound = false;
-        //     //printf("%d aBegin: %d, aEnd %d, Range: %d\n", threadIdx.x, a0tid, a1tid, a1tid-a0tid);
-        //     for(int i = 0; i< range.y - range.x; i++){
-        //         if(!comp(results[i+1], results[i])){
-        //             errFound = true;
-        //             printf("Last ErrorPosition: %d\n", i);
-        //         }
-        //     }
-        //     // for(int i = 0; i < 999; i++){
-        //     //     if(!comp(keys_shared[indices[i+1]], keys_shared[indices[i]])){
-        //     //         errFound = true;
-        //     //         printf("Last ErrorPosition: %d\n", i);
-        //     //     }
-        //     // }
-
-        //     if(!errFound){
-        //         printf("No Error \n");
-        //     }
-        // }
-    }
-
-    template<int VT, bool RangeCheck, typename Compare>
-    __device__ void SerialMerge(const KeyValueType* keys_shared, int aBegin,  int aEnd,
-                                 int bBegin, int bEnd, KeyValueType* results, int* indices, Compare &&comp) {
-
-
-
-        KeyValueType aKey = keys_shared[aBegin];
-        KeyValueType bKey = keys_shared[bBegin];
-        #pragma unroll
-        for(int i = 0; i < VT; ++i) {
-            bool p;
-            if(RangeCheck)
-                p = (bBegin >= bEnd) || ((aBegin < aEnd) && !comp(bKey, aKey));
-            else
-                p = !comp(bKey, aKey);
-
-            results[i] = p ? aKey : bKey;
-            indices[i] = p ? aBegin : bBegin;
-
-            if(p) aKey = keys_shared[++aBegin];
-            else bKey = keys_shared[++bBegin];
-        }
-        __syncthreads();
-
-
-    }
-
-
-    template<int NT, int VT, typename OutputIt>
-    __device__ void DeviceRegToShared(const KeyValueType* reg, int tid,
-                                       OutputIt dest, bool sync) {
-
-        typedef typename std::iterator_traits<OutputIt>::value_type T2;
-        #pragma unroll
-        for(int i = 0; i < VT; ++i)
-            dest[NT * i + tid] = (T2)reg[i];
-
-        if(sync) __syncthreads();
-    }
-
-
-    template<MgpuBounds Bounds, typename It1, typename It2, typename Compare>
-    __device__ int MergePath(It1 a, int aCount, It2 b, int bCount, int diag,
-                                   Compare &&comp) {
-
-        typedef typename std::iterator_traits<It1>::value_type Tb;
-        int begin = max(0, diag - bCount);
-        int end = min(diag, aCount);
-
-        while(begin < end) {
-            int mid = (begin + end)>> 1;
-            Tb aKey = a[mid];
-            Tb bKey = b[diag - 1 - mid];
-            bool pred = (MgpuBoundsUpper == Bounds) ?
-                        comp(aKey, bKey) :
-                        !comp(bKey, aKey);
-            // bool pred = (MgpuBoundsUpper == Bounds) ?
-            //              (getKey(aKey) <= getKey(bKey)) :
-            //              !(getKey(bKey) <= getKey(aKey));
-            if(pred) begin = mid + 1;
-            else end = mid;
-        }
-        return begin;
-    }
-
-
-        template<int NT, int VT0, int VT1, typename InputIt1, typename InputIt2>
-    __device__ void DeviceLoad2ToReg(InputIt1 a_global, int aCount,
-                                      InputIt2 b_global, int bCount, int tid, KeyValueType* reg, bool sync)  {
-
-        b_global -= aCount;
-        int total = aCount + bCount;
-        if(total >= NT * VT0) {
-            #pragma unroll
-            for(int i = 0; i < VT0; ++i) {
-                int index = NT * i + tid;
-                if(index < aCount) reg[i] = a_global[index];
-                else reg[i] = b_global[index];
-            }
-        } else {
-            #pragma unroll
-            for(int i = 0; i < VT0; ++i) {
-                int index = NT * i + tid;
-                if(index < aCount) reg[i] = a_global[index];
-                else if(index < total) reg[i] = b_global[index];
-            }
-        }
-            #pragma unroll
-        for(int i = VT0; i < VT1; ++i) {
-            int index = NT * i + tid;
-            if(index < aCount) reg[i] = a_global[index];
-            else if(index < total) reg[i] = b_global[index];
-        }
-    }
-
-    template<int NT, int VT0, int VT1, typename InputIt1, typename InputIt2>
-    __device__ void DeviceLoad2ToShared(InputIt1 a_global, int aCount,
-                                         InputIt2 b_global, int bCount, int tid, KeyValueType* shared, bool sync) {
-
-        KeyValueType reg[VT1];
-        DeviceLoad2ToReg<NT, VT0, VT1>(a_global, aCount, b_global, bCount, tid,
-                                       reg, false);
-        DeviceRegToShared<NT, VT1>(reg, tid, shared, sync);
-    }
-
-        template<int VT, typename T>
-    __device__ void DeviceThreadToShared(const T* threadReg, int tid, T* shared,
-        bool sync) {
-
-        if(1 & VT) {
-            // Odd grain size. Store as type T.
-            #pragma unroll
-            for(int i = 0; i < VT; ++i)
-                shared[VT * tid + i] = threadReg[i];
-        } else {
-            // Even grain size. Store as DevicePair<T>. This lets us exploit the
-            // 8-byte shared memory mode on Kepler.
-            DevicePair<T>* dest = (DevicePair<T>*)(shared + VT * tid);
-            #pragma unroll
-            for(int i = 0; i < VT / 2; ++i)
-                dest[i] = MakeDevicePair(threadReg[2 * i], threadReg[2 * i + 1]);
-        }
-        if(sync) __syncthreads();
-    }
-
-    template<typename T>
-    __device__ DevicePair<T> MakeDevicePair(T x, T y) {
-	    DevicePair<T> p = { x, y };
-	    return p;
-    }
-
-    template<int NT, int VT, typename T, typename OutputIt>
-    __device__ void DeviceSharedToGlobal(int count, const T* source, int tid,
-        OutputIt dest, bool sync) {
-
-        typedef typename std::iterator_traits<OutputIt>::value_type T2;
-        #pragma unroll
-        for(int i = 0; i < VT; ++i) {
-            int index = NT * i + tid;
-            if(index < count) dest[index] = (T2)source[index];
-        }
-        if(sync) __syncthreads();
-    }
-
-
-    /************************************************ KHUN END ********************************************************/
-
-
-
     template<typename KeyGetter>
-    __device__ void merge(const KeyValueType *block1, const KeyValueType *block2, size_t block_size1, size_t block_size2, KeyValueType *out, KeyGetter &&getKey) {
+    __device__ void seq_merge(const data_t *block1, const data_t *block2, size_t block_size1, size_t block_size2, data_t *out, KeyGetter &&getKey) {
         if (thread_idx::x() > 0) {
             return;
         }
@@ -478,18 +228,228 @@ private:
 
         size_t r_i = (i1 < block_size1 ? i1 : i2);
         size_t r_size = (i1 < block_size1 ? block_size1 : block_size2);
-        const KeyValueType *r_block = (i1 < block_size1 ? block1 : block2);
+        const data_t *r_block = (i1 < block_size1 ? block1 : block2);
         for (; r_i < r_size; r_i++, i_out++) {
             out[i_out] = r_block[r_i];
         }
     }
 
-
-
-
 };
 
+template<typename Key, int BlockSize, int ItemsPerThread>
+class block_merge<Key, BlockSize, ItemsPerThread, XPU_COMPILATION_TARGET> {
 
+public:
+    using data_t = Key;
+
+    struct storage_t {
+        data_t sharedMergeMem[ItemsPerThread * BlockSize + 1];
+    };
+
+    XPU_D block_merge(storage_t &storage) : storage(storage) {}
+
+    template<typename Compare>
+    XPU_D void merge(const data_t *a, size_t size_a, const data_t *b, size_t size_b, data_t *dst, Compare &&comp) {
+
+        PRINT_B("Merging arrays of size %llu and %llu", size_a, size_b);
+
+        int diag_next = 0;
+        int mp_next = merge_path<MgpuBoundsLower>(a, size_a, b, size_b, diag_next, comp);
+        for (int diag = 0; diag < size_a + size_b; diag = diag_next) {
+
+            int mp = mp_next;
+
+            diag_next = min(diag_next + BlockSize * ItemsPerThread, size_a + size_b);
+            mp_next = merge_path<MgpuBoundsLower>(a, size_a, b, size_b, diag_next, comp);
+
+            int4 range;
+            range.x = mp;
+            range.y = mp_next;
+            range.z = diag - mp;
+            range.w = (diag_next - mp_next);
+
+            PRINT_B("Merging [%d, %d] and [%d, %d]", range.x, range.y, range.z, range.w);
+
+            data_t results[ItemsPerThread];
+
+            merge_keys(a, b, range, storage.sharedMergeMem, results, comp);
+
+            thread_to_shared(results, storage.sharedMergeMem, true);
+
+            // Store merged keys to global memory.
+            int aCount = range.y - range.x;
+            int bCount = range.w - range.z;
+            shared_to_global(aCount + bCount, storage.sharedMergeMem, dst+diag, true);
+        }
+    }
+
+private:
+    storage_t &storage;
+
+    /*********************************************** KHUN BEGIN *******************************************************/
+
+    enum MgpuBounds {
+        MgpuBoundsLower,
+        MgpuBoundsUpper
+    };
+
+    template<typename Compare>
+    __device__ void merge_keys(const data_t *a, const data_t *b, int4 range, data_t* data_shared, data_t* results, Compare &&comp) {
+
+        int a0 = range.x;
+        int a1 = range.y;
+        int b0 = range.z;
+        int b1 = range.w;
+
+        int aCount = a1 - a0;
+        int bCount = b1 - b0;
+
+        // Load the data into shared memory.
+        load_to_shared(a + a0, aCount, b + b0, bCount, data_shared, true);
+
+        // Run a merge path to find the start of the serial merge for each thread.
+        int diag = ItemsPerThread * thread_idx::x();
+        int diag_next = min(diag + ItemsPerThread, aCount + bCount);
+        int mp = merge_path<MgpuBoundsLower>(data_shared, aCount, data_shared + aCount, bCount, diag, comp);
+        int mp_next = merge_path<MgpuBoundsLower>(data_shared, aCount, data_shared + aCount, bCount, diag_next, comp);
+
+        // Compute the ranges of the sources in shared memory.
+        int a0tid = mp;
+        int a1tid = mp_next;
+        int b0tid = aCount + diag - mp;
+        int b1tid = aCount + diag_next - mp_next;
+
+        // PRINT_T("merge path: a0 = %d, a1 = %d, b0 = %d, b1 = %d", a0tid, a1tid, b0tid, b1tid);
+
+        // Serial merge into register.
+        serial_merge(data_shared, a0tid, a1tid, b0tid, b1tid, results, comp);
+    }
+
+    template<typename Compare>
+    __device__ void serial_merge(const data_t* keys_shared, int aBegin,  int aEnd, int bBegin, int bEnd, data_t* results, Compare &&comp) {
+        data_t aKey = keys_shared[aBegin];
+        data_t bKey = keys_shared[bBegin];
+
+        constexpr bool range_check = true;
+
+        // PRINT_T("Merging from SMEM, a0 = %d, a1 = %d, b0 = %d, b1 = %d", aBegin, aEnd, bBegin, bEnd);
+
+        #pragma unroll
+        for (int i = 0; i < ItemsPerThread && (bBegin < bEnd || aBegin < aEnd); ++i) {
+            bool p;
+            if (range_check) {
+                p = (bBegin >= bEnd) || ((aBegin < aEnd) && !comp(bKey, aKey));
+            } else {
+                p = !comp(bKey, aKey);
+            }
+
+            results[i] = p ? aKey : bKey;
+
+            // assert(aBegin < BlockSize * ItemsPerThread);
+            // assert(bBegin < BlockSize * ItemsPerThread);
+
+            // PRINT_T("aBegin = %d, bBegin = %d", aBegin, bBegin);
+
+            if (p) {
+                aKey = keys_shared[++aBegin];
+            } else {
+                bKey = keys_shared[++bBegin];
+            }
+        }
+        __syncthreads();
+    }
+
+    template<MgpuBounds Bounds, typename Compare>
+    __device__ int merge_path(const data_t *a, int aCount, const data_t *b, int bCount, int diag, Compare &&comp) {
+
+        PRINT_B("Merge path for diag %d", diag);
+
+        int begin = max(0, diag - bCount);
+        int end = min(diag, aCount);
+
+        PRINT_B("begin = %d, end = %d", begin, end);
+
+        while (begin < end) {
+            int mid = (begin + end) >> 1;
+            data_t aKey = a[mid];
+            // printf("tid %d: bidx = %d\n", thread_idx::x(), diag-1-mid);
+
+            PRINT_T("b_idx = %d", diag-1-mid);
+            data_t bKey = b[diag - 1 - mid];
+            bool pred = (MgpuBoundsUpper == Bounds) ? comp(aKey, bKey) : !comp(bKey, aKey);
+
+            PRINT_B("aKey = %f, bKey = %f, begin = %d, end = %d", aKey, bKey, begin, end);
+
+            if (pred) {
+                begin = mid + 1;
+            } else {
+                end = mid;
+            }
+        }
+        return begin;
+    }
+
+    __device__ void reg_to_shared(const data_t* reg, data_t *dest, bool sync) {
+
+        #pragma unroll
+        for(int i = 0; i < ItemsPerThread; ++i) {
+            assert(BlockSize * i + thread_idx::x() < BlockSize * ItemsPerThread);
+            dest[BlockSize * i + thread_idx::x()] = reg[i];
+        }
+
+        if(sync) {
+            __syncthreads();
+        }
+    }
+
+    __device__ void load_to_reg(const data_t *a_global, int aCount, const data_t *b_global, int bCount, data_t *reg, bool sync)  {
+
+        b_global -= aCount;
+        int total = aCount + bCount;
+
+        #pragma unroll
+        for (int i = 0; i < ItemsPerThread; ++i) {
+            int index = BlockSize * i + thread_idx::x();
+            if (index < aCount) reg[i] = a_global[index];
+            else if (index < total) reg[i] = b_global[index];
+        }
+
+        if (sync) {
+            __syncthreads();
+        }
+    }
+
+    __device__ void load_to_shared(const data_t *a_global, int aCount, const data_t *b_global, int bCount, data_t* shared, bool sync) {
+        data_t reg[ItemsPerThread];
+        load_to_reg(a_global, aCount, b_global, bCount, reg, false);
+        reg_to_shared(reg,  shared, sync);
+    }
+
+    __device__ void thread_to_shared(const data_t* threadReg, data_t* shared, bool sync) {
+        #pragma unroll
+        for(int i = 0; i < ItemsPerThread; ++i) {
+            assert(ItemsPerThread * thread_idx::x() + i < BlockSize * ItemsPerThread);
+            shared[ItemsPerThread * thread_idx::x() + i] = threadReg[i];
+        }
+
+        if(sync) {
+            __syncthreads();
+        }
+    }
+
+    __device__ void shared_to_global(int count, const data_t* source, data_t *dest, bool sync) {
+        #pragma unroll
+        for(int i = 0; i < ItemsPerThread; ++i) {
+            int index = BlockSize * i + thread_idx::x();
+            if(index < count) {
+                dest[index] = source[index];
+            }
+        }
+        if(sync) __syncthreads();
+    }
+
+    /************************************************ KHUN END ********************************************************/
+};
 
 } // namespace xpu
 

@@ -1,3 +1,4 @@
+#ifndef XPU_DRIVER_CPU_DEVICE_RUNTIME
 #define XPU_DRIVER_CPU_DEVICE_RUNTIME
 
 #ifndef XPU_DEVICE_H
@@ -54,6 +55,21 @@ public:
             return getKey(a) < getKey(b);
         });
         return vals;
+    }
+
+};
+
+template<typename Key, int BlockSize, int ItemsPerThread>
+class block_merge<Key, BlockSize, ItemsPerThread, xpu::driver::cpu> {
+
+public:
+    struct storage_t {};
+
+    block_merge(storage_t &) {}
+
+    template<typename Compare>
+    void merge(const Key *a, size_t size_a, const Key *b, size_t size_b, Key *dst, Compare &&comp) {
+        std::merge(a, a + size_a, b, b + size_b, dst, comp);
     }
 
 };

@@ -81,6 +81,19 @@ public:
     XPU_D KeyValueType *sort(KeyValueType *vals, size_t N, KeyValueType *buf, KeyGetter &&getKey);
 };
 
+template<typename Key, int BlockSize, int ItemsPerThread=8, xpu::driver Impl=XPU_COMPILATION_TARGET>
+class block_merge {
+
+public:
+    struct storage_t {};
+
+    XPU_D block_merge(storage_t &);
+
+    template<typename Compare>
+    XPU_D void merge(const Key *a, size_t size_a, const Key *b, size_t size_b, Key *dst, Compare &&);
+
+};
+
 } // namespace xpu
 
 #include "detail/dynamic_loader.h"

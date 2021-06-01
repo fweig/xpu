@@ -41,30 +41,6 @@ inline int atomic_add_block(int *addr, int val) {
     return old;
 }
 
-template<typename T, size_t N = sizeof(T)>
-struct compare_lower_4_byte {};
-
-template<typename T>
-struct compare_lower_4_byte<T, 4> {
-    inline bool operator()(T a, T b) {
-        return a < b;
-    }
-};
-
-template<typename T>
-struct compare_lower_4_byte<T, 8> {
-    union as_llu {
-        T val;
-        unsigned long long int llu;
-    };
-
-    inline bool operator()(T a, T b) {
-        as_llu a_{.val = a};
-        as_llu b_{.val = b};
-        return (a_.llu & 0xFFFFFFFFul) < (b_.llu & 0xFFFFFFFFul);
-    }
-};
-
 template<typename Key, int BlockSize, int ItemsPerThread>
 class block_sort<Key, BlockSize, ItemsPerThread, driver::cpu> {
 

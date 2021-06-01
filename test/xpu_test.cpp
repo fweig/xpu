@@ -155,6 +155,56 @@ TEST(XPUTest, CanSortFloatsShort) {
 
 }
 
+template<typename K>
+void testMergeKernel(size_t M, size_t N) {
+    xpu::hd_buffer<float> a{M};
+    xpu::hd_buffer<float> b{N};
+    xpu::hd_buffer<float> dst{a.size() + b.size()};
+
+    std::mt19937 gen{1337};
+    std::uniform_real_distribution<float> dist{0, 100000};
+
+    std::sort(a.host(), a.host() + a.size());
+    std::sort(b.host(), b.host() + b.size());
+
+    xpu::copy(a, xpu::host_to_device);
+    xpu::copy(b, xpu::host_to_device);
+
+    xpu::run_kernel<K>(xpu::grid::n_blocks(1), a.device(), a.size(), b.device(), b.size(), dst.device());
+
+    xpu::copy(dst, xpu::device_to_host);
+
+    float *h = dst.host();
+    bool isSorted = true;
+    for (size_t i = 1; i < dst.size(); i++) {
+        isSorted &= (h[i-1] <= h[i]);
+    }
+
+    if (!isSorted) {
+        for (size_t i = 0; i < dst.size(); i++) {
+            std::cout << h[i] << " ";
+            if (i % 10 == 9) {
+                std::cout << std::endl;
+            }
+        }
+        std::cout << std::endl;
+    }
+
+    ASSERT_TRUE(isSorted);
+}
+
+TEST(XPUTest, CanMergeEvenNumberOfItems) {
+    testMergeKernel<merge>(512, 512);
+}
+
+TEST(XPUTest, CanMergeUnevenNumberOfItems) {
+    testMergeKernel<merge>(610, 509);
+}
+
+TEST(XPUTest, CanMergeWithOneItemPerThread) {
+    testMergeKernel<merge_single>(512, 512);
+}
+
 TEST(XPUTest, CanSetAndReadCMem) {
     float3_ orig{1, 2, 3};
     xpu::hd_buffer<float3_> out{1};

@@ -36,6 +36,16 @@ XPU_KERNEL(sort_struct, sort_kv_smem, key_value_t *items, int N, key_value_t *bu
     *dst = block_sort_kv_t(smem.sortbuf).sort(items, N, buf, [](const key_value_t &pair) { return pair.key; });
 }
 
+using merge_t = xpu::block_merge<float, 64, 8>;
+XPU_KERNEL(merge, merge_t::storage_t, const float *a, size_t size_a, const float *b, size_t size_b, float *dst) {
+    merge_t(smem).merge(a, size_a, b, size_b, dst, [](float a, float b) { return a < b; });
+}
+
+using merge_single_t = xpu::block_merge<float, 64, 1>;
+XPU_KERNEL(merge_single, typename merge_single_t::storage_t, const float *a, size_t size_a, const float *b, size_t size_b, float *dst) {
+    merge_single_t(smem).merge(a, size_a, b, size_b, dst, [](float a, float b) { return a < b; });
+}
+
 XPU_KERNEL(access_cmem, xpu::no_smem, float3_ *out) {
     if (xpu::thread_idx::x() > 0) {
         return;

@@ -58,12 +58,35 @@ public:
 
     template<typename Kernel, typename... Args>
     void run_kernel(grid g, Args&&... args) {
-        get_image<Kernel>()->template run_kernel<Kernel>(g, std::forward<Args>(args)...);
-    };
+        float ms;
+        get_image<Kernel>()->template run_kernel<Kernel>((measure_time ? &ms : nullptr), g, std::forward<Args>(args)...);
+
+        if (measure_time) {
+            size_t id = type_id<Kernel, typename Kernel::image>::get();
+
+            if (profiling.size() <= id) {
+                profiling.resize(id+1);
+            }
+
+            profiling.at(id).push_back(ms);
+        }
+    }
 
     template<typename C>
     void set_constant(const typename C::data_t &symbol) {
         get_image<C>()->template set<C>(symbol);
+    }
+
+    template<typename Kernel>
+    std::vector<float> get_timing() {
+        size_t id = type_id<Kernel, typename Kernel::image>::get();
+
+        // Profiling not enabled or kernel hasn't run yet.
+        if (profiling.size() <= id) {
+            return {};
+        }
+
+        return profiling.at(id);
     }
 
 private:
@@ -74,6 +97,9 @@ private:
     driver active_driver_type = driver::cpu;
 
     image_pool images;
+
+    bool measure_time = false;
+    std::vector<std::vector<float>> profiling;
 
     template<typename A>
     image<typename A::image> *get_image() {

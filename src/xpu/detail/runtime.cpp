@@ -20,6 +20,9 @@ void runtime::initialize(driver t) {
         });
     }
 
+    const char *profile_env = std::getenv("XPU_PROFILE");
+    measure_time = (profile_env != nullptr) && (std::string{profile_env} != "0");
+
     this->the_cpu_driver.reset(new cpu_driver{});
     this->the_cpu_driver->setup();
     error err = 0;

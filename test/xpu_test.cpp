@@ -241,6 +241,33 @@ TEST(XPUTest, CanGetThreadIdx) {
     }
 }
 
+TEST(XPUTest, CollectsTimingData) {
+    constexpr int NElems = 100000;
+
+    xpu::hd_buffer<float> a{NElems};
+    xpu::hd_buffer<float> b{NElems};
+    xpu::hd_buffer<float> c{NElems};
+
+    std::fill_n(a.host(), a.size(), 24);
+    std::fill_n(b.host(), b.size(), 24);
+
+    xpu::copy(a, xpu::host_to_device);
+    xpu::copy(b, xpu::host_to_device);
+
+    for (int i = 0; i < 10; i++) {
+        xpu::run_kernel<vector_add_timing>(xpu::grid::n_threads(NElems), a.device(), b.device(), c.device(), NElems);
+    }
+
+    auto timings = xpu::get_timing<vector_add_timing>();
+
+    ASSERT_EQ(timings.size(), 10);
+
+    for (auto &t : timings) {
+        ASSERT_GT(t, 0.f);
+    }
+}
+
+
 xpu::driver get_target_driver() {
     const char *driver_name_c = std::getenv("XPU_TEST_DRIVER");
     if (driver_name_c == nullptr) {
@@ -265,6 +292,7 @@ xpu::driver get_target_driver() {
 
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
+    setenv("XPU_PROFILE", "1", 1); // always enable profiling in unittests
     xpu::initialize(get_target_driver());
     return RUN_ALL_TESTS();
 }

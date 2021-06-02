@@ -43,6 +43,11 @@ const char *xpu::get_name() {
     return detail::type_name<Kernel>();
 }
 
+template<typename Kernel>
+std::vector<float> xpu::get_timing() {
+    return detail::runtime::instance().get_timing<Kernel>();
+}
+
 template<typename Kernel, typename... Args>
 void xpu::run_kernel(grid params, Args&&... args) {
     detail::runtime::instance().run_kernel<Kernel>(params, std::forward<Args>(args)...);

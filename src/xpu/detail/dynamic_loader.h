@@ -15,6 +15,7 @@
 #include <dlfcn.h>
 
 #include <cassert>
+#include <chrono>
 #include <iostream>
 #include <string>
 #include <type_traits>
@@ -40,7 +41,7 @@ struct action_interface<Tag, void(*)(Args...)> {
 
 template<typename S, typename... Args>
 struct action_interface<kernel_tag, void(*)(S, Args...)> {
-    using type = void(*)(grid, Args...);
+    using type = void(*)(float *, grid, Args...);
 };
 
 struct delete_me {};
@@ -144,8 +145,8 @@ public:
     }
 
     template<typename K, typename... Args>
-    typename std::enable_if<is_kernel<I, K>::value>::type run_kernel(grid g, Args&&... args) {
-        call_action<K>(g, args...);
+    typename std::enable_if<is_kernel<I, K>::value>::type run_kernel(float *ms, grid g, Args&&... args) {
+        call_action<K>(ms, g, args...);
     }
 
     void dump_symbols() {
@@ -204,15 +205,38 @@ struct action_runner<kernel_tag, K, S, void(*)(S &, Args...)> {
 
     using my_type = action_runner<kernel_tag, K, S, void(*)(S &, Args...)>;
 
-    static void call(grid g, Args... args) {
+    static void call(float *ms, grid g, Args... args) {
         int bsize = block_size<K>::value;
 
         if (g.blocks.x == -1) {
             g.blocks.x = (g.threads.x + bsize - 1) / bsize;
         }
+
+        bool measure_time = (ms != nullptr);
+        cudaEvent_t start, end;
+
+        if (measure_time) {
+            cudaEventCreate(&start);
+            cudaEventCreate(&end);
+        }
+
         XPU_LOG("Calling kernel '%s' [block_dim = (%d, %d, %d), grid_dim = (%d, %d, %d)] with CUDA driver.", type_name<K>(), bsize, 0, 0, g.blocks.x, 0, 0);
+        if (measure_time) {
+            cudaEventRecord(start);
+        }
         kernel_entry<K, S, Args...><<<g.blocks.x, bsize>>>(args...);
+        if (measure_time) {
+            cudaEventRecord(end);
+        }
         cudaDeviceSynchronize();
+
+        if (measure_time) {
+            cudaEventSynchronize(end);
+            cudaEventElapsedTime(ms, start, end);
+            XPU_LOG("Kernel '%s' took %f ms", type_name<K>(), *ms);
+            cudaEventDestroy(start);
+            cudaEventDestroy(end);
+        }
     }
 
 };
@@ -224,15 +248,38 @@ struct action_runner<kernel_tag, K, S, void(*)(S &, Args...)> {
 
     using my_type = action_runner<kernel_tag, K, S, void(*)(S &, Args...)>;
 
-    static void call(grid g, Args... args) {
+    static void call(float *ms, grid g, Args... args) {
         int bsize = block_size<K>::value;
 
         if (g.blocks.x == -1) {
             g.blocks.x = (g.threads.x + bsize - 1) / bsize;
         }
+
+        bool measure_time = (ms != nullptr);
+        hipEvent_t start, end;
+
+        if (measure_time) {
+            hipEventCreate(&start);
+            hipEventCreate(&end);
+        }
+
         XPU_LOG("Calling kernel '%s' [block_dim = (%d, %d, %d), grid_dim = (%d, %d, %d)] with HIP driver.", type_name<K>(), bsize, 0, 0, g.blocks.x, 0, 0);
+        if (measure_time) {
+            hipEventRecord(start);
+        }
         hipLaunchKernelGGL(HIP_KERNEL_NAME(kernel_entry<K, S, Args...>), dim3(g.blocks.x), dim3(bsize), 0, 0, args...);
+        if (measure_time) {
+            hipEventRecord(end);
+        }
         hipDeviceSynchronize();
+
+        if (measure_time) {
+            hipEventSynchronize(end);
+            hipEventElapsedTime(ms, start, end);
+            XPU_LOG("Kernel '%s' took %f ms", type_name<K>(), *ms);
+            hipEventDestroy(start);
+            hipEventDestroy(end);
+        }
     }
 
 };
@@ -244,11 +291,22 @@ struct action_runner<kernel_tag, K, S, void(*)(S &, Args...)> {
 
     using my_type = action_runner<kernel_tag, K, S, void(*)(S &, Args...)>;
 
-    static void call(grid g, Args... args) {
+    static void call(float *ms, grid g, Args... args) {
         if (g.threads.x == -1) {
             g.threads.x = g.blocks.x;
         }
-        XPU_LOG("Calling kernel '%s' [block_dim = (1, 0, 0), grid_dim = (%d, %d, %d)] with CPU driver.", type_name<K>(), g.blocks.x, 0, 0);
+        XPU_LOG("Calling kernel '%s' [block_dim = (1, 0, 0), grid_dim = (%d, %d, %d)] with CPU driver.", type_name<K>(), g.threads.x, 0, 0);
+
+        using clock = std::chrono::high_resolution_clock;
+        using duration = std::chrono::duration<float, std::milli>;
+
+        bool measure_time = (ms != nullptr);
+        clock::time_point start;
+
+        if (measure_time) {
+            start = clock::now();
+        }
+
         #ifdef _OPENMP
         #pragma omp parallel for schedule(static)
         #endif
@@ -257,6 +315,12 @@ struct action_runner<kernel_tag, K, S, void(*)(S &, Args...)> {
             this_thread::block_idx.x = i;
             this_thread::grid_dim.x = g.threads.x;
             K::impl(smem, args...);
+        }
+
+        if (measure_time) {
+            duration elapsed = clock::now() - start;
+            *ms = elapsed.count();
+            XPU_LOG("Kernel '%s' took %f ms", type_name<K>(), *ms);
         }
     }
 

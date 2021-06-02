@@ -11,6 +11,7 @@
 #include <utility>
 #include <string>
 #include <type_traits>
+#include <vector>
 
 namespace xpu {
 
@@ -58,6 +59,9 @@ xpu::driver active_driver();
 
 template<typename Kernel>
 const char *get_name();
+
+template<typename Kernel>
+std::vector<float> get_timing();
 
 template<typename Kernel, typename... Args>
 void run_kernel(grid params, Args&&... args);

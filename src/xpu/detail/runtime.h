@@ -58,7 +58,6 @@ public:
 
     template<typename Kernel, typename... Args>
     void run_kernel(grid g, Args&&... args) {
-        XPU_LOG("Calling kernel '%s' with %s driver.", type_name<Kernel>(), driver_str(active_driver_type));
         get_image<Kernel>()->template run_kernel<Kernel>(g, std::forward<Args>(args)...);
     };
 

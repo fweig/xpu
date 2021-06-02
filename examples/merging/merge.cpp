@@ -4,7 +4,7 @@
 
 int main() {
 
-    static constexpr size_t N = 510;
+    static constexpr size_t N = 1024;
 
     xpu::initialize(xpu::driver::cuda);
 

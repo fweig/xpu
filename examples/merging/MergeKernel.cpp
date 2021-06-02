@@ -2,7 +2,9 @@
 
 XPU_IMAGE(MergeKernel);
 
-using merge_t = xpu::block_merge<float, 64, 4>;
+XPU_BLOCK_SIZE(GpuMerge, 256);
+
+using merge_t = xpu::block_merge<float, xpu::block_size<GpuMerge>{}, 4>;
 
 struct GpuMergeSMem {
     typename merge_t::storage_t merge_buf;

@@ -205,10 +205,13 @@ struct action_runner<kernel_tag, K, S, void(*)(S &, Args...)> {
     using my_type = action_runner<kernel_tag, K, S, void(*)(S &, Args...)>;
 
     static void call(grid g, Args... args) {
+        int bsize = block_size<K>::value;
+
         if (g.blocks.x == -1) {
-            g.blocks.x = (g.threads.x + 63) / 64;
+            g.blocks.x = (g.threads.x + bsize - 1) / bsize;
         }
-        kernel_entry<K, S, Args...><<<g.blocks.x, 64>>>(args...);
+        XPU_LOG("Calling kernel '%s' [block_dim = (%d, %d, %d), grid_dim = (%d, %d, %d)] with CUDA driver.", type_name<K>(), bsize, 0, 0, g.blocks.x, 0, 0);
+        kernel_entry<K, S, Args...><<<g.blocks.x, bsize>>>(args...);
         cudaDeviceSynchronize();
     }
 
@@ -222,10 +225,13 @@ struct action_runner<kernel_tag, K, S, void(*)(S &, Args...)> {
     using my_type = action_runner<kernel_tag, K, S, void(*)(S &, Args...)>;
 
     static void call(grid g, Args... args) {
+        int bsize = block_size<K>::value;
+
         if (g.blocks.x == -1) {
-            g.blocks.x = (g.threads.x + 63) / 64;
+            g.blocks.x = (g.threads.x + bsize - 1) / bsize;
         }
-        hipLaunchKernelGGL(HIP_KERNEL_NAME(kernel_entry<K, S, Args...>), dim3(g.blocks.x), dim3(64), 0, 0, args...);
+        XPU_LOG("Calling kernel '%s' [block_dim = (%d, %d, %d), grid_dim = (%d, %d, %d)] with HIP driver.", type_name<K>(), bsize, 0, 0, g.blocks.x, 0, 0);
+        hipLaunchKernelGGL(HIP_KERNEL_NAME(kernel_entry<K, S, Args...>), dim3(g.blocks.x), dim3(bsize), 0, 0, args...);
         hipDeviceSynchronize();
     }
 
@@ -242,6 +248,7 @@ struct action_runner<kernel_tag, K, S, void(*)(S &, Args...)> {
         if (g.threads.x == -1) {
             g.threads.x = g.blocks.x;
         }
+        XPU_LOG("Calling kernel '%s' [block_dim = (1, 0, 0), grid_dim = (%d, %d, %d)] with CPU driver.", type_name<K>(), g.blocks.x, 0, 0);
         #ifdef _OPENMP
         #pragma omp parallel for schedule(static)
         #endif
@@ -381,5 +388,8 @@ struct register_kernel {
 #define XPU_DETAIL_KERNEL(name, shared_memory, ...) \
     static xpu::detail::register_kernel<name, shared_memory> XPU_MAGIC_NAME(xpu_detail_register_action){}; \
     template<> XPU_D void name::impl<shared_memory>(XPU_MAYBE_UNUSED shared_memory &smem, ##__VA_ARGS__)
+
+#define XPU_DETAIL_BLOCK_SIZE(kernel, size) \
+    template<> struct xpu::block_size<kernel> : std::integral_constant<int, size> {}
 
 #endif

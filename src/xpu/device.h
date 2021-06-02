@@ -6,6 +6,7 @@
 
 #define _USE_MATH_DEFINES
 #include <cmath>
+#include <type_traits>
 
 #define XPU_IMAGE(image) XPU_DETAIL_IMAGE(image)
 
@@ -19,6 +20,7 @@
 #define XPU_FUNC_TI(name) XPU_DETAIL_FUNC_TI(name)
 #define XPU_FUNC_TS(name, ...) XPU_DETAIL_FUNC_TS(name, ##__VA_ARGS__)
 #define XPU_KERNEL(name, shared_memory, ...) XPU_DETAIL_KERNEL(name, shared_memory, ##__VA_ARGS__)
+#define XPU_BLOCK_SIZE(kernel, size) XPU_DETAIL_BLOCK_SIZE(kernel, size)
 
 #define XPU_ASSERT(x) XPU_DETAIL_ASSERT(x)
 
@@ -45,6 +47,9 @@ struct grid_dim {
     grid_dim() = delete;
     XPU_D static XPU_FORCE_INLINE int x();
 };
+
+template<typename K>
+struct block_size : std::integral_constant<int, 64> {};
 
 struct no_smem {};
 

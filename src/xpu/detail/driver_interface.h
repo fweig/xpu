@@ -13,7 +13,7 @@ class driver_interface {
 public:
     virtual ~driver_interface() {}
 
-    virtual error setup() = 0;
+    virtual error setup(int) = 0;
     virtual error device_malloc(void **, size_t) = 0;
     virtual error free(void *) = 0;
     virtual error memcpy(void *, const void *, size_t) = 0;

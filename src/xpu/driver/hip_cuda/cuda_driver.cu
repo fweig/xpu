@@ -3,8 +3,6 @@
 
 #include <iostream>
 
-#define CU_DEVICE 0
-
 namespace xpu {
 namespace detail {
 
@@ -13,17 +11,17 @@ class cuda_driver : public driver_interface {
 public:
     virtual ~cuda_driver() {}
 
-    error setup() override {
+    error setup(int device) override {
         error err;
         cudaDeviceProp props;
-        err = cudaGetDeviceProperties(&props, CU_DEVICE);
+        err = cudaGetDeviceProperties(&props, device);
         if (err != 0) {
             return err;
         }
 
         XPU_LOG("Selected %s(arch = %d%d) as active device.", props.name, props.major, props.minor);
 
-        err = cudaSetDevice(CU_DEVICE);
+        err = cudaSetDevice(device);
         if (err != 0) {
             return err;
         }

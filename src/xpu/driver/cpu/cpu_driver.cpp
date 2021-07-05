@@ -1,11 +1,13 @@
 #include "cpu_driver.h"
 
+#include <cassert>
 #include <cstdlib>
 #include <cstring>
 
 using namespace xpu::detail;
 
-error cpu_driver::setup() {
+error cpu_driver::setup(int device) {
+    assert(device == 0);
     return 0;
 }
 

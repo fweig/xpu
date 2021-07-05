@@ -13,18 +13,18 @@ class hip_driver : public driver_interface {
 public:
     virtual ~hip_driver() {}
 
-    error setup() override {
+    error setup(int device) override {
         error err;
 
         hipDeviceProp_t props;
-        err = hipGetDeviceProperties(&props, 0);
+        err = hipGetDeviceProperties(&props, device);
         if (err != 0) {
             return err;
         }
 
         XPU_LOG("Selected %s(arch = %d%d) as active device.", props.name, props.major, props.minor);
 
-        err = hipSetDevice(0);
+        err = hipSetDevice(device);
         if (err != 0) {
             return err;
         }

@@ -10,7 +10,10 @@ runtime &runtime::instance() {
     return the_runtime;
 }
 
-void runtime::initialize(driver t) {
+void runtime::initialize(driver target_driver) {
+
+    int target_device = 0;
+
     const char *use_logger = std::getenv("XPU_VERBOSE");
     bool verbose = (use_logger != nullptr) && (std::string{use_logger} != "0");
 
@@ -23,16 +26,42 @@ void runtime::initialize(driver t) {
     const char *profile_env = std::getenv("XPU_PROFILE");
     measure_time = (profile_env != nullptr) && (std::string{profile_env} != "0");
 
+    const char *device_env = std::getenv("XPU_DEVICE");
+    if (device_env != nullptr) {
+        std::vector<std::pair<std::string, xpu::driver>> str_to_driver {
+            {"cpu", driver::cpu},
+            {"cuda", driver::cuda},
+            {"hip", driver::hip},
+        };
+
+        bool valid_driver = false;
+        for (auto &driver_str : str_to_driver) {
+            const std::string &name = driver_str.first;
+            if (strncmp(device_env, name.c_str(), name.size()) == 0) {
+                valid_driver = true;
+                device_env += name.size();
+                target_driver = driver_str.second;
+                break;
+            }
+        }
+
+        if (not valid_driver) {
+            throw exception{"Requested unknown driver with environment variable XPU_DEVICE: " + std::string{device_env}};
+        }
+
+        sscanf(device_env, "%d", &target_device);
+    }
+
     this->the_cpu_driver.reset(new cpu_driver{});
-    this->the_cpu_driver->setup();
+    this->the_cpu_driver->setup(0);
     error err = 0;
-    switch (t) {
+    switch (target_driver) {
     case driver::cpu:
         active_driver_inst = the_cpu_driver.get();
         break;
     case driver::cuda:
         the_cuda_driver.reset(new lib_obj<driver_interface>{"libxpu_Cuda.so"});
-        err = the_cuda_driver->obj->setup();
+        err = the_cuda_driver->obj->setup(target_device);
         if (err != 0) {
             throw exception{"Caught error " + std::to_string(err)};
         }
@@ -40,15 +69,15 @@ void runtime::initialize(driver t) {
         break;
     case driver::hip:
         the_hip_driver.reset(new lib_obj<driver_interface>{"libxpu_Hip.so"});
-        err = the_hip_driver->obj->setup();
+        err = the_hip_driver->obj->setup(target_device);
         if (err != 0) {
             throw exception{"Caught error " + std::to_string(err)};
         }
         active_driver_inst = the_hip_driver->obj;
         break;
     }
-    active_driver_type = t;
-    XPU_LOG("Set %s as active driver.", driver_str(t));
+    active_driver_type = target_driver;
+    XPU_LOG("Set %s as active driver.", driver_str(target_driver));
 }
 
 void *runtime::host_malloc(size_t bytes) {

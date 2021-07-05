@@ -267,32 +267,9 @@ TEST(XPUTest, CollectsTimingData) {
     }
 }
 
-
-xpu::driver get_target_driver() {
-    const char *driver_name_c = std::getenv("XPU_TEST_DRIVER");
-    if (driver_name_c == nullptr) {
-        return xpu::driver::cpu;
-    }
-    std::string driver_name{driver_name_c};
-    std::transform(driver_name.begin(), driver_name.end(), driver_name.begin(), [](unsigned char c) { return std::tolower(c); });
-
-    if (driver_name == "cpu") {
-        return xpu::driver::cpu;
-    }
-    if (driver_name == "cuda") {
-        return xpu::driver::cuda;
-    }
-    if (driver_name == "hip") {
-        return xpu::driver::hip;
-    }
-
-    std::cout << "ERROR: Unknown driver '" << driver_name_c << "'" << std::endl;
-    std::abort();
-}
-
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
     setenv("XPU_PROFILE", "1", 1); // always enable profiling in unittests
-    xpu::initialize(get_target_driver());
+    xpu::initialize(xpu::driver::cpu);
     return RUN_ALL_TESTS();
 }

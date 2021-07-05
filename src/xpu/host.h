@@ -37,25 +37,25 @@ private:
 
 };
 
-void initialize(driver);
+inline void initialize(driver);
 
-void *host_malloc(size_t);
+inline void *host_malloc(size_t);
 template<typename T>
 T *host_malloc(size_t N) {
     return static_cast<T *>(host_malloc(sizeof(T) * N));
 }
 
-void *device_malloc(size_t);
+inline void *device_malloc(size_t);
 template<typename T>
 T *device_malloc(size_t N) {
     return static_cast<T *>(device_malloc(sizeof(T) * N));
 }
 
-void free(void *);
-void memcpy(void *, const void *, size_t);
-void memset(void *, int, size_t);
+inline void free(void *);
+inline void memcpy(void *, const void *, size_t);
+inline void memset(void *, int, size_t);
 
-xpu::driver active_driver();
+inline xpu::driver active_driver();
 
 template<typename Kernel>
 const char *get_name();

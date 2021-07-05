@@ -3,16 +3,13 @@ include(FetchContent)
 FetchContent_Declare(
   googletest
   GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG        release-1.10.0
+  GIT_TAG        4ec4cd23f486bf70efcc5d2caa40f24368f752e3
 )
 FetchContent_GetProperties(googletest)
 if(NOT googletest_POPULATED)
   FetchContent_Populate(googletest)
-  set(WARN_DEPRECATED_BACK ${CMAKE_WARN_DEPRECATED})
-  set(CMAKE_WARN_DEPRECATED FALSE)
   set(BUILD_GMOCK OFF)
   add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR})
-  set(CMAKE_WARN_DEPRECATED ${WARN_DEPRECATED_BACK})
 endif()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})

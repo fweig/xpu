@@ -13,10 +13,12 @@
 int main() {
 
     // Number of elements to sort.
-    constexpr size_t NumElems = 1000;
+    constexpr size_t NumElemsPerBlock = 1000;
+    constexpr size_t NumBlocks = 200;
+    constexpr size_t NumElems = NumBlocks * NumElemsPerBlock;
 
-    // Initialize the xpu runtime and select cuda backend.
-    xpu::initialize(xpu::driver::cuda);
+    // Initialize the xpu runtime and select cpu backend.
+    xpu::initialize(xpu::driver::cpu);
 
     // Host buffer.
     std::vector<KeyValuePair> itemsH;
@@ -45,10 +47,7 @@ int main() {
     xpu::copy(inputD, itemsH.data(), NumElems);
 
     // Run kernel that performs the sorting.
-    //xpu::run_kernel<SortKernel::gpuSort>(xpu::grid::n_blocks(1), inputD, bufD, outD, indices, shared_keys, NumElems);
-    //KHUN BEGIN
-    xpu::run_kernel<GpuSort>(xpu::grid::n_blocks(1), inputD, bufD, outD, NumElems);
-    //KHUN END
+    xpu::run_kernel<GpuSort>(xpu::grid::n_blocks(NumBlocks), inputD, bufD, outD, NumElems);
 
     // Get the buffer that contains the sorted data.
     KeyValuePair *outH = nullptr;
@@ -56,17 +55,17 @@ int main() {
 
     // Copy sorted data back to host.
     xpu::copy(itemsH.data(), outH, NumElems);
+    // my_memcpy(itemsH.data(), outH, NumElems);
 
     // Check if data is sorted.
     bool ok = true;
-    for (size_t i = 1; i < itemsH.size(); i++) {
-        auto faa = (itemsH[i-1].key <= itemsH[i].key);
-        ok &= faa;
-        if(faa == false){
-            std::cout << i << std::endl;
+    for (size_t block = 0; block < NumBlocks; block++) {
+        size_t offset = block * NumElemsPerBlock;
+        for (size_t i = 1; i < NumElemsPerBlock; i++) {
+            auto faa = (itemsH[offset+i-1].key <= itemsH[offset+i].key);
+            ok &= faa;
         }
     }
-    std::cout << itemsH.size() << std::endl;
 
     if (ok) {
         std::cout << "Data is sorted!" << std::endl;
@@ -74,13 +73,7 @@ int main() {
         std::cout << "Error: Data is not sorted!" << std::endl;
     }
 
-    // for(int i = 0; i<((int)NumElems/10); i++){
-    //     for(int j = 0; j<10; j++){
-    //         std::cout << itemsH[i*1+j].key << ", ";
-    //     }
-    //     std::cout << std::endl;
-    // }
-    std::cout << "Cleaning" << std::endl;
+    std::cout << "Cleaning up." << std::endl;
 
     // Cleanup: Free data allocated on GPU.
     xpu::free(inputD);

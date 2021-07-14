@@ -23,8 +23,16 @@ XPU_KERNEL(GpuSort, GpuSortSmem, KeyValuePair *data, KeyValuePair *buf, KeyValue
     // Call the sort function. Along the two buffers and the number of elements, a function that
     // extracts the key from the struct has to be passed.
     // Returns the buffer that contains the sorted data (either data or buf).
-    *out = SortT(smem.sortBuf).sort(
-        data, numElems, buf,
+
+    size_t itemsPerBlock = numElems / xpu::grid_dim::x();
+    size_t offset = itemsPerBlock * xpu::block_idx::x();
+
+    KeyValuePair *res = SortT(smem.sortBuf).sort(
+        &data[offset], itemsPerBlock, &buf[offset],
         [](const KeyValuePair &dat) { return dat.key; }
     );
+
+    if (xpu::block_idx::x() == 0) {
+        *out = res;
+    }
 }

@@ -1,5 +1,7 @@
 #include "cpu_driver.h"
 
+#include "../../detail/log.h"
+
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
@@ -22,6 +24,7 @@ error cpu_driver::free(void *ptr) {
 }
 
 error cpu_driver::memcpy(void *dst, const void *src, size_t bytes) {
+    XPU_LOG("memcpy %lu bytes", bytes);
     std::memcpy(dst, src, bytes);
     return 0;
 }

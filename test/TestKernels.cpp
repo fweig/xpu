@@ -30,8 +30,11 @@ struct sort_floats_smem {
 };
 
 XPU_KERNEL(sort_float, sort_floats_smem, float *items, int N, float *buf, float **dst) {
-    // printf("In sort\n");
-    *dst = block_sort_t(smem.sortbuf).sort(items, N, buf, [](const float &x) { return x; });
+    float *res = block_sort_t(smem.sortbuf).sort(items, N, buf, [](const float &x) { return x; });
+
+    if (xpu::block_idx::x() == 0) {
+        *dst = res;
+    }
 }
 
 using block_sort_kv_t = xpu::block_sort<unsigned int, key_value_t, 64, 8>;
@@ -41,7 +44,11 @@ struct sort_kv_smem {
 };
 
 XPU_KERNEL(sort_struct, sort_kv_smem, key_value_t *items, int N, key_value_t *buf, key_value_t **dst) {
-    *dst = block_sort_kv_t(smem.sortbuf).sort(items, N, buf, [](const key_value_t &pair) { return pair.key; });
+    key_value_t *res = block_sort_kv_t(smem.sortbuf).sort(items, N, buf, [](const key_value_t &pair) { return pair.key; });
+
+    if (xpu::block_idx::x() == 0) {
+        *dst = res;
+    }
 }
 
 using merge_t = xpu::block_merge<float, 64, 8>;

@@ -18,6 +18,7 @@ public:
     virtual error free(void *) = 0;
     virtual error memcpy(void *, const void *, size_t) = 0;
     virtual error memset(void *, int, size_t) = 0;
+    virtual const char *error_to_string(error) = 0;
 
 };
 

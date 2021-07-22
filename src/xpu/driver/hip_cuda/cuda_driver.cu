@@ -53,6 +53,10 @@ public:
         return cudaMemset(dst, ch, bytes);
     }
 
+    const char *error_to_string(error err) override {
+        return cudaGetErrorString(static_cast<cudaError_t>(err));
+    }
+
 };
 
 } // namespace detail

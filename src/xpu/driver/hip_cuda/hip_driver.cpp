@@ -56,6 +56,10 @@ public:
         return hipMemset(dst, ch, bytes);
     }
 
+    const char *error_to_string(error err) override {
+        return hipGetErrorString(static_cast<hipError_t>(err));
+    }
+
 };
 
 } // namespace detail

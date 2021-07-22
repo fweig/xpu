@@ -35,10 +35,15 @@ TEST(XPUTest, CanRunVectorAdd) {
 
 TEST(XPUTest, CanSortStruct) {
 
-    constexpr int NElems = 100000;
+    constexpr size_t NElems = 1000000000;
 
     std::mt19937 gen{1337};
     std::uniform_int_distribution<unsigned int> dist{0, 1000000};
+
+    key_value_t *ditems = xpu::device_malloc<key_value_t>(NElems);
+    key_value_t *buf = xpu::device_malloc<key_value_t>(NElems);
+    key_value_t **dst = xpu::device_malloc<key_value_t *>(1);
+
 
     std::unordered_set<unsigned int> keys{};
     while (keys.size() < NElems) {
@@ -60,9 +65,6 @@ TEST(XPUTest, CanSortStruct) {
     // }
     // std::cout << std::endl;
 
-    key_value_t *ditems = xpu::device_malloc<key_value_t>(NElems);
-    key_value_t *buf = xpu::device_malloc<key_value_t>(NElems);
-    key_value_t **dst = xpu::device_malloc<key_value_t *>(1);
 
     xpu::copy(ditems, items.data(), NElems);
 

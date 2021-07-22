@@ -93,7 +93,6 @@ private:
     std::unique_ptr<cpu_driver> the_cpu_driver;
     std::unique_ptr<lib_obj<driver_interface>> the_cuda_driver;
     std::unique_ptr<lib_obj<driver_interface>> the_hip_driver;
-    driver_interface *active_driver_inst = nullptr;
     driver active_driver_type = driver::cpu;
 
     image_pool images;
@@ -130,9 +129,14 @@ private:
         return i;
     }
 
+    driver_interface *get_driver(driver) const;
+    driver_interface *get_active_driver() const;
+
     std::string complete_file_name(const char *, driver) const;
 
     const char *driver_str(driver) const;
+
+    void throw_on_driver_error(driver, error) const;
 };
 
 } // namespace detail

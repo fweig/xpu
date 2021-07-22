@@ -16,6 +16,15 @@ public:
     detail::error free(void *) override;
     detail::error memcpy(void *, const void *, size_t) override;
     detail::error memset(void *, int, size_t) override;
+    const char *error_to_string(error) override;
+
+private:
+    enum error_code : int {
+        SUCCESS = 0,
+        OUT_OF_MEMORY,
+        INVALID_DEVICE,
+    };
+
 };
 
 } // namespace detail

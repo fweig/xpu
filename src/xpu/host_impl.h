@@ -72,16 +72,13 @@ xpu::hd_buffer<T>::hd_buffer(size_t N) {
 
 template<typename T>
 xpu::hd_buffer<T>::~hd_buffer() {
-    if (hostdata != nullptr) {
-        std::free(hostdata);
-    }
-    if (copy_required()) {
-        xpu::free(devicedata);
-    }
+    reset();
 }
 
 template<typename T>
 xpu::hd_buffer<T> &xpu::hd_buffer<T>::operator=(hd_buffer<T> &&other)  {
+    reset();
+
     _size = other._size;
     hostdata = other.hostdata;
     devicedata = other.devicedata;
@@ -92,6 +89,18 @@ xpu::hd_buffer<T> &xpu::hd_buffer<T>::operator=(hd_buffer<T> &&other)  {
 }
 
 template<typename T>
+void xpu::hd_buffer<T>::reset() {
+    if (hostdata != nullptr) {
+        std::free(hostdata);
+    }
+    if (copy_required()) {
+        xpu::free(devicedata);
+    }
+    hostdata = devicedata = nullptr;
+    _size = 0;
+}
+
+template<typename T>
 xpu::d_buffer<T>::d_buffer(size_t N) {
     _size = N;
     devicedata = device_malloc<T>(N);
@@ -99,17 +108,28 @@ xpu::d_buffer<T>::d_buffer(size_t N) {
 
 template<typename T>
 xpu::d_buffer<T>::~d_buffer() {
-    free(devicedata);
+    reset();
 }
 
 template<typename T>
 xpu::d_buffer<T> &xpu::d_buffer<T>::operator=(xpu::d_buffer<T> &&other) {
+    reset();
+
     _size = other._size;
     devicedata = other.devicedata;
 
     other._size = 0;
     other.devicedata = nullptr;
     return *this;
+}
+
+template<typename T>
+void xpu::d_buffer<T>::reset() {
+    if (devicedata != nullptr) {
+        free(devicedata);
+    }
+    devicedata = nullptr;
+    _size = 0;
 }
 
 template<typename T>

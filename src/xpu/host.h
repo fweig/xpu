@@ -86,6 +86,8 @@ public:
 
     bool copy_required() const { return hostdata != devicedata; }
 
+    void reset();
+
 private:
     size_t _size = 0;
     T *hostdata = nullptr;
@@ -106,6 +108,8 @@ public:
 
     size_t size() const { return _size; }
     T *data() { return devicedata; }
+
+    void reset();
 
 private:
     size_t _size = 0;

@@ -14,6 +14,10 @@ if (NOT DEFINED XPU_ENABLE_CUDA)
     set(XPU_ENABLE_CUDA OFF)
 endif()
 
+if (NOT DEFINED XPU_DEBUG)
+    set(XPU_DEBUG OFF)
+endif()
+
 if( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR )
     set(XPU_STANDALONE ON)
 else()
@@ -24,7 +28,12 @@ if (XPU_STANDALONE)
     set(CMAKE_CXX_STANDARD 11)
     set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
     # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g3 -Wall -Wextra -Werror -Wfatal-errors")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Og -g3 -Wall -Wextra -Werror -fmax-errors=5")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror -fmax-errors=5")
+    if (XPU_DEBUG)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g3 -Og")
+    else()
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+    endif()
 endif()
 
 find_package(OpenMP)
@@ -123,7 +132,6 @@ add_library(xpu SHARED
 target_link_libraries(xpu dl)
 
 if (XPU_ENABLE_CUDA)
-    enable_language(CUDA)
     xpu_create_subproject(
         xpu Cuda
         "${CMAKE_CURRENT_SOURCE_DIR}/src/xpu/driver/hip_cuda/cuda_driver.cu"

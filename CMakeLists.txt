@@ -147,6 +147,7 @@ endif()
 
 if (XPU_BUILD_TESTS)
     add_subdirectory(test)
+    add_subdirectory(benchmark)
 endif()
 
 if (XPU_BUILD_EXAMPLES)

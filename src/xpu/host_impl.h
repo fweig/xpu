@@ -79,10 +79,12 @@ template<typename T>
 xpu::hd_buffer<T> &xpu::hd_buffer<T>::operator=(hd_buffer<T> &&other)  {
     reset();
 
-    _size = std::exchange(other._size, 0);
-    hostdata = std::exchange(other.hostdata, nullptr);
-    devicedata = std::exchange(other.devicedata, nullptr);
+    _size = other._size;
+    hostdata = other.hostdata;
+    devicedata = other.devicedata;
 
+    other._size = 0;
+    other.hostdata = other.devicedata = nullptr;
     return *this;
 }
 
@@ -112,8 +114,12 @@ xpu::d_buffer<T>::~d_buffer() {
 template<typename T>
 xpu::d_buffer<T> &xpu::d_buffer<T>::operator=(xpu::d_buffer<T> &&other) {
     reset();
-    _size = std::exchange(other._size, 0);
-    devicedata = std::exchange(other.devicedata, nullptr);
+
+    _size = other._size;
+    devicedata = other.devicedata;
+
+    other._size = 0;
+    other.devicedata = nullptr;
     return *this;
 }
 

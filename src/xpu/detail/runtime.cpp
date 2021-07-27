@@ -4,8 +4,8 @@
 #include <cstdlib>
 #include <sstream>
 
-#define CATCH_ERROR(err) CATCH_ERROR_D(active_driver_type, err)
-#define CATCH_ERROR_D(driver, err) throw_on_driver_error(driver, err)
+#define DRIVER_CALL(func) throw_on_driver_error(active_driver_type, get_active_driver()->func)
+#define CPU_DRIVER_CALL(func) throw_on_driver_error(xpu::driver::cpu, the_cpu_driver->func)
 
 using namespace xpu::detail;
 
@@ -76,61 +76,52 @@ void runtime::initialize(driver target_driver) {
         break;
     }
     active_driver_type = target_driver;
-    driver_interface *d = get_active_driver();
-    CATCH_ERROR(d->setup());
+
+    DRIVER_CALL(setup());
 
     device_prop props;
-    CATCH_ERROR(d->get_properties(&props, target_device));
-    CATCH_ERROR(d->set_device(target_device));
-    CATCH_ERROR(d->device_synchronize());
+    DRIVER_CALL(get_properties(&props, target_device));
+    DRIVER_CALL(set_device(target_device));
+    DRIVER_CALL(device_synchronize());
 
     if (active_driver_type != driver::cpu) {
         XPU_LOG("Selected %s(arch = %d%d) as active device.", props.name.c_str(), props.major, props.minor);
-        the_cpu_driver->setup();
+        CPU_DRIVER_CALL(setup());
     } else {
         XPU_LOG("Selected %s as active device.", props.name.c_str());
     }}
 
 void *runtime::host_malloc(size_t bytes) {
     void *ptr = nullptr;
-    error err = the_cpu_driver->device_malloc(&ptr, bytes);
-
-    CATCH_ERROR(err);
-
+    CPU_DRIVER_CALL(device_malloc(&ptr, bytes));
     return ptr;
 }
 
 void *runtime::device_malloc(size_t bytes) {
-    driver_interface *d = get_active_driver();
-
     if (logger::instance().active()) {
         size_t free, total;
-        CATCH_ERROR(d->meminfo(&free, &total));
+        DRIVER_CALL(meminfo(&free, &total));
         int device;
-        CATCH_ERROR(d->get_device(&device));
+        DRIVER_CALL(get_device(&device));
         device_prop props;
-        CATCH_ERROR(d->get_properties(&props, device));
+        DRIVER_CALL(get_properties(&props, device));
         XPU_LOG("Allocating %lu bytes on device %s. [%lu / %lu available]", bytes, props.name.c_str(), free, total);
     }
     void *ptr = nullptr;
-    error err = d->device_malloc(&ptr, bytes);
-    CATCH_ERROR(err);
+    DRIVER_CALL(device_malloc(&ptr, bytes));
     return ptr;
 }
 
 void runtime::free(void *ptr) {
-    error err = get_active_driver()->free(ptr);
-    CATCH_ERROR(err);
+    DRIVER_CALL(free(ptr));
 }
 
 void runtime::memcpy(void *dst, const void *src, size_t bytes) {
-    error err = get_active_driver()->memcpy(dst, src, bytes);
-    CATCH_ERROR(err);
+    DRIVER_CALL(memcpy(dst, src, bytes));
 }
 
 void runtime::memset(void *dst, int ch, size_t bytes) {
-    error err = get_active_driver()->memset(dst, ch, bytes);
-    CATCH_ERROR(err);
+    DRIVER_CALL(memset(dst, ch, bytes));
 }
 
 driver_interface *runtime::get_driver(driver d) const {

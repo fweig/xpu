@@ -11,19 +11,19 @@ class cpu_driver : public driver_interface {
 public:
     virtual ~cpu_driver() {}
 
-    detail::error setup() override;
-    detail::error device_malloc(void **, size_t) override;
-    detail::error free(void *) override;
-    detail::error memcpy(void *, const void *, size_t) override;
-    detail::error memset(void *, int, size_t) override;
+    error setup() override;
+    error device_malloc(void **, size_t) override;
+    error free(void *) override;
+    error memcpy(void *, const void *, size_t) override;
+    error memset(void *, int, size_t) override;
 
-    detail::error num_devices(int *) override;
-    detail::error set_device(int) override;
-    detail::error get_device(int *) override;
-    detail::error device_synchronize() override;
-    detail::error get_properties(device_prop *, int) override;
+    error num_devices(int *) override;
+    error set_device(int) override;
+    error get_device(int *) override;
+    error device_synchronize() override;
+    error get_properties(device_prop *, int) override;
 
-    detail::error meminfo(size_t *, size_t *) override;
+    error meminfo(size_t *, size_t *) override;
 
     const char *error_to_string(error) override;
 

@@ -57,25 +57,39 @@ void runtime::initialize(driver target_driver) {
     }
 
     this->the_cpu_driver.reset(new cpu_driver{});
-    error err = 0;
     switch (target_driver) {
     case driver::cpu:
         break;
     case driver::cuda:
+        XPU_LOG("Loading cuda driver.");
         the_cuda_driver.reset(new lib_obj<driver_interface>{"libxpu_Cuda.so"});
+        if (not the_cuda_driver->ok()) {
+            throw exception{"xpu: Requested cuda driver, but failed to load 'libxpu_Cuda.so'."};
+        }
         break;
     case driver::hip:
+        XPU_LOG("Loading hip driver.");
         the_hip_driver.reset(new lib_obj<driver_interface>{"libxpu_Hip.so"});
+        if (not the_hip_driver->ok()) {
+            throw exception{"xpu: Requested hip driver, but failed to load 'libxpu_Hip.so'."};
+        }
         break;
     }
     active_driver_type = target_driver;
-    err = get_active_driver()->setup(target_device);
-    CATCH_ERROR(err);
+    driver_interface *d = get_active_driver();
+    CATCH_ERROR(d->setup());
+
+    device_prop props;
+    CATCH_ERROR(d->get_properties(&props, target_device));
+    CATCH_ERROR(d->set_device(target_device));
+    CATCH_ERROR(d->device_synchronize());
+
     if (active_driver_type != driver::cpu) {
-        the_cpu_driver->setup(0);
-    }
-    XPU_LOG("Set %s as active driver.", driver_str(target_driver));
-}
+        XPU_LOG("Selected %s(arch = %d%d) as active device.", props.name.c_str(), props.major, props.minor);
+        the_cpu_driver->setup();
+    } else {
+        XPU_LOG("Selected %s as active device.", props.name.c_str());
+    }}
 
 void *runtime::host_malloc(size_t bytes) {
     void *ptr = nullptr;
@@ -87,8 +101,19 @@ void *runtime::host_malloc(size_t bytes) {
 }
 
 void *runtime::device_malloc(size_t bytes) {
+    driver_interface *d = get_active_driver();
+
+    if (logger::instance().active()) {
+        size_t free, total;
+        CATCH_ERROR(d->meminfo(&free, &total));
+        int device;
+        CATCH_ERROR(d->get_device(&device));
+        device_prop props;
+        CATCH_ERROR(d->get_properties(&props, device));
+        XPU_LOG("Allocating %lu bytes on device %s. [%lu / %lu available]", bytes, props.name.c_str(), free, total);
+    }
     void *ptr = nullptr;
-    error err = get_active_driver()->device_malloc(&ptr, bytes);
+    error err = d->device_malloc(&ptr, bytes);
     CATCH_ERROR(err);
     return ptr;
 }

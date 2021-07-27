@@ -3,12 +3,21 @@
 
 #include "defines.h"
 
+#include <string>
+
 namespace xpu {
 
 enum class driver {
     cpu,
     cuda,
     hip,
+};
+
+struct device_prop {
+    std::string name;
+    driver driver_type;
+    int major;
+    int minor;
 };
 
 struct dim {

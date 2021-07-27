@@ -15,6 +15,8 @@ public:
 
     void *symbol(const std::string &);
 
+    bool ok() const;
+
 private:
     void *handle = nullptr;
 
@@ -40,6 +42,8 @@ public:
             destroy(obj);
         }
     }
+
+    bool ok() const { return lib.ok(); }
 
 private:
     library_loader lib;

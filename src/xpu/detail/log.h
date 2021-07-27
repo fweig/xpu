@@ -12,6 +12,7 @@ public:
     static logger &instance();
 
     void initialize(std::function<void(const char *)>);
+    bool active() const;
     void write(const char *, ...) __attribute__ ((format (__printf__, 2, 3)));
 
 private:

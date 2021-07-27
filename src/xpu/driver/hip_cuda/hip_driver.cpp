@@ -1,5 +1,6 @@
 #include "../../detail/driver_interface.h"
 #include "../../detail/log.h"
+#include "../../common.h"
 
 #include <hip/hip_runtime_api.h>
 
@@ -13,32 +14,11 @@ class hip_driver : public driver_interface {
 public:
     virtual ~hip_driver() {}
 
-    error setup(int device) override {
-        error err;
-
-        hipDeviceProp_t props;
-        err = hipGetDeviceProperties(&props, device);
-        if (err != 0) {
-            return err;
-        }
-
-        XPU_LOG("Selected %s(arch = %d%d) as active device.", props.name, props.major, props.minor);
-
-        err = hipSetDevice(device);
-        if (err != 0) {
-            return err;
-        }
-        err = hipDeviceSynchronize();
-
-        return err;
+    error setup() override {
+        return 0;
     }
 
     error device_malloc(void **ptr, size_t bytes) override {
-        size_t free, total;
-        hipMemGetInfo(&free, &total);
-
-        XPU_LOG("Allocating %lu bytes on active HIP device. (%lu / %lu free)", bytes, free, total);
-
         return hipMalloc(ptr, bytes);
     }
 
@@ -54,6 +34,41 @@ public:
 
     error memset(void *dst, int ch, size_t bytes) override {
         return hipMemset(dst, ch, bytes);
+    }
+
+    error num_devices(int *devices) override {
+        return hipGetDeviceCount(devices);
+    }
+
+    error set_device(int device) override {
+        return hipSetDevice(device);
+    }
+
+    error get_device(int *device) override {
+        return hipGetDevice(device);
+    }
+
+    error device_synchronize() override {
+        return hipDeviceSynchronize();
+    }
+
+    error get_properties(device_prop *props, int device) override {
+        hipDeviceProp_t cuprop;
+        error err = hipGetDeviceProperties(&cuprop, device);
+        if (err != 0) {
+            return err;
+        }
+
+        props->name = cuprop.name;
+        props->driver_type = xpu::driver::hip;
+        props->major = cuprop.major;
+        props->minor = cuprop.minor;
+
+        return 0;
+    }
+
+    error meminfo(size_t *free, size_t *total) override {
+        return hipMemGetInfo(free, total);
     }
 
     const char *error_to_string(error err) override {

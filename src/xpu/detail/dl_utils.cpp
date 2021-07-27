@@ -29,3 +29,7 @@ void *library_loader::symbol(const std::string &symname) {
     }
     return sym;
 }
+
+bool library_loader::ok() const {
+    return handle != nullptr;
+}

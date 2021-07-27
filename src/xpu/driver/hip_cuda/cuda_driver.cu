@@ -1,5 +1,6 @@
 #include "../../detail/driver_interface.h"
 #include "../../detail/log.h"
+#include "../../common.h"
 
 #include <iostream>
 
@@ -11,31 +12,11 @@ class cuda_driver : public driver_interface {
 public:
     virtual ~cuda_driver() {}
 
-    error setup(int device) override {
-        error err;
-        cudaDeviceProp props;
-        err = cudaGetDeviceProperties(&props, device);
-        if (err != 0) {
-            return err;
-        }
-
-        XPU_LOG("Selected %s(arch = %d%d) as active device.", props.name, props.major, props.minor);
-
-        err = cudaSetDevice(device);
-        if (err != 0) {
-            return err;
-        }
-        err = cudaDeviceSynchronize();
-
-        return err;
+    error setup() override {
+        return 0;
     }
 
     error device_malloc(void **ptr, size_t bytes) override {
-        size_t free, total;
-        cudaMemGetInfo(&free, &total);
-
-        XPU_LOG("Allocating %lu bytes on active CUDA device. (%lu / %lu free)", bytes, free, total);
-
         return cudaMalloc(ptr, bytes);
     }
 
@@ -51,6 +32,41 @@ public:
 
     error memset(void *dst, int ch, size_t bytes) override {
         return cudaMemset(dst, ch, bytes);
+    }
+
+    error num_devices(int *devices) override {
+        return cudaGetDeviceCount(devices);
+    }
+
+    error set_device(int device) override {
+        return cudaSetDevice(device);
+    }
+
+    error get_device(int *device) override {
+        return cudaGetDevice(device);
+    }
+
+    error device_synchronize() override {
+        return cudaDeviceSynchronize();
+    }
+
+    error get_properties(device_prop *props, int device) override {
+        cudaDeviceProp cuprop;
+        error err = cudaGetDeviceProperties(&cuprop, device);
+        if (err != 0) {
+            return err;
+        }
+
+        props->name = cuprop.name;
+        props->driver_type = xpu::driver::cuda;
+        props->major = cuprop.major;
+        props->minor = cuprop.minor;
+
+        return 0;
+    }
+
+    error meminfo(size_t *free, size_t *total) override {
+        return cudaMemGetInfo(free, total);
     }
 
     const char *error_to_string(error err) override {

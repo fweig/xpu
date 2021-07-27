@@ -1,6 +1,9 @@
 #include "cpu_driver.h"
 
 #include "../../detail/log.h"
+#include "../../host.h"
+
+#include <unistd.h>
 
 #include <cassert>
 #include <cstdlib>
@@ -8,10 +11,7 @@
 
 using namespace xpu::detail;
 
-error cpu_driver::setup(int device) {
-    if (device != 0) {
-        return INVALID_DEVICE;
-    }
+error cpu_driver::setup() {
     return SUCCESS;
 }
 
@@ -36,6 +36,44 @@ error cpu_driver::memcpy(void *dst, const void *src, size_t bytes) {
 
 error cpu_driver::memset(void *dst, int ch, size_t bytes) {
     std::memset(dst, ch, bytes);
+    return SUCCESS;
+}
+
+error cpu_driver::num_devices(int *devices) {
+    *devices = 1;
+    return SUCCESS;
+}
+
+error cpu_driver::set_device(int device) {
+    return (device == 0 ? SUCCESS : INVALID_DEVICE);
+}
+
+error cpu_driver::get_device(int *device) {
+    *device = 0;
+    return SUCCESS;
+}
+
+error cpu_driver::device_synchronize() {
+    return SUCCESS;
+}
+
+error cpu_driver::get_properties(device_prop *props, int device) {
+    if (device != 0) {
+        return INVALID_DEVICE;
+    }
+
+    props->name = "CPU";
+    props->driver_type = xpu::driver::cpu;
+    props->major = 0;
+    props->minor = 0;
+
+    return SUCCESS;
+}
+
+error cpu_driver::meminfo(size_t *free, size_t *total) {
+    size_t pagesize = sysconf(_SC_PAGESIZE);
+    *free = pagesize * sysconf(_SC_AVPHYS_PAGES);
+    *total = pagesize * sysconf(_SC_PHYS_PAGES);
     return SUCCESS;
 }
 

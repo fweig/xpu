@@ -15,8 +15,12 @@ void logger::initialize(std::function<void(const char *)> write_out) {
     this->write_out = std::move(write_out);
 }
 
+bool logger::active() const {
+    return write_out != nullptr;
+}
+
 void logger::write(const char *format, ...) {
-    if (write_out == nullptr) {
+    if (not active()) {
         return;
     }
 

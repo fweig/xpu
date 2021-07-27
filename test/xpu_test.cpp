@@ -35,7 +35,7 @@ TEST(XPUTest, CanRunVectorAdd) {
 
 TEST(XPUTest, CanSortStruct) {
 
-    constexpr size_t NElems = 1000000000;
+    constexpr size_t NElems = 1000000;
 
     std::mt19937 gen{1337};
     std::uniform_int_distribution<unsigned int> dist{0, 1000000};

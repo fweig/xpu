@@ -10,7 +10,7 @@
 int main() {
     constexpr int NElems = 100;
 
-    xpu::initialize(xpu::driver::cuda); // or xpu::driver::cuda
+    xpu::initialize(xpu::cpu); // or xpu::driver::cuda
 
     xpu::hd_buffer<float> x{NElems};
     std::fill_n(x.host(), NElems, 8);

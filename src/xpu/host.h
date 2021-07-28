@@ -37,7 +37,7 @@ private:
 
 };
 
-inline void initialize(driver);
+inline void initialize(driver_t);
 
 inline void *host_malloc(size_t);
 template<typename T>
@@ -55,7 +55,7 @@ inline void free(void *);
 inline void memcpy(void *, const void *, size_t);
 inline void memset(void *, int, size_t);
 
-inline xpu::driver active_driver();
+inline xpu::driver_t active_driver();
 
 template<typename Kernel>
 const char *get_name();

@@ -58,7 +58,7 @@ public:
         }
 
         props->name = cuprop.name;
-        props->driver_type = xpu::driver::cuda;
+        props->driver = cuda;
         props->major = cuprop.major;
         props->minor = cuprop.minor;
 

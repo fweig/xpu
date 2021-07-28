@@ -63,7 +63,7 @@ error cpu_driver::get_properties(device_prop *props, int device) {
     }
 
     props->name = "CPU";
-    props->driver_type = xpu::driver::cpu;
+    props->driver = cpu;
     props->major = 0;
     props->minor = 0;
 

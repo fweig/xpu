@@ -18,7 +18,7 @@ int main() {
     constexpr size_t NumElems = NumBlocks * NumElemsPerBlock;
 
     // Initialize the xpu runtime and select cpu backend.
-    xpu::initialize(xpu::driver::cpu);
+    xpu::initialize(xpu::cpu);
 
     // Host buffer.
     std::vector<KeyValuePair> itemsH;

@@ -16,7 +16,7 @@ class image_pool {
 
 public:
     template<typename I>
-    I *find(driver d) {
+    I *find(driver_t d) {
         for (auto &e : entries) {
             if (e.d == d && e.id == type_id<I, image_pool>::get()) {
                 return static_cast<I *>(e.image);
@@ -26,13 +26,13 @@ public:
     }
 
     template<typename I>
-    void add(I *i, driver d) {
+    void add(I *i, driver_t d) {
         entries.push_back(basic_entry{d, type_id<I, image_pool>::get(), i});
     }
 
 private:
     struct basic_entry {
-        driver d;
+        driver_t d;
         size_t id;
         void *image;
     };
@@ -45,7 +45,7 @@ class runtime {
 public:
     static runtime &instance();
 
-    void initialize(driver);
+    void initialize(driver_t);
 
     void *host_malloc(size_t);
     void *device_malloc(size_t);
@@ -54,7 +54,7 @@ public:
     void memcpy(void *, const void *, size_t);
     void memset(void *, int, size_t);
 
-    driver active_driver() { return active_driver_type; }
+    driver_t active_driver() const { return _active_driver; }
 
     template<typename Kernel, typename... Args>
     void run_kernel(grid g, Args&&... args) {
@@ -93,7 +93,7 @@ private:
     std::unique_ptr<cpu_driver> the_cpu_driver;
     std::unique_ptr<lib_obj<driver_interface>> the_cuda_driver;
     std::unique_ptr<lib_obj<driver_interface>> the_hip_driver;
-    driver active_driver_type = driver::cpu;
+    driver_t _active_driver = cpu;
 
     image_pool images;
 
@@ -102,9 +102,9 @@ private:
 
     template<typename A>
     image<typename A::image> *get_image() {
-        auto *img = images.find< image<typename A::image> >(active_driver_type);
+        auto *img = images.find< image<typename A::image> >(active_driver());
         if (img == nullptr) {
-            img = load_image<typename A::image>(active_driver_type);
+            img = load_image<typename A::image>(active_driver());
         }
         if (img == nullptr) {
             XPU_LOG("Failed to load image for kernel '%s'.", type_name<A>());
@@ -114,14 +114,14 @@ private:
     }
 
     template<typename I>
-    image<I> *load_image(driver d) {
+    image<I> *load_image(driver_t d) {
         image<I> *i = nullptr;
         switch (d) {
-        case driver::cpu:
+        case cpu:
             i = new image<I>{};
             break;
-        case driver::cuda:
-        case driver::hip:
+        case cuda:
+        case hip:
             i = new image<I>(complete_file_name(image_context<I>::file_name, d).c_str());
             break;
         }
@@ -129,14 +129,14 @@ private:
         return i;
     }
 
-    driver_interface *get_driver(driver) const;
+    driver_interface *get_driver(driver_t) const;
     driver_interface *get_active_driver() const;
 
-    std::string complete_file_name(const char *, driver) const;
+    std::string complete_file_name(const char *, driver_t) const;
 
-    const char *driver_str(driver) const;
+    const char *driver_str(driver_t) const;
 
-    void throw_on_driver_error(driver, error) const;
+    void throw_on_driver_error(driver_t, error) const;
 };
 
 } // namespace detail

@@ -42,7 +42,7 @@ inline int atomic_add_block(int *addr, int val) {
 }
 
 template<typename Key, typename KeyValueType, int BlockSize, int ItemsPerThread>
-class block_sort<Key, KeyValueType, BlockSize, ItemsPerThread, driver::cpu> {
+class block_sort<Key, KeyValueType, BlockSize, ItemsPerThread, cpu> {
 
 public:
     struct storage_t {};
@@ -60,7 +60,7 @@ public:
 };
 
 template<typename Key, int BlockSize, int ItemsPerThread>
-class block_merge<Key, BlockSize, ItemsPerThread, xpu::driver::cpu> {
+class block_merge<Key, BlockSize, ItemsPerThread, cpu> {
 
 public:
     struct storage_t {};

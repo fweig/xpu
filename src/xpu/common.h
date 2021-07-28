@@ -7,7 +7,7 @@
 
 namespace xpu {
 
-enum class driver {
+enum driver_t {
     cpu,
     cuda,
     hip,
@@ -15,7 +15,7 @@ enum class driver {
 
 struct device_prop {
     std::string name;
-    driver driver_type;
+    driver_t driver;
     int major;
     int minor;
 };

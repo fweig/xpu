@@ -4,8 +4,8 @@
 #include <cstdlib>
 #include <sstream>
 
-#define DRIVER_CALL(func) throw_on_driver_error(active_driver_type, get_active_driver()->func)
-#define CPU_DRIVER_CALL(func) throw_on_driver_error(xpu::driver::cpu, the_cpu_driver->func)
+#define DRIVER_CALL(func) throw_on_driver_error(active_driver(), get_active_driver()->func)
+#define CPU_DRIVER_CALL(func) throw_on_driver_error(xpu::cpu, the_cpu_driver->func)
 
 using namespace xpu::detail;
 
@@ -14,7 +14,7 @@ runtime &runtime::instance() {
     return the_runtime;
 }
 
-void runtime::initialize(driver target_driver) {
+void runtime::initialize(driver_t target_driver) {
 
     int target_device = 0;
 
@@ -32,10 +32,10 @@ void runtime::initialize(driver target_driver) {
 
     const char *device_env = std::getenv("XPU_DEVICE");
     if (device_env != nullptr) {
-        std::vector<std::pair<std::string, xpu::driver>> str_to_driver {
-            {"cpu", driver::cpu},
-            {"cuda", driver::cuda},
-            {"hip", driver::hip},
+        std::vector<std::pair<std::string, xpu::driver_t>> str_to_driver {
+            {"cpu", cpu},
+            {"cuda", cuda},
+            {"hip", hip},
         };
 
         bool valid_driver = false;
@@ -58,16 +58,16 @@ void runtime::initialize(driver target_driver) {
 
     this->the_cpu_driver.reset(new cpu_driver{});
     switch (target_driver) {
-    case driver::cpu:
+    case cpu:
         break;
-    case driver::cuda:
+    case cuda:
         XPU_LOG("Loading cuda driver.");
         the_cuda_driver.reset(new lib_obj<driver_interface>{"libxpu_Cuda.so"});
         if (not the_cuda_driver->ok()) {
             throw exception{"xpu: Requested cuda driver, but failed to load 'libxpu_Cuda.so'."};
         }
         break;
-    case driver::hip:
+    case hip:
         XPU_LOG("Loading hip driver.");
         the_hip_driver.reset(new lib_obj<driver_interface>{"libxpu_Hip.so"});
         if (not the_hip_driver->ok()) {
@@ -75,7 +75,7 @@ void runtime::initialize(driver target_driver) {
         }
         break;
     }
-    active_driver_type = target_driver;
+    _active_driver = target_driver;
 
     DRIVER_CALL(setup());
 
@@ -84,7 +84,7 @@ void runtime::initialize(driver target_driver) {
     DRIVER_CALL(set_device(target_device));
     DRIVER_CALL(device_synchronize());
 
-    if (active_driver_type != driver::cpu) {
+    if (_active_driver != cpu) {
         XPU_LOG("Selected %s(arch = %d%d) as active device.", props.name.c_str(), props.major, props.minor);
         CPU_DRIVER_CALL(setup());
     } else {
@@ -124,41 +124,41 @@ void runtime::memset(void *dst, int ch, size_t bytes) {
     DRIVER_CALL(memset(dst, ch, bytes));
 }
 
-driver_interface *runtime::get_driver(driver d) const {
+driver_interface *runtime::get_driver(driver_t d) const {
     switch (d) {
-        case driver::cpu: return the_cpu_driver.get();
-        case driver::cuda: return the_cuda_driver->obj;
-        case driver::hip: return the_hip_driver->obj;
+        case cpu: return the_cpu_driver.get();
+        case cuda: return the_cuda_driver->obj;
+        case hip: return the_hip_driver->obj;
     }
 
     return nullptr; // UNREACHABLE;
 }
 
 driver_interface *runtime::get_active_driver() const {
-    return get_driver(active_driver_type);
+    return get_driver(_active_driver);
 }
 
-std::string runtime::complete_file_name(const char *fname, driver d) const {
+std::string runtime::complete_file_name(const char *fname, driver_t d) const {
     std::string prefix = "lib";
     std::string suffix = "";
     switch (d) {
-    case xpu::driver::cuda: suffix = "_Cuda.so"; break;
-    case xpu::driver::hip:  suffix = "_Hip.so"; break;
-    case xpu::driver::cpu:  suffix = ".so"; break;
+    case cuda: suffix = "_Cuda.so"; break;
+    case hip:  suffix = "_Hip.so"; break;
+    case cpu:  suffix = ".so"; break;
     }
     return prefix + std::string{fname} + suffix;
 }
 
-const char *runtime::driver_str(driver d) const {
+const char *runtime::driver_str(driver_t d) const {
     switch (d) {
-    case driver::cpu: return "CPU";
-    case driver::cuda: return "CUDA";
-    case driver::hip: return "HIP";
+    case cpu: return "CPU";
+    case cuda: return "CUDA";
+    case hip: return "HIP";
     }
     return "UNKNOWN";
 }
 
-void runtime::throw_on_driver_error(driver d, error err) const {
+void runtime::throw_on_driver_error(driver_t d, error err) const {
     if (err == 0) {
         return;
     }

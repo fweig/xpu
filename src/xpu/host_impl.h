@@ -10,7 +10,7 @@
 #include "detail/runtime.h"
 #include "detail/type_info.h"
 
-void xpu::initialize(xpu::driver driver) {
+void xpu::initialize(xpu::driver_t driver) {
     detail::runtime::instance().initialize(driver);
 }
 
@@ -34,7 +34,7 @@ void xpu::memset(void *dst, int ch, size_t bytes) {
     return detail::runtime::instance().memset(dst, ch, bytes);
 }
 
-xpu::driver xpu::active_driver() {
+xpu::driver_t xpu::active_driver() {
     return detail::runtime::instance().active_driver();
 }
 
@@ -63,7 +63,7 @@ xpu::hd_buffer<T>::hd_buffer(size_t N) {
     _size = N;
     hostdata = static_cast<T *>(std::malloc(sizeof(T) * N));
 
-    if (active_driver() == driver::cpu) {
+    if (active_driver() == cpu) {
         devicedata = hostdata;
     } else {
         devicedata = device_malloc<T>(N);

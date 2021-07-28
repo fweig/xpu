@@ -235,7 +235,7 @@ TEST(XPUTest, CanGetThreadIdx) {
     xpu::copy(idx, xpu::device_to_host);
 
     for (int i = 0; i < 64; i++) {
-        if (xpu::active_driver() == xpu::driver::cpu) {
+        if (xpu::active_driver() == xpu::cpu) {
             EXPECT_EQ(idx.host()[i], 0) << " with i = " << i;
         } else {
             EXPECT_EQ(idx.host()[i], i);
@@ -272,6 +272,6 @@ TEST(XPUTest, CollectsTimingData) {
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
     setenv("XPU_PROFILE", "1", 1); // always enable profiling in unittests
-    xpu::initialize(xpu::driver::cpu);
+    xpu::initialize(xpu::cpu);
     return RUN_ALL_TESTS();
 }

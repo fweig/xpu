@@ -60,7 +60,7 @@ public:
         }
 
         props->name = cuprop.name;
-        props->driver_type = xpu::driver::hip;
+        props->driver = hip;
         props->major = cuprop.major;
         props->minor = cuprop.minor;
 

@@ -207,13 +207,13 @@ public:
 int main() {
     setenv("XPU_PROFILE", "1", 1); // always enable profiling in benchmark
 
-    xpu::initialize(xpu::driver::cpu);
+    xpu::initialize(xpu::cpu);
 
     benchmark_runner runner;
 
     runner.add(new sort_bench<sort_i1>{});
     // Parameters don't have an effect on cpu merge, so running one sort benchmark is enough
-    if (xpu::active_driver() != xpu::driver::cpu) {
+    if (xpu::active_driver() != xpu::cpu) {
         runner.add(new sort_bench<sort_i2>{});
         runner.add(new sort_bench<sort_i4>{});
         runner.add(new sort_bench<sort_i8>{});
@@ -226,7 +226,7 @@ int main() {
 
     runner.add(new merge_bench<merge_i4>{});
     // Parameters don't have an effect on cpu sort, so running one sort benchmark is enough
-    if (xpu::active_driver() != xpu::driver::cpu) {
+    if (xpu::active_driver() != xpu::cpu) {
         runner.add(new merge_bench<merge_i8>{});
         runner.add(new merge_bench<merge_i12>{});
         runner.add(new merge_bench<merge_i16>{});

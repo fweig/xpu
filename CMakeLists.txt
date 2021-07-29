@@ -14,6 +14,14 @@ if (NOT DEFINED XPU_ENABLE_CUDA)
     set(XPU_ENABLE_CUDA OFF)
 endif()
 
+if (NOT DEFINED XPU_ENABLE_HIP)
+    set(XPU_ENABLE_HIP OFF)
+endif()
+
+if (NOT DEFINED XPU_HIP_COMPILER)
+    set(XPU_HIP_COMPILER /opt/rocm/llvm/bin/clang)
+endif()
+
 if (NOT DEFINED XPU_DEBUG)
     set(XPU_DEBUG OFF)
 endif()
@@ -44,8 +52,9 @@ endif()
 
 set_property(GLOBAL PROPERTY XpuRootDir "${CMAKE_CURRENT_SOURCE_DIR}")
 set_property(GLOBAL PROPERTY XpuEnableCuda "${XPU_ENABLE_CUDA}")
-if (DEFINED XPU_HIP_CXX)
-    set_property(GLOBAL PROPERTY XpuHipCxx "${XPU_HIP_CXX}")
+set_property(GLOBAL PROPERTY XpuEnableHip "${XPU_ENABLE_HIP}")
+if (DEFINED XPU_HIP_COMPILER)
+    set_property(GLOBAL PROPERTY XpuHipCompiler "${XPU_HIP_COMPILER}")
 endif()
 
 function(xpu_create_subproject Library DriverType UnitySrcAbsolute)
@@ -53,7 +62,7 @@ function(xpu_create_subproject Library DriverType UnitySrcAbsolute)
     set(SrcDir "${CMAKE_CURRENT_BINARY_DIR}/${Library}_${DriverType}")
     get_property(RootDir GLOBAL PROPERTY XpuRootDir)
     get_target_property(IncludeDirectories ${Library} INCLUDE_DIRECTORIES)
-    get_property(HipCxx GLOBAL PROPERTY XpuHipCxx)
+    get_property(HipCxx GLOBAL PROPERTY XpuHipCompiler)
 
     if (DriverType STREQUAL "Hip")
         # HipCxx should point hip-clang, so add the prefix for c++
@@ -98,7 +107,7 @@ function(xpu_attach Library)
 
     get_property(RootDir GLOBAL PROPERTY XpuRootDir)
     get_property(EnableCuda GLOBAL PROPERTY XpuEnableCuda)
-    get_property(EnableHip GLOBAL PROPERTY XpuHipCxx SET)
+    get_property(EnableHip GLOBAL PROPERTY XpuEnableHip)
 
     target_compile_definitions(${Library} PRIVATE XPU_IMAGE_FILE="${Library}")
     target_compile_options(${Library} PUBLIC -fPIC)
@@ -138,7 +147,7 @@ if (XPU_ENABLE_CUDA)
     )
 endif()
 
-if (DEFINED XPU_HIP_CXX)
+if (XPU_ENABLE_HIP)
     xpu_create_subproject(
         xpu Hip
         "${CMAKE_CURRENT_SOURCE_DIR}/src/xpu/driver/hip_cuda/hip_driver.cpp"

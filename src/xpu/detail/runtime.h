@@ -54,6 +54,8 @@ public:
     void memcpy(void *, const void *, size_t);
     void memset(void *, int, size_t);
 
+    device_prop device_properties();
+
     driver_t active_driver() const { return _active_driver; }
 
     template<typename Kernel, typename... Args>

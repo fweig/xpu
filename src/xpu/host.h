@@ -55,6 +55,7 @@ inline void free(void *);
 inline void memcpy(void *, const void *, size_t);
 inline void memset(void *, int, size_t);
 
+inline device_prop device_properties();
 inline xpu::driver_t active_driver();
 
 template<typename Kernel>

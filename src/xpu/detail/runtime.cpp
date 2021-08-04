@@ -101,10 +101,7 @@ void *runtime::device_malloc(size_t bytes) {
     if (logger::instance().active()) {
         size_t free, total;
         DRIVER_CALL(meminfo(&free, &total));
-        int device;
-        DRIVER_CALL(get_device(&device));
-        device_prop props;
-        DRIVER_CALL(get_properties(&props, device));
+        device_prop props = device_properties();
         XPU_LOG("Allocating %lu bytes on device %s. [%lu / %lu available]", bytes, props.name.c_str(), free, total);
     }
     void *ptr = nullptr;
@@ -122,6 +119,14 @@ void runtime::memcpy(void *dst, const void *src, size_t bytes) {
 
 void runtime::memset(void *dst, int ch, size_t bytes) {
     DRIVER_CALL(memset(dst, ch, bytes));
+}
+
+xpu::device_prop runtime::device_properties() {
+    int device;
+    DRIVER_CALL(get_device(&device));
+    device_prop props;
+    DRIVER_CALL(get_properties(&props, device));
+    return props;
 }
 
 driver_interface *runtime::get_driver(driver_t d) const {

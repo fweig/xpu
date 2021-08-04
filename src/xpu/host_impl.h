@@ -34,6 +34,10 @@ void xpu::memset(void *dst, int ch, size_t bytes) {
     return detail::runtime::instance().memset(dst, ch, bytes);
 }
 
+xpu::device_prop xpu::device_properties() {
+    return detail::runtime::instance().device_properties();
+}
+
 xpu::driver_t xpu::active_driver() {
     return detail::runtime::instance().active_driver();
 }

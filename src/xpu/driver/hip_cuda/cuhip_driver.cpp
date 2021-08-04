@@ -2,63 +2,73 @@
 #include "../../detail/log.h"
 #include "../../common.h"
 
-#include <iostream>
+#define CONCAT_I(a, b) a ## b
+#define CONCAT(a, b) CONCAT_I(a, b)
+
+#if XPU_IS_CUDA
+#define CUHIP(expr) CONCAT(cuda, expr)
+using cuhip_device_prop = cudaDeviceProp;
+#else
+#include <hip/hip_runtime_api.h>
+#define CUHIP(expr) CONCAT(hip, expr)
+using cuhip_device_prop = hipDeviceProp_t;
+#endif
 
 namespace xpu {
 namespace detail {
 
-class cuda_driver : public driver_interface {
+class cuhip_driver : public driver_interface {
 
 public:
-    virtual ~cuda_driver() {}
+    virtual ~cuhip_driver() {}
 
     error setup() override {
         return 0;
     }
 
     error device_malloc(void **ptr, size_t bytes) override {
-        return cudaMalloc(ptr, bytes);
+        return CUHIP(Malloc)(ptr, bytes);
     }
 
     error free(void *ptr) override {
-        return cudaFree(ptr);
+        return CUHIP(Free)(ptr);
     }
 
     error memcpy(void *dst, const void *src, size_t bytes) override {
-        error err = cudaMemcpy(dst, src, bytes, cudaMemcpyDefault);
-        cudaDeviceSynchronize();
+        error err = CUHIP(Memcpy)(dst, src, bytes, CUHIP(MemcpyDefault));
+        device_synchronize();
         return err;
     }
 
     error memset(void *dst, int ch, size_t bytes) override {
-        return cudaMemset(dst, ch, bytes);
+        return CUHIP(Memset)(dst, ch, bytes);
     }
 
     error num_devices(int *devices) override {
-        return cudaGetDeviceCount(devices);
+        return CUHIP(GetDeviceCount)(devices);
     }
 
     error set_device(int device) override {
-        return cudaSetDevice(device);
+        return CUHIP(SetDevice)(device);
     }
 
     error get_device(int *device) override {
-        return cudaGetDevice(device);
+        return CUHIP(GetDevice)(device);
     }
 
     error device_synchronize() override {
-        return cudaDeviceSynchronize();
+        return CUHIP(DeviceSynchronize)();
     }
 
     error get_properties(device_prop *props, int device) override {
-        cudaDeviceProp cuprop;
-        error err = cudaGetDeviceProperties(&cuprop, device);
+        cuhip_device_prop cuprop;
+        error err = CUHIP(GetDeviceProperties)(&cuprop, device);
         if (err != 0) {
             return err;
         }
 
         props->name = cuprop.name;
-        props->driver = cuda;
+        props->driver = (XPU_IS_CUDA ? cuda : hip);
         props->major = cuprop.major;
         props->minor = cuprop.minor;
 
@@ -66,11 +76,11 @@ public:
     }
 
     error meminfo(size_t *free, size_t *total) override {
-        return cudaMemGetInfo(free, total);
+        return CUHIP(MemGetInfo)(free, total);
     }
 
     const char *error_to_string(error err) override {
-        return cudaGetErrorString(static_cast<cudaError_t>(err));
+        return CUHIP(GetErrorString)(static_cast<CUHIP(Error_t)>(err));
     }
 
 };
@@ -79,7 +89,7 @@ public:
 } // namespace xpu
 
 extern "C" xpu::detail::driver_interface *create() {
-    return new xpu::detail::cuda_driver{};
+    return new xpu::detail::cuhip_driver{};
 }
 
 extern "C" void destroy(xpu::detail::driver_interface *b) {

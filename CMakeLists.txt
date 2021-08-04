@@ -166,14 +166,14 @@ target_link_libraries(xpu dl)
 if (XPU_ENABLE_CUDA)
     xpu_create_subproject(
         xpu Cuda
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/xpu/driver/hip_cuda/cuda_driver.cu"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/xpu/driver/hip_cuda/cuhip_driver.cpp"
     )
 endif()
 
 if (XPU_ENABLE_HIP)
     xpu_create_subproject(
         xpu Hip
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/xpu/driver/hip_cuda/hip_driver.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/xpu/driver/hip_cuda/cuhip_driver.cpp"
     )
 endif()
 

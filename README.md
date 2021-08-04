@@ -21,6 +21,24 @@ The public headers in `src/xpu` expose the entire API (With the exception of def
 
 ---
 
+## Configuration
+
+CMake Options:
+
+- `XPU_ENABLE_CUDA`: Enable / Disable compilation for cuda. (default=`OFF`)
+- `XPU_ENABLE_HIP`: Enable / Disable compilation for hip. (default=`OFF`)
+- `XPU_HIP_COMPILER`: Path to hip-clang. (default=`/opt/rocm/llvm/bin/clang`)
+- `XPU_DEBUG`: Build gpu code with debug symbols and disable optimizations. (default=`OFF`)
+- `XPU_BUILD_TESTS`: Build unittests and benchmarks. (default=`OFF`)
+- `XPU_BUILD_EXAMPLES`: Build examples. (default=`OFF`)
+
+Environment variables:
+
+- `XPU_PROFILE`: Enable collecting kernel times. (default=`0`)
+- `XPU_DEVICE`: Select the device to run kernels on. Values must have the form "`<driver><devicenr>`".  If `devicenr` is missing, defaults to device 0 of selected driver. Possible values are for example: `cpu`, `cuda0`, `cuda1`, `hip0`. (default=Device selected when calling `xpu::initialize`)
+
+---
+
 ## Tests and examples
 
 Building unittests requires the `googletest` framework. `xpu` will download and build `googletest` automatically.

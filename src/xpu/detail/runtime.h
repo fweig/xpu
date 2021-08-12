@@ -45,7 +45,7 @@ class runtime {
 public:
     static runtime &instance();
 
-    void initialize(driver_t);
+    void initialize();
 
     void *host_malloc(size_t);
     void *device_malloc(size_t);
@@ -95,12 +95,15 @@ private:
     std::unique_ptr<cpu_driver> the_cpu_driver;
     std::unique_ptr<lib_obj<driver_interface>> the_cuda_driver;
     std::unique_ptr<lib_obj<driver_interface>> the_hip_driver;
+
     driver_t _active_driver = cpu;
 
     image_pool images;
 
     bool measure_time = false;
     std::vector<std::vector<float>> profiling;
+
+    std::vector<device_prop> devices;
 
     template<typename A>
     image<typename A::image> *get_image() {
@@ -131,6 +134,7 @@ private:
         return i;
     }
 
+    bool has_driver(driver_t) const;
     driver_interface *get_driver(driver_t) const;
     driver_interface *get_active_driver() const;
 

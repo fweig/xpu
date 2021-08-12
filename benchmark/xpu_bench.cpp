@@ -207,7 +207,7 @@ public:
 int main() {
     setenv("XPU_PROFILE", "1", 1); // always enable profiling in benchmark
 
-    xpu::initialize(xpu::cpu);
+    xpu::initialize();
 
     benchmark_runner runner;
 

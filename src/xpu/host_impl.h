@@ -10,8 +10,8 @@
 #include "detail/runtime.h"
 #include "detail/type_info.h"
 
-void xpu::initialize(xpu::driver_t driver) {
-    detail::runtime::instance().initialize(driver);
+void xpu::initialize() {
+    detail::runtime::instance().initialize();
 }
 
 void *xpu::host_malloc(size_t bytes) {

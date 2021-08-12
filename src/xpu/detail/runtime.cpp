@@ -4,8 +4,9 @@
 #include <cstdlib>
 #include <sstream>
 
-#define DRIVER_CALL(func) throw_on_driver_error(active_driver(), get_active_driver()->func)
-#define CPU_DRIVER_CALL(func) throw_on_driver_error(xpu::cpu, the_cpu_driver->func)
+#define DRIVER_CALL_I(type, func) throw_on_driver_error((type), get_driver((type))->func)
+#define DRIVER_CALL(func) DRIVER_CALL_I(active_driver(), func)
+#define CPU_DRIVER_CALL(func) DRIVER_CALL_I(cpu, func)
 
 using namespace xpu::detail;
 
@@ -14,9 +15,10 @@ runtime &runtime::instance() {
     return the_runtime;
 }
 
-void runtime::initialize(driver_t target_driver) {
+void runtime::initialize() {
 
     int target_device = 0;
+    driver_t target_driver = cpu;
 
     const char *use_logger = std::getenv("XPU_VERBOSE");
     bool verbose = (use_logger != nullptr) && (std::string{use_logger} != "0");
@@ -56,29 +58,50 @@ void runtime::initialize(driver_t target_driver) {
         sscanf(device_env, "%d", &target_device);
     }
 
-    this->the_cpu_driver.reset(new cpu_driver{});
-    switch (target_driver) {
-    case cpu:
-        break;
-    case cuda:
-        XPU_LOG("Loading cuda driver.");
-        the_cuda_driver.reset(new lib_obj<driver_interface>{"libxpu_Cuda.so"});
-        if (not the_cuda_driver->ok()) {
-            throw exception{"xpu: Requested cuda driver, but failed to load 'libxpu_Cuda.so'."};
+    the_cpu_driver.reset(new cpu_driver{});
+    CPU_DRIVER_CALL(setup());
+
+    XPU_LOG("Loading cuda driver.");
+    the_cuda_driver.reset(new lib_obj<driver_interface>{"libxpu_Cuda.so"});
+    if (the_cuda_driver->ok()) {
+        DRIVER_CALL_I(cuda, setup());
+        XPU_LOG("Finished loading cuda driver.");
+    } else {
+        XPU_LOG("Couldn't find 'libxpu_Cuda.so'. Cuda driver not active.");
+    }
+
+    XPU_LOG("Loading hip driver.");
+    the_hip_driver.reset(new lib_obj<driver_interface>{"libxpu_Hip.so"});
+    if (the_hip_driver->ok()) {
+        DRIVER_CALL_I(hip, setup());
+        XPU_LOG("Finished loading hip driver.");
+    } else {
+        XPU_LOG("Couldn't find 'libxpu_Hip.so'. Hip driver not active.");
+    }
+
+    XPU_LOG("Found devices:");
+    for (driver_t driver : {cpu, cuda, hip}) {
+        if (not has_driver(driver)) {
+            continue;
         }
-        break;
-    case hip:
-        XPU_LOG("Loading hip driver.");
-        the_hip_driver.reset(new lib_obj<driver_interface>{"libxpu_Hip.so"});
-        if (not the_hip_driver->ok()) {
-            throw exception{"xpu: Requested hip driver, but failed to load 'libxpu_Hip.so'."};
+        int ndevices;
+        DRIVER_CALL_I(driver, num_devices(&ndevices));
+        for (int i = 0; i < ndevices; i++) {
+            device_prop props;
+            DRIVER_CALL_I(driver, get_properties(&props, i));
+            if (props.driver != cpu) {
+                XPU_LOG("  %lu: %s(arch = %d%d)", devices.size(), props.name.c_str(), props.major, props.minor);
+            } else {
+                XPU_LOG("  %lu: %s", devices.size(), props.name.c_str());
+            }
+            devices.push_back(props);
         }
-        break;
+    }
+
+    if (not has_driver(target_driver)) {
+        throw exception{"xpu: Requested " + std::string{driver_str(target_driver)} + " device, but failed to load that driver."};
     }
     _active_driver = target_driver;
-
-    DRIVER_CALL(setup());
-
     device_prop props;
     DRIVER_CALL(get_properties(&props, target_device));
     DRIVER_CALL(set_device(target_device));
@@ -86,10 +109,10 @@ void runtime::initialize(driver_t target_driver) {
 
     if (_active_driver != cpu) {
         XPU_LOG("Selected %s(arch = %d%d) as active device.", props.name.c_str(), props.major, props.minor);
-        CPU_DRIVER_CALL(setup());
     } else {
         XPU_LOG("Selected %s as active device.", props.name.c_str());
-    }}
+    }
+}
 
 void *runtime::host_malloc(size_t bytes) {
     void *ptr = nullptr;
@@ -127,6 +150,10 @@ xpu::device_prop runtime::device_properties() {
     device_prop props;
     DRIVER_CALL(get_properties(&props, device));
     return props;
+}
+
+bool runtime::has_driver(driver_t d) const {
+    return get_driver(d) != nullptr;
 }
 
 driver_interface *runtime::get_driver(driver_t d) const {

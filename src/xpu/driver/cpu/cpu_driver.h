@@ -27,6 +27,8 @@ public:
 
     const char *error_to_string(error) override;
 
+    driver_t get_type() override;
+
 private:
     enum error_code : int {
         SUCCESS = 0,

@@ -68,7 +68,7 @@ public:
         }
 
         props->name = cuprop.name;
-        props->driver = (XPU_IS_CUDA ? cuda : hip);
+        props->driver = get_type();
         props->major = cuprop.major;
         props->minor = cuprop.minor;
 
@@ -81,6 +81,10 @@ public:
 
     const char *error_to_string(error err) override {
         return CUHIP(GetErrorString)(static_cast<CUHIP(Error_t)>(err));
+    }
+
+    driver_t get_type() override {
+        return (XPU_IS_CUDA ? cuda : hip);
     }
 
 };

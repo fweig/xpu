@@ -30,6 +30,8 @@ public:
 
     virtual const char *error_to_string(error) = 0;
 
+    virtual driver_t get_type() = 0;
+
 };
 
 } // namespace detail

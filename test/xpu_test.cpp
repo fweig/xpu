@@ -272,6 +272,6 @@ TEST(XPUTest, CollectsTimingData) {
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
     setenv("XPU_PROFILE", "1", 1); // always enable profiling in unittests
-    xpu::initialize(xpu::cpu);
+    xpu::initialize();
     return RUN_ALL_TESTS();
 }

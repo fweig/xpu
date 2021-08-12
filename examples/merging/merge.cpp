@@ -6,7 +6,7 @@ int main() {
 
     static constexpr size_t N = 1024;
 
-    xpu::initialize(xpu::cpu);
+    xpu::initialize();
 
     xpu::hd_buffer<float> a{N};
     xpu::hd_buffer<float> b{N};

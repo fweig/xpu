@@ -37,7 +37,7 @@ private:
 
 };
 
-inline void initialize(driver_t);
+inline void initialize();
 
 inline void *host_malloc(size_t);
 template<typename T>

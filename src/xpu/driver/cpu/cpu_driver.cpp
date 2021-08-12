@@ -86,3 +86,7 @@ const char *cpu_driver::error_to_string(error err) {
 
     return "Unknown error code";
 }
+
+xpu::driver_t cpu_driver::get_type() {
+    return xpu::cpu;
+}

@@ -88,6 +88,11 @@ struct numeric_limits<unsigned int> {
     __device__ static constexpr unsigned int max_or_inf() { return UINT_MAX; }
 };
 
+template<>
+struct numeric_limits<unsigned long int> {
+    __device__ static constexpr unsigned long int max_or_inf() { return UINT64_MAX; }
+};
+
 } // namespace detail
 
 template<typename Key, typename T, int BlockSize, int ItemsPerThread>

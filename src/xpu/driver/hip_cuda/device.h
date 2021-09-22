@@ -67,6 +67,8 @@ XPU_D XPU_FORCE_INLINE float tan(float x) { return ::tanf(x); }
 
 XPU_D XPU_FORCE_INLINE int atomic_add_block(int *addr, int val) { return atomicAdd(addr, val); }
 
+XPU_D XPU_FORCE_INLINE void barrier() { __syncthreads(); }
+
 namespace detail {
 
 #if XPU_IS_CUDA

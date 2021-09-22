@@ -41,6 +41,8 @@ inline int atomic_add_block(int *addr, int val) {
     return old;
 }
 
+XPU_FORCE_INLINE void barrier() { return; }
+
 template<typename Key, typename KeyValueType, int BlockSize, int ItemsPerThread>
 class block_sort<Key, KeyValueType, BlockSize, ItemsPerThread, cpu> {
 

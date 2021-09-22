@@ -74,6 +74,8 @@ XPU_D XPU_FORCE_INLINE float tan(float x);
 
 XPU_D XPU_FORCE_INLINE int atomic_add_block(int *addr, int val);
 
+XPU_D XPU_FORCE_INLINE void barrier();
+
 template<typename Key, typename KeyValueType, int BlockSize, int ItemsPerThread=8, xpu::driver_t Impl=XPU_COMPILATION_TARGET>
 class block_sort {
 

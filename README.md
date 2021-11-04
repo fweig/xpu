@@ -26,6 +26,7 @@ The public headers in `src/xpu` expose the entire API (With the exception of def
 CMake Options:
 
 - `XPU_ENABLE_CUDA`: Enable / Disable compilation for cuda. (default=`OFF`)
+- `XPU_CUDA_ARCHITECTURES`: List of target cuda architectures. (default=`75`)
 - `XPU_ENABLE_HIP`: Enable / Disable compilation for hip. (default=`OFF`)
 - `XPU_HIP_COMPILER`: Path to hip-clang. (default=`/opt/rocm/llvm/bin/clang`)
 - `XPU_DEBUG`: Build gpu code with debug symbols and disable optimizations. (default=`OFF`)

@@ -30,6 +30,16 @@
 #define XPU_DETAIL_DEVICE_SPEC
 #endif
 
+#if XPU_IS_CUDA
+#if __CUDA_ARCH__ >= 600
+#define XPU_DETAIL_CUDA_HAS_BLOCK_ATOMICS 1
+#else
+#define XPU_DETAIL_CUDA_HAS_BLOCK_ATOMICS 0
+#endif
+#else
+#define XPU_DETAIL_CUDA_HAS_BLOCK_ATOMICS 0
+#endif
+
 #if XPU_IS_HIP
 #include <hip/hip_runtime.h>
 #endif

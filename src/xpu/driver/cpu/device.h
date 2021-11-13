@@ -16,6 +16,18 @@
 
 namespace xpu {
 
+namespace detail {
+
+// workaround until c++14 / c++17 is available
+template<class T>
+inline T exchange(T &obj, T new_val) {
+    T old_val = std::move(obj);
+    obj = new_val;
+    return old_val;
+}
+
+} // namespace detail
+
 XPU_FORCE_INLINE int thread_idx::x() { return 0; }
 XPU_FORCE_INLINE int block_dim::x() { return 1; }
 XPU_FORCE_INLINE int block_idx::x() { return detail::this_thread::block_idx.x; }
@@ -35,10 +47,53 @@ XPU_FORCE_INLINE int   max(int a, int b) { return std::max(a, b); }
 XPU_FORCE_INLINE float sqrt(float x) { return std::sqrt(x); }
 XPU_FORCE_INLINE float tan(float x) { return std::tan(x); }
 
+inline int atomic_cas(int *addr, int compare, int val) {
+    __atomic_compare_exchange(addr, &compare, &val, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
+    return compare;
+}
+
+inline int atomic_cas_block(int *addr, int compare, int val) {
+    return detail::exchange(*addr, (*addr == compare ? val : *addr));
+}
+
+inline int atomic_add(int *addr, int val) {
+    return __atomic_fetch_add(addr, val, __ATOMIC_SEQ_CST);
+}
+
 inline int atomic_add_block(int *addr, int val) {
-    int old = *addr;
-    *addr += val;
-    return old;
+    return detail::exchange(*addr, *addr + val);
+}
+
+inline int atomic_sub(int *addr, int val) {
+    return __atomic_fetch_sub(addr, val, __ATOMIC_SEQ_CST);
+}
+
+inline int atomic_sub_block(int *addr, int val) {
+    return detail::exchange(*addr, *addr - val);
+}
+
+inline int atomic_and(int *addr, int val) {
+    return __atomic_fetch_and(addr, val, __ATOMIC_SEQ_CST);
+}
+
+inline int atomic_and_block(int *addr, int val) {
+    return detail::exchange(*addr, *addr & val);
+}
+
+inline int atomic_or(int *addr, int val) {
+    return __atomic_fetch_or(addr, val, __ATOMIC_SEQ_CST);
+}
+
+inline int atomic_or_block(int *addr, int val) {
+    return detail::exchange(*addr, *addr | val);
+}
+
+inline int atomic_xor(int *addr, int val) {
+    return __atomic_fetch_xor(addr, val, __ATOMIC_SEQ_CST);
+}
+
+inline int atomic_xor_block(int *addr, int val) {
+    return detail::exchange(*addr, *addr ^ val);
 }
 
 XPU_FORCE_INLINE void barrier() { return; }

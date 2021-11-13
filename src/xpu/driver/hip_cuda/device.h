@@ -65,7 +65,77 @@ XPU_D XPU_FORCE_INLINE int   max(int a, int b) { return ::max(a, b); }
 XPU_D XPU_FORCE_INLINE float sqrt(float x) { return ::sqrtf(x); }
 XPU_D XPU_FORCE_INLINE float tan(float x) { return ::tanf(x); }
 
-XPU_D XPU_FORCE_INLINE int atomic_add_block(int *addr, int val) { return atomicAdd(addr, val); }
+XPU_D XPU_FORCE_INLINE int atomic_cas(int *addr, int compare, int val) {
+    return atomicCAS(addr, compare, val);
+}
+
+XPU_D XPU_FORCE_INLINE int atomic_cas_block(int *addr, int compare, int val) {
+#if XPU_CUDA_HAS_BLOCK_ATOMICS
+    return atomicCAS_block(addr, compare, val);
+#else
+    return atomicCAS(addr, compare, val);
+#endif
+}
+
+XPU_D XPU_FORCE_INLINE int atomic_add(int *addr, int compare, int val) {
+    return atomicAdd(addr, val);
+}
+
+XPU_D XPU_FORCE_INLINE int atomic_add_block(int *addr, int val) {
+#if XPU_CUDA_HAS_BLOCK_ATOMICS
+    return atomicAdd_block(addr, val);
+#else
+    return atomicAdd(addr, val);
+#endif
+}
+
+XPU_D XPU_FORCE_INLINE int atomic_sub(int *addr, int val) {
+    return atomicSub(addr, val);
+}
+
+XPU_D XPU_FORCE_INLINE int atomic_sub_block(int *addr, int val) {
+#if XPU_CUDA_HAS_BLOCK_ATOMICS
+    return atomicSub_block(addr, val);
+#else
+    return atomicSub(addr, val);
+#endif
+}
+
+XPU_D XPU_FORCE_INLINE int atomic_and(int *addr, int val) {
+    return atomicAnd(addr, val);
+}
+
+XPU_D XPU_FORCE_INLINE int atomic_and_block(int *addr, int val) {
+#if XPU_CUDA_HAS_BLOCK_ATOMICS
+    return atomicAnd_block(addr, val);
+#else
+    return atomicAnd(addr, val);
+#endif
+}
+
+XPU_D XPU_FORCE_INLINE int atomic_or(int *addr, int val) {
+    return atomicOr(addr, val);
+}
+
+XPU_D XPU_FORCE_INLINE int atomic_or_block(int *addr, int val) {
+#if XPU_CUDA_HAS_BLOCK_ATOMICS
+    return atomicOr_block(addr, val);
+#else
+    return atomicOr(addr, val);
+#endif
+}
+
+XPU_D XPU_FORCE_INLINE int atomic_xor(int *addr, int val) {
+    return atomicXor(addr, val);
+}
+
+XPU_D XPU_FORCE_INLINE int atomic_xor_block(int *addr, int val) {
+#if XPU_CUDA_HAS_BLOCK_ATOMICS
+    return atomicXor_block(addr, val);
+#else
+    return atomicXor(addr, val);
+#endif
+}
 
 XPU_D XPU_FORCE_INLINE void barrier() { __syncthreads(); }
 

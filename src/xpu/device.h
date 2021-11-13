@@ -72,7 +72,18 @@ XPU_D XPU_FORCE_INLINE float max(float a, float b);
 XPU_D XPU_FORCE_INLINE float sqrt(float x);
 XPU_D XPU_FORCE_INLINE float tan(float x);
 
+XPU_D XPU_FORCE_INLINE int atomic_cas(int *addr, int compare, int val);
+XPU_D XPU_FORCE_INLINE int atomic_cas_block(int *addr, int compare, int val);
+XPU_D XPU_FORCE_INLINE int atomic_add(int *addr, int val);
 XPU_D XPU_FORCE_INLINE int atomic_add_block(int *addr, int val);
+XPU_D XPU_FORCE_INLINE int atomic_sub(int *addr, int val);
+XPU_D XPU_FORCE_INLINE int atomic_sub_block(int *addr, int val);
+XPU_D XPU_FORCE_INLINE int atomic_and(int *addr, int val);
+XPU_D XPU_FORCE_INLINE int atomic_and_block(int *addr, int val);
+XPU_D XPU_FORCE_INLINE int atomic_or(int *addr, int val);
+XPU_D XPU_FORCE_INLINE int atomic_or_block(int *addr, int val);
+XPU_D XPU_FORCE_INLINE int atomic_xor(int *addr, int val);
+XPU_D XPU_FORCE_INLINE int atomic_xor_block(int *addr, int val);
 
 XPU_D XPU_FORCE_INLINE void barrier();
 

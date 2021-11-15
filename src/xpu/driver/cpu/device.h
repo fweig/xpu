@@ -1,5 +1,5 @@
-#ifndef XPU_DRIVER_CPU_DEVICE_RUNTIME
-#define XPU_DRIVER_CPU_DEVICE_RUNTIME
+#ifndef XPU_DRIVER_CPU_DEVICE_RUNTIME_H
+#define XPU_DRIVER_CPU_DEVICE_RUNTIME_H
 
 #ifndef XPU_DEVICE_H
 #error "This header should not be included directly. Include xpu/device.h instead."
@@ -18,7 +18,7 @@ namespace xpu {
 
 namespace detail {
 
-// workaround until c++14 / c++17 is available
+// workaround until c++14 / c++17 with std::exchange is available
 template<class T>
 inline T exchange(T &obj, T new_val) {
     T old_val = std::move(obj);

@@ -2,8 +2,6 @@
 #ifndef XPU_DRIVER_CUDA_DEVICE_RUNTIME_H
 #define XPU_DRIVER_CUDA_DEVICE_RUNTIME_H
 
-
-
 #ifndef XPU_DEVICE_H
 #error "This header should not be included directly. Include xpu/device.h instead."
 #endif

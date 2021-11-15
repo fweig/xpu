@@ -59,47 +59,53 @@ XPU_D XPU_FORCE_INLINE const typename C::data_t &cmem() { return C::get(); }
 XPU_D XPU_FORCE_INLINE constexpr float pi() { return M_PIf32; }
 XPU_D XPU_FORCE_INLINE constexpr float deg_to_rad() { return pi() / 180.f; }
 
-XPU_D XPU_FORCE_INLINE int   abs(int x);
+XPU_D XPU_FORCE_INLINE   int abs(int x);
 XPU_D XPU_FORCE_INLINE float abs(float x);
+
 XPU_D XPU_FORCE_INLINE float ceil(float x);
+
 XPU_D XPU_FORCE_INLINE float cos(float x);
-XPU_D XPU_FORCE_INLINE int   min(int a, int b);
+
+XPU_D XPU_FORCE_INLINE                    int min(int a, int b);
 XPU_D XPU_FORCE_INLINE unsigned long long int min(unsigned long long int a, unsigned long long int b);
-XPU_D XPU_FORCE_INLINE long long int min(long long int a, long long int b);
-XPU_D XPU_FORCE_INLINE float min(float a, float b);
-XPU_D XPU_FORCE_INLINE int   max(int a, int b);
+XPU_D XPU_FORCE_INLINE          long long int min(long long int a, long long int b);
+XPU_D XPU_FORCE_INLINE                  float min(float a, float b);
+
+XPU_D XPU_FORCE_INLINE   int max(int a, int b);
 XPU_D XPU_FORCE_INLINE float max(float a, float b);
+
 XPU_D XPU_FORCE_INLINE float sqrt(float x);
+
 XPU_D XPU_FORCE_INLINE float tan(float x);
 
-XPU_D XPU_FORCE_INLINE int atomic_cas(int *addr, int compare, int val);
+XPU_D XPU_FORCE_INLINE          int atomic_cas(int *addr, int compare, int val);
 XPU_D XPU_FORCE_INLINE unsigned int atomic_cas(unsigned int *addr, unsigned int compare, unsigned int val);
-XPU_D XPU_FORCE_INLINE int atomic_cas_block(int *addr, int compare, int val);
+XPU_D XPU_FORCE_INLINE          int atomic_cas_block(int *addr, int compare, int val);
 XPU_D XPU_FORCE_INLINE unsigned int atomic_cas_block(unsigned int *addr, unsigned int compare, unsigned int val);
 
-XPU_D XPU_FORCE_INLINE int atomic_add(int *addr, int val);
+XPU_D XPU_FORCE_INLINE          int atomic_add(int *addr, int val);
 XPU_D XPU_FORCE_INLINE unsigned int atomic_add(unsigned int *addr, unsigned int val);
-XPU_D XPU_FORCE_INLINE int atomic_add_block(int *addr, int val);
+XPU_D XPU_FORCE_INLINE          int atomic_add_block(int *addr, int val);
 XPU_D XPU_FORCE_INLINE unsigned int atomic_add_block(unsigned int *addr, unsigned int val);
 
-XPU_D XPU_FORCE_INLINE int atomic_sub(int *addr, int val);
+XPU_D XPU_FORCE_INLINE          int atomic_sub(int *addr, int val);
 XPU_D XPU_FORCE_INLINE unsigned int atomic_sub(unsigned int *addr, unsigned int val);
-XPU_D XPU_FORCE_INLINE int atomic_sub_block(int *addr, int val);
+XPU_D XPU_FORCE_INLINE          int atomic_sub_block(int *addr, int val);
 XPU_D XPU_FORCE_INLINE unsigned int atomic_sub_block(unsigned int *addr, unsigned int val);
 
-XPU_D XPU_FORCE_INLINE int atomic_and(int *addr, int val);
+XPU_D XPU_FORCE_INLINE          int atomic_and(int *addr, int val);
 XPU_D XPU_FORCE_INLINE unsigned int atomic_and(unsigned int *addr, unsigned int val);
-XPU_D XPU_FORCE_INLINE int atomic_and_block(int *addr, int val);
+XPU_D XPU_FORCE_INLINE          int atomic_and_block(int *addr, int val);
 XPU_D XPU_FORCE_INLINE unsigned int atomic_and_block(unsigned int *addr, unsigned int val);
 
-XPU_D XPU_FORCE_INLINE int atomic_or(int *addr, int val);
+XPU_D XPU_FORCE_INLINE          int atomic_or(int *addr, int val);
 XPU_D XPU_FORCE_INLINE unsigned int atomic_or(unsigned int *addr, unsigned int val);
-XPU_D XPU_FORCE_INLINE int atomic_or_block(int *addr, int val);
-XPU_D XPU_FORCE_INLINE unsigned atomic_or_block(unsigned int *addr, unsigned int val);
+XPU_D XPU_FORCE_INLINE          int atomic_or_block(int *addr, int val);
+XPU_D XPU_FORCE_INLINE unsigned int atomic_or_block(unsigned int *addr, unsigned int val);
 
-XPU_D XPU_FORCE_INLINE int atomic_xor(int *addr, int val);
+XPU_D XPU_FORCE_INLINE          int atomic_xor(int *addr, int val);
 XPU_D XPU_FORCE_INLINE unsigned int atomic_xor(unsigned int *addr, unsigned int val);
-XPU_D XPU_FORCE_INLINE int atomic_xor_block(int *addr, int val);
+XPU_D XPU_FORCE_INLINE          int atomic_xor_block(int *addr, int val);
 XPU_D XPU_FORCE_INLINE unsigned int atomic_xor_block(unsigned int *addr, unsigned int val);
 
 XPU_D XPU_FORCE_INLINE void barrier();

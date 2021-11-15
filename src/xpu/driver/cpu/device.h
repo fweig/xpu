@@ -52,7 +52,16 @@ inline int atomic_cas(int *addr, int compare, int val) {
     return compare;
 }
 
+inline unsigned int atomic_cas(unsigned int *addr, unsigned int compare, unsigned int val) {
+    __atomic_compare_exchange(addr, &compare, &val, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
+    return compare;
+}
+
 inline int atomic_cas_block(int *addr, int compare, int val) {
+    return detail::exchange(*addr, (*addr == compare ? val : *addr));
+}
+
+inline unsigned int atomic_cas_block(unsigned int *addr, unsigned int compare, unsigned int val) {
     return detail::exchange(*addr, (*addr == compare ? val : *addr));
 }
 
@@ -60,7 +69,15 @@ inline int atomic_add(int *addr, int val) {
     return __atomic_fetch_add(addr, val, __ATOMIC_SEQ_CST);
 }
 
+inline unsigned int atomic_add(unsigned int *addr, unsigned int val) {
+    return __atomic_fetch_add(addr, val, __ATOMIC_SEQ_CST);
+}
+
 inline int atomic_add_block(int *addr, int val) {
+    return detail::exchange(*addr, *addr + val);
+}
+
+inline unsigned int atomic_add_block(unsigned int *addr, unsigned int val) {
     return detail::exchange(*addr, *addr + val);
 }
 
@@ -68,7 +85,15 @@ inline int atomic_sub(int *addr, int val) {
     return __atomic_fetch_sub(addr, val, __ATOMIC_SEQ_CST);
 }
 
+inline unsigned int atomic_sub(unsigned int *addr, unsigned int val) {
+    return __atomic_fetch_sub(addr, val, __ATOMIC_SEQ_CST);
+}
+
 inline int atomic_sub_block(int *addr, int val) {
+    return detail::exchange(*addr, *addr - val);
+}
+
+inline unsigned int atomic_sub_block(unsigned int *addr, unsigned int val) {
     return detail::exchange(*addr, *addr - val);
 }
 
@@ -76,7 +101,15 @@ inline int atomic_and(int *addr, int val) {
     return __atomic_fetch_and(addr, val, __ATOMIC_SEQ_CST);
 }
 
+inline unsigned int atomic_and(unsigned int *addr, unsigned int val) {
+    return __atomic_fetch_and(addr, val, __ATOMIC_SEQ_CST);
+}
+
 inline int atomic_and_block(int *addr, int val) {
+    return detail::exchange(*addr, *addr & val);
+}
+
+inline unsigned int atomic_and_block(unsigned int *addr, unsigned int val) {
     return detail::exchange(*addr, *addr & val);
 }
 
@@ -84,7 +117,15 @@ inline int atomic_or(int *addr, int val) {
     return __atomic_fetch_or(addr, val, __ATOMIC_SEQ_CST);
 }
 
+inline unsigned int atomic_or(unsigned int *addr, unsigned int val) {
+    return __atomic_fetch_or(addr, val, __ATOMIC_SEQ_CST);
+}
+
 inline int atomic_or_block(int *addr, int val) {
+    return detail::exchange(*addr, *addr | val);
+}
+
+inline unsigned int atomic_or_block(unsigned int *addr, unsigned int val) {
     return detail::exchange(*addr, *addr | val);
 }
 
@@ -92,7 +133,15 @@ inline int atomic_xor(int *addr, int val) {
     return __atomic_fetch_xor(addr, val, __ATOMIC_SEQ_CST);
 }
 
+inline unsigned int atomic_xor(unsigned int *addr, unsigned int val) {
+    return __atomic_fetch_xor(addr, val, __ATOMIC_SEQ_CST);
+}
+
 inline int atomic_xor_block(int *addr, int val) {
+    return detail::exchange(*addr, *addr ^ val);
+}
+
+inline unsigned int atomic_xor_block(unsigned int *addr, unsigned int val) {
     return detail::exchange(*addr, *addr ^ val);
 }
 

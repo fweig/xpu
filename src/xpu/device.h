@@ -67,6 +67,7 @@ XPU_D XPU_FORCE_INLINE float ceil(float x);
 XPU_D XPU_FORCE_INLINE float cos(float x);
 
 XPU_D XPU_FORCE_INLINE                    int min(int a, int b);
+XPU_D XPU_FORCE_INLINE           unsigned int min(unsigned int a, unsigned int b);
 XPU_D XPU_FORCE_INLINE unsigned long long int min(unsigned long long int a, unsigned long long int b);
 XPU_D XPU_FORCE_INLINE          long long int min(long long int a, long long int b);
 XPU_D XPU_FORCE_INLINE                  float min(float a, float b);

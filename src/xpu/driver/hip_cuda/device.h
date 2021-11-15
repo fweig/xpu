@@ -57,6 +57,7 @@ XPU_D XPU_FORCE_INLINE float min(float a, float b) { return ::fminf(a, b); }
 XPU_D XPU_FORCE_INLINE float max(float a, float b) { return ::fmaxf(a, b); }
 XPU_D XPU_FORCE_INLINE int   abs(int a) { return ::abs(a); }
 XPU_D XPU_FORCE_INLINE int   min(int a, int b) { return ::min(a, b); }
+XPU_D XPU_FORCE_INLINE unsigned int min(unsigned int a, unsigned int b) { return ::min(a, b); }
 XPU_D XPU_FORCE_INLINE unsigned long long int min(unsigned long long int a, unsigned long long int b) { return ::min(a, b); }
 XPU_D XPU_FORCE_INLINE long long int min(long long int a, long long int b) { return ::min(a, b); }
 XPU_D XPU_FORCE_INLINE int   max(int a, int b) { return ::max(a, b); }

@@ -20,17 +20,18 @@ if ("@DriverType@" STREQUAL "Hip")
         add_compile_options(-O3)
         add_definitions(-DNDEBUG)
     endif()
+
     # Hip sets some clang flags that results in warnings
     add_compile_options(-Qunused-arguments)
     # set(GPU_TARGETS "gfx906" CACHE STRING "AMD GPU targets to compile for")
-    list(APPEND CMAKE_PREFIX_PATH /opt/rocm/hip /opt/rocm)
-    find_package(hip)
+    list(APPEND CMAKE_PREFIX_PATH "$@RocmRoot@/hip" "@RocmRoot@")
+    find_package(hip REQUIRED)
 
     # On ROCm hipCUB requires rocPRIM
-    find_package(rocprim REQUIRED CONFIG PATHS "/opt/rocm/rocprim")
+    find_package(rocprim REQUIRED CONFIG PATHS "@RocmRoot@/rocprim")
 
     # "/opt/rocm" - default install prefix
-    find_package(hipcub REQUIRED CONFIG PATHS "/opt/rocm/hipcub")
+    find_package(hipcub REQUIRED CONFIG PATHS "@RocmRoot@/hipcub")
 endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

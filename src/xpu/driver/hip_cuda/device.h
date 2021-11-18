@@ -50,19 +50,92 @@ XPU_D XPU_FORCE_INLINE int grid_dim::x() {
     return XPU_CHOOSE(hipGridDim_x, gridDim.x);
 }
 
-XPU_D XPU_FORCE_INLINE float ceil(float x) { return ::ceilf(x); }
-XPU_D XPU_FORCE_INLINE float cos(float x) { return ::cosf(x); }
+XPU_D XPU_FORCE_INLINE int abs(int a) { return ::abs(a); }
 XPU_D XPU_FORCE_INLINE float abs(float x) { return ::fabsf(x); }
-XPU_D XPU_FORCE_INLINE float min(float a, float b) { return ::fminf(a, b); }
+XPU_D XPU_FORCE_INLINE float acos(float x) { return ::acosf(x); }
+XPU_D XPU_FORCE_INLINE float acosh(float x) { return ::acoshf(x); }
+XPU_D XPU_FORCE_INLINE float asin(float x) { return ::asinf(x); }
+XPU_D XPU_FORCE_INLINE float asinh(float x) { return ::asinhf(x); }
+XPU_D XPU_FORCE_INLINE float atan2(float y, float x) { return ::atan2f(y, x); }
+XPU_D XPU_FORCE_INLINE float atan(float x) { return ::atanf(x); }
+XPU_D XPU_FORCE_INLINE float atanh(float x) { return ::atanhf(x); }
+XPU_D XPU_FORCE_INLINE float cbrt(float x) { return ::cbrtf(x); }
+XPU_D XPU_FORCE_INLINE float ceil(float x) { return ::ceilf(x); }
+XPU_D XPU_FORCE_INLINE float copysign(float x, float y) { return ::copysignf(x, y); }
+XPU_D XPU_FORCE_INLINE float cos(float x) { return ::cosf(x); }
+XPU_D XPU_FORCE_INLINE float cosh(float x) { return ::coshf(x); }
+XPU_D XPU_FORCE_INLINE float cospi(float x) { return ::cospi(x); }
+XPU_D XPU_FORCE_INLINE float erf(float x) { return ::erff(x); }
+XPU_D XPU_FORCE_INLINE float erfc(float x) { return ::erfcf(x); }
+XPU_D XPU_FORCE_INLINE float exp2(float x) { return ::exp2f(x); }
+XPU_D XPU_FORCE_INLINE float exp(float x) { return ::expf(x); }
+XPU_D XPU_FORCE_INLINE float expm1(float x) { return ::expm1(x); }
+XPU_D XPU_FORCE_INLINE float fdim(float x, float y) { return ::fdimf(x, y); }
+XPU_D XPU_FORCE_INLINE float floor(float x) { return ::floorf(x); }
+XPU_D XPU_FORCE_INLINE float fma(float x, float y, float z) { return ::fmaf(x, y, z); }
+XPU_D XPU_FORCE_INLINE float fmod(float x, float y) { return ::fmodf(x, y); }
+XPU_D XPU_FORCE_INLINE float hypot(float x, float y) { return ::hypotf(x, y); }
+XPU_D XPU_FORCE_INLINE float ilogb(float x) { return ::ilogbf(x); }
+XPU_D XPU_FORCE_INLINE bool isfinite(float a) { return ::isfinite(a); }
+XPU_D XPU_FORCE_INLINE bool isinf(float x) { return ::isinf(x); }
+XPU_D XPU_FORCE_INLINE bool isnan(float x) { return ::isnan(x); }
+XPU_D XPU_FORCE_INLINE float j0(float x) { return ::j0f(x); }
+XPU_D XPU_FORCE_INLINE float j1(float x) { return ::j1f(x); }
+XPU_D XPU_FORCE_INLINE float jn(int n, float x) { return ::jnf(n, x); }
+XPU_D XPU_FORCE_INLINE float ldexp(float x, int exp) { return ::ldexpf(x, exp); }
+XPU_D XPU_FORCE_INLINE long long int llrint(float x) { return ::llrintf(x); }
+XPU_D XPU_FORCE_INLINE long long int llround(float x) { return ::llroundf(x); }
+XPU_D XPU_FORCE_INLINE float log(float x) { return ::logf(x); }
+XPU_D XPU_FORCE_INLINE float log10(float x) { return ::log10f(x); }
+XPU_D XPU_FORCE_INLINE float log1p(float x) { return ::log1pf(x); }
+XPU_D XPU_FORCE_INLINE float log2(float x) { return ::log2f(x); }
+XPU_D XPU_FORCE_INLINE float logb(float x) { return ::logbf(x); }
+XPU_D XPU_FORCE_INLINE long int lrint(float x) { return ::lrintf(x); }
+XPU_D XPU_FORCE_INLINE long int lround(float x) { return ::lroundf(x); }
+XPU_D XPU_FORCE_INLINE int max(int a, int b) { return ::max(a, b); }
+XPU_D XPU_FORCE_INLINE unsigned int max(unsigned int a, unsigned int b) { return ::max(a, b); }
+XPU_D XPU_FORCE_INLINE long long int max(long long int a, long long int b) { return ::max(a, b); }
+XPU_D XPU_FORCE_INLINE unsigned long long int max(unsigned long long int a, unsigned long long int b) { return ::max(a, b); }
 XPU_D XPU_FORCE_INLINE float max(float a, float b) { return ::fmaxf(a, b); }
-XPU_D XPU_FORCE_INLINE int   abs(int a) { return ::abs(a); }
-XPU_D XPU_FORCE_INLINE int   min(int a, int b) { return ::min(a, b); }
+XPU_D XPU_FORCE_INLINE int min(int a, int b) { return ::min(a, b); }
 XPU_D XPU_FORCE_INLINE unsigned int min(unsigned int a, unsigned int b) { return ::min(a, b); }
-XPU_D XPU_FORCE_INLINE unsigned long long int min(unsigned long long int a, unsigned long long int b) { return ::min(a, b); }
 XPU_D XPU_FORCE_INLINE long long int min(long long int a, long long int b) { return ::min(a, b); }
-XPU_D XPU_FORCE_INLINE int   max(int a, int b) { return ::max(a, b); }
+XPU_D XPU_FORCE_INLINE unsigned long long int min(unsigned long long int a, unsigned long long int b) { return ::min(a, b); }
+XPU_D XPU_FORCE_INLINE float min(float a, float b) { return ::fminf(a, b); }
+XPU_D XPU_FORCE_INLINE float nan(const char *tagp) { return ::nanf(tagp); }
+XPU_D XPU_FORCE_INLINE float nearbyint(float x) { return ::nearbyint(x); }
+XPU_D XPU_FORCE_INLINE float norm(int dim, const float *a) { return ::normf(dim, a); }
+XPU_D XPU_FORCE_INLINE float norm3d(float a, float b, float c) { return ::norm3df(a, b, c); }
+XPU_D XPU_FORCE_INLINE float norm4d(float a, float b, float c, float d) { return ::norm4df(a, b, c, d); }
+// XPU_D XPU_FORCE_INLINE float normcdf(float y) { return ::normcdff(y); }
+// XPU_D XPU_FORCE_INLINE float normcdfinv(float y) { return ::normcdfinvf(y); }
+XPU_D XPU_FORCE_INLINE float pow(float x, float y) { return ::powf(x, y); }
+XPU_D XPU_FORCE_INLINE float rcbrt(float x) { return ::rcbrtf(x); }
+XPU_D XPU_FORCE_INLINE float remainder(float x, float y) { return ::remainderf(x, y); }
+XPU_D XPU_FORCE_INLINE float remquo(float x, float y, int *quo) { return ::remquof(x, y, quo); }
+XPU_D XPU_FORCE_INLINE float rhypot(float x, float y) { return ::rhypotf(x, y); }
+XPU_D XPU_FORCE_INLINE float rint(float x) { return ::rintf(x); }
+XPU_D XPU_FORCE_INLINE float rnorm(int dim, const float *a) { return ::rnormf(dim, a); }
+XPU_D XPU_FORCE_INLINE float rnorm3d(float a, float b, float c) { return ::rnorm3df(a, b, c); }
+XPU_D XPU_FORCE_INLINE float rnorm4d(float a, float b, float c, float d) { return ::rnorm4df(a, b, c, d); }
+XPU_D XPU_FORCE_INLINE float round(float x) { return ::roundf(x); }
+XPU_D XPU_FORCE_INLINE float rsqrt(float x) { return ::rsqrtf(x); }
+XPU_D XPU_FORCE_INLINE float scalbln(float x, long int n) { return ::scalblnf(x, n); }
+XPU_D XPU_FORCE_INLINE float scalbn(float x, int n) { return ::scalbnf(x, n); }
+XPU_D XPU_FORCE_INLINE bool signbit(float a) { return ::signbit(a); }
+XPU_D XPU_FORCE_INLINE void sincos(float x, float *sptr, float *cptr) { return ::sincosf(x, sptr, cptr); }
+XPU_D XPU_FORCE_INLINE void sincospi(float x, float *sptr, float *cptr) { return ::sincospif(x, sptr, cptr); }
+XPU_D XPU_FORCE_INLINE float sin(float x) { return ::sinf(x); }
+XPU_D XPU_FORCE_INLINE float sinh(float x) { return ::sinhf(x); }
+XPU_D XPU_FORCE_INLINE float sinpi(float x) { return ::sinpif(x); }
 XPU_D XPU_FORCE_INLINE float sqrt(float x) { return ::sqrtf(x); }
 XPU_D XPU_FORCE_INLINE float tan(float x) { return ::tanf(x); }
+XPU_D XPU_FORCE_INLINE float tanh(float x) { return ::tanhf(x); }
+XPU_D XPU_FORCE_INLINE float tgamma(float x) { return ::tgammaf(x); }
+XPU_D XPU_FORCE_INLINE float trunc(float x) { return ::truncf(x); }
+XPU_D XPU_FORCE_INLINE float y0(float x) { return ::y0f(x); }
+XPU_D XPU_FORCE_INLINE float y1(float x) { return ::y1f(x); }
+XPU_D XPU_FORCE_INLINE float yn(int n, float x) { return ::ynf(n, x); }
 
 XPU_D XPU_FORCE_INLINE int atomic_cas(int *addr, int compare, int val) {
     return atomicCAS(addr, compare, val);

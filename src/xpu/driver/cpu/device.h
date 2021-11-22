@@ -54,12 +54,13 @@ XPU_FORCE_INLINE float erfc(float x) { return std::erfcf(x); }
 XPU_FORCE_INLINE float exp2(float x) { return std::exp2f(x); }
 XPU_FORCE_INLINE float exp(float x) { return std::exp(x); }
 XPU_FORCE_INLINE float expm1(float x) { return std::expm1f(x); }
-XPU_FORCE_INLINE float fdmin(float x, float y) { return std::fdimf(x, y); }
+XPU_FORCE_INLINE float fdim(float x, float y) { return std::fdimf(x, y); }
+XPU_FORCE_INLINE float floor(float x) { return std::floor(x); }
 XPU_FORCE_INLINE float fma(float x, float y, float z) { return std::fmaf(x, y, z); }
 XPU_FORCE_INLINE float fmod(float x, float y) { return std::fmod(x, y); }
 // XPU_FORCE_INLINE float frexp(float x, int *nptr) { return std::frexp(x, nptr); }
 XPU_FORCE_INLINE float hypot(float x, float y) { return std::hypotf(x, y); }
-XPU_FORCE_INLINE float ilob(float x) { return std::ilogbf(x); }
+XPU_FORCE_INLINE int ilogb(float x) { return std::ilogbf(x); }
 XPU_FORCE_INLINE bool isfinite(float a) { return std::isfinite(a); }
 XPU_FORCE_INLINE bool isinf(float a) { return std::isinf(a); }
 XPU_FORCE_INLINE bool isnan(float a) { return std::isnan(a); }

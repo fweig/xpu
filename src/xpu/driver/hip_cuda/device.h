@@ -75,7 +75,7 @@ XPU_D XPU_FORCE_INLINE float floor(float x) { return ::floorf(x); }
 XPU_D XPU_FORCE_INLINE float fma(float x, float y, float z) { return ::fmaf(x, y, z); }
 XPU_D XPU_FORCE_INLINE float fmod(float x, float y) { return ::fmodf(x, y); }
 XPU_D XPU_FORCE_INLINE float hypot(float x, float y) { return ::hypotf(x, y); }
-XPU_D XPU_FORCE_INLINE float ilogb(float x) { return ::ilogbf(x); }
+XPU_D XPU_FORCE_INLINE int ilogb(float x) { return ::ilogbf(x); }
 XPU_D XPU_FORCE_INLINE bool isfinite(float a) { return ::isfinite(a); }
 XPU_D XPU_FORCE_INLINE bool isinf(float x) { return ::isinf(x); }
 XPU_D XPU_FORCE_INLINE bool isnan(float x) { return ::isnan(x); }

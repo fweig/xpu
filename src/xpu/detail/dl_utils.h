@@ -32,6 +32,9 @@ public:
     T *obj = nullptr;
 
     lib_obj(const std::string &libname) : lib(libname) {
+        if (not lib.ok()) {
+            return;
+        }
         create = reinterpret_cast<create_f *>(lib.symbol("create"));
         destroy = reinterpret_cast<destroy_f *>(lib.symbol("destroy"));
         obj = create();

@@ -21,6 +21,9 @@ library_loader::~library_loader() {
 }
 
 void *library_loader::symbol(const std::string &symname) {
+    if (not ok()) {
+        return nullptr;
+    }
     void *sym = dlsym(handle, symname.c_str());
     const char *err = dlerror();
     if (err != nullptr) {

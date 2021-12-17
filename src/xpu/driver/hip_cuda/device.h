@@ -72,6 +72,10 @@ XPU_D XPU_FORCE_INLINE unsigned int atomic_cas(unsigned int *addr, unsigned int 
     return atomicCAS(addr, compare, val);
 }
 
+XPU_D XPU_FORCE_INLINE float atomic_cas(float *addr, float compare, float val) {
+    return __int_as_float(atomicCAS((int *) addr, __float_as_int(compare), __float_as_int(val)));
+}
+
 XPU_D XPU_FORCE_INLINE int atomic_cas_block(int *addr, int compare, int val) {
 #if XPU_CUDA_HAS_BLOCK_ATOMICS
     return atomicCAS_block(addr, compare, val);
@@ -88,11 +92,19 @@ XPU_D XPU_FORCE_INLINE unsigned int atomic_cas_block(unsigned int *addr, unsigne
 #endif
 }
 
+XPU_D XPU_FORCE_INLINE float atomic_cas_block(float *addr, float compare, float val) {
+    return int_as_float(atomic_cas_block((int *) addr, float_as_int(compare), float_as_int(val)));
+}
+
 XPU_D XPU_FORCE_INLINE int atomic_add(int *addr, int compare, int val) {
     return atomicAdd(addr, val);
 }
 
 XPU_D XPU_FORCE_INLINE unsigned int atomic_add(unsigned int *addr, unsigned int compare, unsigned int val) {
+    return atomicAdd(addr, val);
+}
+
+XPU_D XPU_FORCE_INLINE float atomic_add(float *addr, float val) {
     return atomicAdd(addr, val);
 }
 
@@ -105,6 +117,14 @@ XPU_D XPU_FORCE_INLINE int atomic_add_block(int *addr, int val) {
 }
 
 XPU_D XPU_FORCE_INLINE unsigned int atomic_add_block(unsigned int *addr, unsigned int val) {
+#if XPU_CUDA_HAS_BLOCK_ATOMICS
+    return atomicAdd_block(addr, val);
+#else
+    return atomicAdd(addr, val);
+#endif
+}
+
+XPU_D XPU_FORCE_INLINE float atomic_add_block(float *addr, float val) {
 #if XPU_CUDA_HAS_BLOCK_ATOMICS
     return atomicAdd_block(addr, val);
 #else
@@ -209,6 +229,9 @@ XPU_D XPU_FORCE_INLINE unsigned int atomic_xor_block(unsigned int *addr, unsigne
 }
 
 XPU_D XPU_FORCE_INLINE void barrier() { __syncthreads(); }
+
+XPU_D XPU_FORCE_INLINE int float_as_int(float val) { return __float_as_int(val); }
+XPU_D XPU_FORCE_INLINE float int_as_float(int val) { return __int_as_float(val); }
 
 namespace detail {
 

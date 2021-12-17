@@ -58,11 +58,20 @@ inline unsigned int atomic_cas(unsigned int *addr, unsigned int compare, unsigne
     return compare;
 }
 
+inline float atomic_cas(float *addr, float compare, float val) {
+    __atomic_compare_exchange(addr, &compare, &val, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
+    return compare;
+}
+
 inline int atomic_cas_block(int *addr, int compare, int val) {
     return detail::exchange(*addr, (*addr == compare ? val : *addr));
 }
 
 inline unsigned int atomic_cas_block(unsigned int *addr, unsigned int compare, unsigned int val) {
+    return detail::exchange(*addr, (*addr == compare ? val : *addr));
+}
+
+inline float atomic_cas_block(float *addr, float compare, float val) {
     return detail::exchange(*addr, (*addr == compare ? val : *addr));
 }
 
@@ -74,11 +83,27 @@ inline unsigned int atomic_add(unsigned int *addr, unsigned int val) {
     return __atomic_fetch_add(addr, val, __ATOMIC_SEQ_CST);
 }
 
+inline float atomic_add(float *addr, float val) {
+    float old = *addr;
+    float assumed;
+
+    do {
+        assumed = old;
+        old = atomic_cas(addr, assumed, assumed + val);
+    } while (float_as_int(old) != float_as_int(assumed));
+
+    return old;
+}
+
 inline int atomic_add_block(int *addr, int val) {
     return detail::exchange(*addr, *addr + val);
 }
 
 inline unsigned int atomic_add_block(unsigned int *addr, unsigned int val) {
+    return detail::exchange(*addr, *addr + val);
+}
+
+inline float atomic_add_block(float *addr, float val) {
     return detail::exchange(*addr, *addr + val);
 }
 
@@ -147,6 +172,23 @@ inline unsigned int atomic_xor_block(unsigned int *addr, unsigned int val) {
 }
 
 XPU_FORCE_INLINE void barrier() { return; }
+
+namespace detail {
+    union float_int_reint {
+        float f;
+        int i;
+    };
+} // namespace detail
+
+inline int float_as_int(float val) {
+    detail::float_int_reint xval { .f = val };
+    return xval.i;
+}
+
+inline float int_as_float(int val) {
+    detail::float_int_reint xval { .i = val };
+    return xval.f;
+}
 
 template<typename Key, typename KeyValueType, int BlockSize, int ItemsPerThread>
 class block_sort<Key, KeyValueType, BlockSize, ItemsPerThread, cpu> {

@@ -81,13 +81,17 @@ XPU_D XPU_FORCE_INLINE float tan(float x);
 
 XPU_D XPU_FORCE_INLINE          int atomic_cas(int *addr, int compare, int val);
 XPU_D XPU_FORCE_INLINE unsigned int atomic_cas(unsigned int *addr, unsigned int compare, unsigned int val);
+XPU_D XPU_FORCE_INLINE        float atomic_cas(float *addr, float compare, float val);
 XPU_D XPU_FORCE_INLINE          int atomic_cas_block(int *addr, int compare, int val);
 XPU_D XPU_FORCE_INLINE unsigned int atomic_cas_block(unsigned int *addr, unsigned int compare, unsigned int val);
+XPU_D XPU_FORCE_INLINE        float atomic_cas_block(float *addr, float compare, float val);
 
 XPU_D XPU_FORCE_INLINE          int atomic_add(int *addr, int val);
 XPU_D XPU_FORCE_INLINE unsigned int atomic_add(unsigned int *addr, unsigned int val);
+XPU_D XPU_FORCE_INLINE        float atomic_add(float *addr, float val);
 XPU_D XPU_FORCE_INLINE          int atomic_add_block(int *addr, int val);
 XPU_D XPU_FORCE_INLINE unsigned int atomic_add_block(unsigned int *addr, unsigned int val);
+XPU_D XPU_FORCE_INLINE        float atomic_add_block(float *addr, float val);
 
 XPU_D XPU_FORCE_INLINE          int atomic_sub(int *addr, int val);
 XPU_D XPU_FORCE_INLINE unsigned int atomic_sub(unsigned int *addr, unsigned int val);
@@ -110,6 +114,9 @@ XPU_D XPU_FORCE_INLINE          int atomic_xor_block(int *addr, int val);
 XPU_D XPU_FORCE_INLINE unsigned int atomic_xor_block(unsigned int *addr, unsigned int val);
 
 XPU_D XPU_FORCE_INLINE void barrier();
+
+XPU_D int float_as_int(float val);
+XPU_D float int_as_float(int val);
 
 template<typename Key, typename KeyValueType, int BlockSize, int ItemsPerThread=8, xpu::driver_t Impl=XPU_COMPILATION_TARGET>
 class block_sort {

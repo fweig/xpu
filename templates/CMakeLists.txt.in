@@ -22,7 +22,7 @@ if ("@DriverType@" STREQUAL "Hip")
     endif()
     # Hip sets some clang flags that results in warnings
     add_compile_options(-Qunused-arguments)
-    set(GPU_TARGETS "gfx906" CACHE STRING "AMD GPU targets to compile for")
+    # set(GPU_TARGETS "gfx906" CACHE STRING "AMD GPU targets to compile for")
     list(APPEND CMAKE_PREFIX_PATH /opt/rocm/hip /opt/rocm)
     find_package(hip)
 

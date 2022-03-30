@@ -166,7 +166,14 @@ void testMergeKernel(size_t M, size_t N) {
     std::mt19937 gen{1337};
     std::uniform_real_distribution<float> dist{0, 100000};
 
+    for (size_t i = 0; i < M; i++) {
+        a.host()[i] = dist(gen);
+    }
     std::sort(a.host(), a.host() + a.size());
+
+    for (size_t i = 0; i < N; i++) {
+        b.host()[i] = dist(gen);
+    }
     std::sort(b.host(), b.host() + b.size());
 
     xpu::copy(a, xpu::host_to_device);

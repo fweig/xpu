@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.11)
 
 project(xpu)
 
+
 set(XPU_BUILD_TESTS OFF CACHE BOOL "Build xpu unit tests.")
 set(XPU_BUILD_EXAMPLES OFF CACHE BOOL "Build xpu examples.")
 set(XPU_ENABLE_CUDA OFF CACHE BOOL "Enable xpu cuda backend.")
@@ -163,6 +164,7 @@ if (XPU_ENABLE_HIP)
 endif()
 
 if (XPU_BUILD_TESTS)
+    enable_testing()
     add_subdirectory(test)
     add_subdirectory(benchmark)
 endif()

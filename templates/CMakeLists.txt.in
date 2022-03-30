@@ -36,6 +36,7 @@ endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# Try to get complete list of include directories with this: https://stackoverflow.com/questions/43554085/target-link-libraries-and-include-directories-property
 include_directories(@IncludeDirectories@)
 add_library(@Library@_@DriverType@ MODULE @UnitySrcAbsolute@)
 

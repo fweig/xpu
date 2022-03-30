@@ -2,33 +2,14 @@ cmake_minimum_required(VERSION 3.11)
 
 project(xpu)
 
-if(NOT DEFINED XPU_BUILD_TESTS)
-    set(XPU_BUILD_TESTS OFF)
-endif()
-
-if (NOT DEFINED XPU_BUILD_EXAMPLES)
-    set(XPU_BUILD_EXAMPLES OFF)
-endif()
-
-if (NOT DEFINED XPU_ENABLE_CUDA)
-    set(XPU_ENABLE_CUDA OFF)
-endif()
-
-if (NOT DEFINED XPU_CUDA_ARCHITECTURES)
-    set(XPU_CUDA_ARCHITECTURES 75)
-endif()
-
-if (NOT DEFINED XPU_ENABLE_HIP)
-    set(XPU_ENABLE_HIP OFF)
-endif()
-
-if (NOT DEFINED XPU_ROCM_ROOT)
-    set(XPU_ROCM_ROOT /opt/rocm)
-endif()
-
-if (NOT DEFINED XPU_DEBUG)
-    set(XPU_DEBUG OFF)
-endif()
+set(XPU_BUILD_TESTS OFF CACHE BOOL "Build xpu unit tests.")
+set(XPU_BUILD_EXAMPLES OFF CACHE BOOL "Build xpu examples.")
+set(XPU_ENABLE_CUDA OFF CACHE BOOL "Enable xpu cuda backend.")
+set(XPU_CUDA_ARCHITECTURES 75 CACHE STRING "Target cuda architectures.")
+set(XPU_ENABLE_HIP OFF CACHE STRING "Enable xpu hip backend.")
+set(XPU_ROCM_ROOT /opt/rocm CACHE PATH "Path to rocm installation.")
+set(XPU_DEBUG OFF CACHE BOOL "Enable debug options for GPU code.")
+set(XPU_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
 
 if( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR )
     set(XPU_STANDALONE ON)
@@ -84,24 +65,16 @@ if (OPENMP_FOUND)
   set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 
-set_property(GLOBAL PROPERTY XpuRootDir "${CMAKE_CURRENT_SOURCE_DIR}")
-set_property(GLOBAL PROPERTY XpuEnableCuda "${XPU_ENABLE_CUDA}")
-set_property(GLOBAL PROPERTY XpuCudaArchitectures "${XPU_CUDA_ARCHITECTURES}")
-set_property(GLOBAL PROPERTY XpuEnableHip "${XPU_ENABLE_HIP}")
-if (DEFINED XPU_ROCM_ROOT)
-    set_property(GLOBAL PROPERTY XpuRocmRoot "${XPU_ROCM_ROOT}")
-endif()
-
 function(xpu_create_subproject Library DriverType UnitySrcAbsolute)
     include(ExternalProject)
     set(SrcDir "${CMAKE_CURRENT_BINARY_DIR}/${Library}_${DriverType}")
-    get_property(RootDir GLOBAL PROPERTY XpuRootDir)
-    get_property(CudaArchitectures GLOBAL PROPERTY XpuCudaArchitectures)
     get_target_property(IncludeDirectories ${Library} INCLUDE_DIRECTORIES)
+    if (NOT ${XPU_ROOT_DIR}/src IN_LIST IncludeDirectories)
+        set(IncludeDirectories ${IncludeDirectries} ${XPU_ROOT_DIR}/src)
+    endif()
 
     if (DriverType STREQUAL "Hip")
-        get_property(RocmRoot GLOBAL PROPERTY XpuRocmRoot)
-        set(HipClang "${RocmRoot}/llvm/bin/clang")
+        set(HipClang "${XPU_ROCM_ROOT}/llvm/bin/clang")
         set(SubprojectCxx ${HipClang}++)
         set(SubprojectC ${HipClang})
     else()
@@ -111,7 +84,7 @@ function(xpu_create_subproject Library DriverType UnitySrcAbsolute)
 
     file(MAKE_DIRECTORY ${SrcDir})
     configure_file(
-        "${RootDir}/templates/CMakeLists.txt.in"
+        "${XPU_ROOT_DIR}/templates/CMakeLists.txt.in"
         "${SrcDir}/CMakeLists.txt"
     )
 
@@ -141,12 +114,9 @@ function(xpu_attach Library)
 
     get_filename_component(KernelDeclFullPath "${KernelDecl}" REALPATH)
 
-    get_property(RootDir GLOBAL PROPERTY XpuRootDir)
-    get_property(EnableCuda GLOBAL PROPERTY XpuEnableCuda)
-    get_property(EnableHip GLOBAL PROPERTY XpuEnableHip)
-
     target_compile_definitions(${Library} PRIVATE XPU_IMAGE_FILE="${Library}")
     target_compile_options(${Library} PUBLIC -fPIC)
+    target_link_libraries(${Library} xpu_device)
 
     file(REMOVE ${UnitySrcAbsolute})
     foreach(File ${DeviceSrcs})
@@ -156,16 +126,14 @@ function(xpu_attach Library)
         )
     endforeach()
 
-    if (${EnableCuda})
+    if (XPU_ENABLE_CUDA)
         xpu_create_subproject(${Library} Cuda ${UnitySrcAbsolute})
     endif()
 
-    if (${EnableHip})
+    if (XPU_ENABLE_HIP)
         xpu_create_subproject(${Library} Hip ${UnitySrcAbsolute})
     endif()
 endfunction()
-
-include_directories(src)
 
 add_library(xpu SHARED
     src/xpu/detail/dl_utils.cpp
@@ -175,6 +143,10 @@ add_library(xpu SHARED
     src/xpu/driver/cpu/this_thread.cpp
 )
 target_link_libraries(xpu dl)
+target_include_directories(xpu PUBLIC src)
+
+add_library(xpu_device INTERFACE)
+target_include_directories(xpu_device INTERFACE src)
 
 if (XPU_ENABLE_CUDA)
     xpu_create_subproject(

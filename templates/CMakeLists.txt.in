@@ -9,7 +9,7 @@ if (@DriverType@ STREQUAL "Cuda")
     else()
         add_definitions(-DNDEBUG)
     endif()
-    set(CMAKE_CUDA_ARCHITECTURES @CudaArchitectures@)
+    set(CMAKE_CUDA_ARCHITECTURES @XPU_CUDA_ARCHITECTURES@)
     set_source_files_properties(@UnitySrcAbsolute@ PROPERTIES LANGUAGE CUDA)
 endif()
 
@@ -24,14 +24,14 @@ if ("@DriverType@" STREQUAL "Hip")
     # Hip sets some clang flags that results in warnings
     add_compile_options(-Qunused-arguments)
     # set(GPU_TARGETS "gfx906" CACHE STRING "AMD GPU targets to compile for")
-    list(APPEND CMAKE_PREFIX_PATH "$@RocmRoot@/hip" "@RocmRoot@")
+    list(APPEND CMAKE_PREFIX_PATH "$@XPU_ROCM_ROOT@/hip" "@XPU_ROCM_ROOT@")
     find_package(hip REQUIRED)
 
     # On ROCm hipCUB requires rocPRIM
-    find_package(rocprim REQUIRED CONFIG PATHS "@RocmRoot@/rocprim")
+    find_package(rocprim REQUIRED CONFIG PATHS "@XPU_ROCM_ROOT@/rocprim")
 
     # "/opt/rocm" - default install prefix
-    find_package(hipcub REQUIRED CONFIG PATHS "@RocmRoot@/hipcub")
+    find_package(hipcub REQUIRED CONFIG PATHS "@XPU_ROCM_ROOT@/hipcub")
 endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

@@ -12,11 +12,11 @@ logger &logger::instance() {
 }
 
 void logger::initialize(std::function<void(const char *)> write_out) {
-    this->write_out = std::move(write_out);
+    this->m_write_out = std::move(write_out);
 }
 
 bool logger::active() const {
-    return write_out != nullptr;
+    return m_write_out != nullptr;
 }
 
 void logger::write(const char *format, ...) {
@@ -35,5 +35,5 @@ void logger::write(const char *format, ...) {
     std::vsnprintf(formatted.get(), buf_size, format, args);
     va_end(args);
 
-    write_out(formatted.get());
+    m_write_out(formatted.get());
 }

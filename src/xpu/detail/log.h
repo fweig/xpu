@@ -16,7 +16,7 @@ public:
     void write(const char *, ...) __attribute__ ((format (__printf__, 2, 3)));
 
 private:
-    std::function<void(const char *)> write_out;
+    std::function<void(const char *)> m_write_out;
 
 };
 

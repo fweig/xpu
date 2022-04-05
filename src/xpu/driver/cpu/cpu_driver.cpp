@@ -1,8 +1,9 @@
 #include "cpu_driver.h"
 
 #include "../../detail/log.h"
-#include "../../detail/platform.h"
 #include "../../host.h"
+
+#include <unistd.h>
 
 #include <cassert>
 #include <cstdlib>
@@ -70,7 +71,9 @@ error cpu_driver::get_properties(device_prop *props, int device) {
 }
 
 error cpu_driver::meminfo(size_t *free, size_t *total) {
-    get_meminfo(free, total);
+    size_t pagesize = sysconf(_SC_PAGESIZE);
+    *free = pagesize * sysconf(_SC_AVPHYS_PAGES);
+    *total = pagesize * sysconf(_SC_PHYS_PAGES);
     return SUCCESS;
 }
 

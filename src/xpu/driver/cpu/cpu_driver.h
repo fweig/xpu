@@ -34,6 +34,7 @@ private:
         SUCCESS = 0,
         OUT_OF_MEMORY,
         INVALID_DEVICE,
+        MACOSX_ERROR
     };
 
 };

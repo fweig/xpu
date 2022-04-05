@@ -70,18 +70,43 @@ error cpu_driver::get_properties(device_prop *props, int device) {
     return SUCCESS;
 }
 
+#ifdef __linux__
 error cpu_driver::meminfo(size_t *free, size_t *total) {
     size_t pagesize = sysconf(_SC_PAGESIZE);
     *free = pagesize * sysconf(_SC_AVPHYS_PAGES);
     *total = pagesize * sysconf(_SC_PHYS_PAGES);
     return SUCCESS;
 }
+#elif defined __APPLE__
+#include <mach/mach.h>
+#include <mach/vm_statistics.h>
+#include <sys/types.h>
+#include <sys/sysctl.h>
+error cpu_driver::meminfo(size_t *free, size_t *total) {
+    size_t pagesize = getpagesize();
+    struct vm_statistics64 stats;
+    mach_port_t host    = mach_host_self();
+    natural_t   count   = HOST_VM_INFO64_COUNT;
+    kern_return_t ret;
+    if ((ret = host_statistics64(host, HOST_VM_INFO64, (host_info64_t)&stats, &count)) != KERN_SUCCESS) {
+        return MACOSX_ERROR;
+    }
+    *free  = pagesize * stats.free_count;
+    *total = pagesize * (stats.free_count     +
+                         stats.active_count   +
+                         stats.inactive_count +
+                         stats.wire_count     +
+                         stats.compressor_page_count);
+    return SUCCESS;
+}
+#endif
 
 const char *cpu_driver::error_to_string(error err) {
     switch (err) {
     case SUCCESS: return "Success";
     case OUT_OF_MEMORY: return "Out of memory";
     case INVALID_DEVICE: return "Invalid device";
+    case MACOSX_ERROR: return "Macosx error";
     }
 
     return "Unknown error code";

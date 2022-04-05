@@ -107,7 +107,11 @@ public:
     }
 
     image(const char *name) {
-        handle = dlopen(name, RTLD_LAZY | RTLD_DEEPBIND);
+#if defined __APPLE__
+  handle = dlopen(name, RTLD_LAZY);
+#elif defined __linux__
+  handle = dlopen(name, RTLD_LAZY | RTLD_DEEPBIND);
+#endif
         if (handle == nullptr) {
             XPU_LOG("Error opening '%s: %s", name, dlerror());
         }

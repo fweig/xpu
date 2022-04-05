@@ -6,6 +6,7 @@
 #include "../driver/cpu/this_thread.h"
 #include "log.h"
 #include "macros.h"
+#include "platform.h"
 #include "type_info.h"
 
 #if XPU_IS_HIP
@@ -107,7 +108,7 @@ public:
     }
 
     image(const char *name) {
-        handle = dlopen(name, RTLD_LAZY | RTLD_DEEPBIND);
+        handle = dlopen_image(name);
         if (handle == nullptr) {
             XPU_LOG("Error opening '%s: %s", name, dlerror());
         }

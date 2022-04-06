@@ -53,7 +53,9 @@ if (XPU_STANDALONE)
     set(CMAKE_CXX_STANDARD 11)
     set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
     # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g3 -Wall -Wextra -Werror -Wfatal-errors")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror -Wno-undefined-var-template")
+    # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -Werror -Wno-undefined-var-template")
+
     check_cxx_compiler_flag("-fmax-errors=5" CXX_HAS_MAX_ERRORS_FLAG)
     if (CXX_HAS_MAX_ERRORS_FLAG)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fmax-errors=5")
@@ -66,10 +68,6 @@ if (XPU_STANDALONE)
 endif()
 
 find_package(OpenMP)
-if (OPENMP_FOUND)
-  set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-endif()
 
 function(xpu_create_subproject Library DriverType UnitySrcAbsolute)
     include(ExternalProject)
@@ -122,7 +120,10 @@ function(xpu_attach Library)
 
     target_compile_definitions(${Library} PRIVATE XPU_IMAGE_FILE="${Library}")
     target_compile_options(${Library} PUBLIC -fPIC)
-    target_link_libraries(${Library} xpu_device)
+    target_link_libraries(${Library} xpu)
+    if (TARGET OpenMP::OpenMP_CXX)
+        target_link_libraries(${Library} OpenMP::OpenMP_CXX)
+    endif()
 
     file(REMOVE ${UnitySrcAbsolute})
     foreach(File ${DeviceSrcs})
@@ -150,9 +151,6 @@ add_library(xpu SHARED
 )
 target_link_libraries(xpu dl)
 target_include_directories(xpu PUBLIC src)
-
-add_library(xpu_device INTERFACE)
-target_include_directories(xpu_device INTERFACE src)
 
 if (XPU_ENABLE_CUDA)
     xpu_create_subproject(

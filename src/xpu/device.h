@@ -56,11 +56,35 @@ struct no_smem {};
 template<typename C>
 XPU_D const typename C::data_t &cmem() { return C::get(); }
 
-XPU_D constexpr float pi() { return M_PIf32; }
-XPU_D constexpr float pi_2() { return M_PI_2f32; }
-XPU_D constexpr float pi_4() { return M_PI_4f32; }
+XPU_D constexpr float pi() {
+#ifdef __APPLE__
+    return M_PI;
+#else
+    return M_PIf32;
+#endif
+}
+XPU_D constexpr float pi_2() {
+#ifdef __APPLE__
+    return M_PI_2;
+#else
+    return M_PI_2f32;
+#endif
+}
+XPU_D constexpr float pi_4() {
+#ifdef __APPLE__
+    return M_PI_4;
+#else
+    return M_PI_4f32;
+#endif
+}
 XPU_D constexpr float deg_to_rad() { return pi() / 180.f; }
-XPU_D constexpr float sqrt2() { return M_SQRT2f32; }
+XPU_D constexpr float sqrt2() {
+#ifdef __APPLE__
+    return M_SQRT2;
+#else
+    return M_SQRT2f32;
+#endif
+}
 
 XPU_D   int abs(int x);
 XPU_D float abs(float x);

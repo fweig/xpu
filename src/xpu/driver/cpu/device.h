@@ -64,9 +64,27 @@ XPU_FORCE_INLINE int ilogb(float x) { return std::ilogbf(x); }
 XPU_FORCE_INLINE bool isfinite(float a) { return std::isfinite(a); }
 XPU_FORCE_INLINE bool isinf(float a) { return std::isinf(a); }
 XPU_FORCE_INLINE bool isnan(float a) { return std::isnan(a); }
-XPU_FORCE_INLINE float j0(float x) { return ::j0f(x); }
-XPU_FORCE_INLINE float j1(float x) { return ::j1f(x); }
-XPU_FORCE_INLINE float jn(int n, float x) { return ::jnf(n, x); }
+XPU_FORCE_INLINE float j0(float x) {
+#if __APPLE__
+    return ::j0(x);
+#else
+    return ::j0f(x);
+#endif
+}
+XPU_FORCE_INLINE float j1(float x) {
+#if __APPLE__
+    return ::j1(x);
+#else
+    return ::j1f(x);
+#endif
+}
+XPU_FORCE_INLINE float jn(int n, float x) {
+#if __APPLE__
+    return ::jn(n, x);
+#else
+    return ::jnf(n, x);
+#endif
+}
 XPU_FORCE_INLINE float ldexp(float x, int exp) { return std::ldexp(x, exp); }
 // XPU_FORCE_INLINE float lgamma(float x) { return std::lgammaf(x); }
 XPU_FORCE_INLINE long long int llrint(float x) { return std::llrintf(x); }
@@ -133,9 +151,27 @@ XPU_FORCE_INLINE float tan(float x) { return std::tan(x); }
 XPU_FORCE_INLINE float tanh(float x) { return std::tanh(x); }
 XPU_FORCE_INLINE float tgamma(float x) { return std::tgammaf(x); }
 XPU_FORCE_INLINE float trunc(float x) { return std::truncf(x); }
-XPU_FORCE_INLINE float y0(float x) { return ::y0f(x); }
-XPU_FORCE_INLINE float y1(float x) { return ::y1f(x); }
-XPU_FORCE_INLINE float yn(int n, float x) { return ::ynf(n, x); }
+XPU_FORCE_INLINE float y0(float x) {
+#if __APPLE__
+    return ::y0(x);
+#else
+    return ::y0f(x);
+#endif
+}
+XPU_FORCE_INLINE float y1(float x) {
+#if __APPLE__
+    return ::y1(x);
+#else
+    return ::y1f(x);
+#endif
+}
+XPU_FORCE_INLINE float yn(int n, float x) {
+#if __APPLE__
+    return ::yn(n, x);
+#else
+    return ::ynf(n, x);
+#endif
+}
 
 inline int atomic_cas(int *addr, int compare, int val) {
     __atomic_compare_exchange(addr, &compare, &val, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);

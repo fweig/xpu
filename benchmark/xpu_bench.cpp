@@ -13,6 +13,8 @@
 class benchmark {
 
 public:
+    virtual ~benchmark() {}
+
     virtual std::string name() = 0;
     virtual void setup() = 0;
     virtual void teardown() = 0;
@@ -158,6 +160,9 @@ public:
 
 };
 
+template<typename T>
+constexpr size_t merge_bench<T>::elems_per_block;
+
 template<typename Kernel>
 class sort_bench : public benchmark {
 
@@ -203,6 +208,9 @@ public:
     std::vector<float> timings() { return xpu::get_timing<Kernel>(); }
 
 };
+
+template<typename T>
+constexpr size_t sort_bench<T>::elems_per_block;
 
 int main() {
     setenv("XPU_PROFILE", "1", 1); // always enable profiling in benchmark

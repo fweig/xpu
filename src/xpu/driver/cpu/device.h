@@ -141,7 +141,13 @@ XPU_FORCE_INLINE float rsqrt(float x) { return 1.f / sqrt(x); }
 XPU_FORCE_INLINE float scalbln(float x, long int n) { return std::scalblnf(x, n); }
 XPU_FORCE_INLINE float scalbn(float x, int n) { return std::scalbnf(x, n); }
 XPU_FORCE_INLINE bool signbit(float a) { return std::signbit(a); }
-XPU_FORCE_INLINE void sincos(float x, float *sptr, float *cptr) { return ::sincosf(x, sptr, cptr); }
+XPU_FORCE_INLINE void sincos(float x, float *sptr, float *cptr) {
+#if __APPLE__
+    *sptr = std::sin(x); *cptr = std::cos(x);
+#else
+    return ::sincosf(x, sptr, cptr);
+#endif
+}
 XPU_FORCE_INLINE void sincospi(float x, float *sptr, float *cptr) { return sincos(x * pi(), sptr, cptr); }
 XPU_FORCE_INLINE float sin(float x) { return std::sin(x); }
 XPU_FORCE_INLINE float sinh(float x) { return std::sinh(x); }

@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.11)
 
-project(xpu)
+project(xpu
+    LANGUAGES CXX
+)
 
 
 set(XPU_BUILD_TESTS OFF CACHE BOOL "Build xpu unit tests.")
@@ -50,7 +52,9 @@ message(STATUS "  XPU_DEBUG:          ${XPU_DEBUG}")
 
 if (XPU_STANDALONE)
     include(CheckCXXCompilerFlag)
-    set(CMAKE_CXX_STANDARD 11)
+    if (NOT DEFINED CMAKE_CXX_STANDARD)
+        set(CMAKE_CXX_STANDARD 11)
+    endif()
     set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
     # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g3 -Wall -Wextra -Werror -Wfatal-errors")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror")

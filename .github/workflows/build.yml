@@ -93,8 +93,16 @@ jobs:
   macos:
     runs-on: macOS-latest
 
+    strategy:
+      matrix:
+        use_omp: [true, false]
+
     steps:
     - uses: actions/checkout@v3
+
+    - name: Install OpenMP
+      run: brew install libomp
+      if: ${{ matrix.use_omp }}
 
     - name: Configure CMake
       env:

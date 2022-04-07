@@ -89,3 +89,28 @@ jobs:
       env:
         CTEST_OUTPUT_ON_FAILURE: 1
       run: ctest
+
+  macos:
+    runs-on: macOS-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Configure CMake
+      env:
+        CXX: ${{ matrix.compiler }}
+      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+      run: cmake -B ${{github.workspace}}/build -DXPU_BUILD_TESTS=ON -DXPU_BUILD_EXAMPLES=ON
+
+    - name: Build
+      # Build your program with the given configuration
+      run: cmake --build ${{github.workspace}}/build -j4
+
+    - name: Test
+      working-directory: ${{github.workspace}}/build
+      # Execute tests defined by the CMake configuration.
+      # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
+      env:
+        CTEST_OUTPUT_ON_FAILURE: 1
+      run: ctest

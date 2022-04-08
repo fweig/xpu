@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.11)
 
-project(xpu
-    LANGUAGES CXX
-)
+project(xpu)
 
 
 set(XPU_BUILD_TESTS OFF CACHE BOOL "Build xpu unit tests.")
@@ -34,6 +32,8 @@ if (XPU_ENABLE_HIP)
         )
     endif()
 endif()
+
+find_package(OpenMP)
 
 message(STATUS "xpu configuration:")
 message(STATUS "  XPU_BUILD_TESTS:    ${XPU_BUILD_TESTS}")
@@ -71,11 +71,12 @@ if (XPU_STANDALONE)
     endif()
 endif()
 
-find_package(OpenMP)
-
 function(xpu_create_subproject Library DriverType UnitySrcAbsolute)
-    include(ExternalProject)
-    set(SrcDir "${CMAKE_CURRENT_BINARY_DIR}/${Library}_${DriverType}")
+    set(OutputDir ${CMAKE_CURRENT_BINARY_DIR})
+    set(SubLibraryName ${Library}_${DriverType})
+    set(SubLibraryFullPath ${OutputDir}/${CMAKE_SHARED_LIBRARY_PREFIX}${SubLibraryName}${CMAKE_SHARED_LIBRARY_SUFFIX})
+    set(SrcDir "${CMAKE_CURRENT_BINARY_DIR}/${SubLibraryName}")
+
     get_target_property(IncludeDirectories ${Library} INCLUDE_DIRECTORIES)
     if (NOT ${XPU_ROOT_DIR}/src IN_LIST IncludeDirectories)
         set(IncludeDirectories ${IncludeDirectries} ${XPU_ROOT_DIR}/src)
@@ -96,21 +97,26 @@ function(xpu_create_subproject Library DriverType UnitySrcAbsolute)
         "${SrcDir}/CMakeLists.txt"
     )
 
-    set(OutputDir ${CMAKE_CURRENT_BINARY_DIR})
-
-    # TODO replace with custom implementation that calls cmake at build generation:
-    # https://stackoverflow.com/questions/31274577/custom-target-as-a-target-library-in-cmake
-    ExternalProject_Add(${Library}_${DriverType}
-        SOURCE_DIR "${SrcDir}"
-        CMAKE_ARGS
+    message(STATUS "Generating library ${SubLibraryName}.")
+    execute_process(
+        COMMAND ${CMAKE_COMMAND}
             -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=${OutputDir}
             -DCMAKE_CXX_COMPILER=${SubprojectCxx}
             -DCMAKE_C_COMPILER=${SubprojectC}
-        BUILD_ALWAYS TRUE
-        STEP_TARGETS build
-        EXCLUDE_FROM_ALL TRUE
+            .
+        WORKING_DIRECTORY ${SrcDir}
+        OUTPUT_QUIET
     )
-    add_dependencies(${Library} ${Library}_${DriverType}-build)
+
+    # Use $(make) instead of "cmake --build" here to suppress warnings about make jobserver...
+    add_custom_target(${SubLibraryName}
+        COMMAND $(MAKE) > /dev/null
+        WORKING_DIRECTORY ${SrcDir}
+        BYPRODUCTS ${SubLibraryFullPath} ${SrcDir}
+        COMMENT "Building target ${SubLibraryName}"
+    )
+
+    add_dependencies(${Library} ${SubLibraryName})
 endfunction()
 
 function(xpu_attach Library)

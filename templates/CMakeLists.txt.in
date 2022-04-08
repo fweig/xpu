@@ -1,4 +1,4 @@
-project(@DeviceLibrary@_@DriverType@ CXX)
+project(@DeviceLibrary@_@DriverType@)
 cmake_minimum_required(VERSION 3.11)
 
 

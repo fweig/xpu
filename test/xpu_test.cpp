@@ -167,23 +167,23 @@ void testMergeKernel(size_t M, size_t N) {
     std::uniform_real_distribution<float> dist{0, 100000};
 
     for (size_t i = 0; i < M; i++) {
-        a.host()[i] = dist(gen);
+        a.h()[i] = dist(gen);
     }
-    std::sort(a.host(), a.host() + a.size());
+    std::sort(a.h(), a.h() + a.size());
 
     for (size_t i = 0; i < N; i++) {
-        b.host()[i] = dist(gen);
+        b.h()[i] = dist(gen);
     }
-    std::sort(b.host(), b.host() + b.size());
+    std::sort(b.h(), b.h() + b.size());
 
     xpu::copy(a, xpu::host_to_device);
     xpu::copy(b, xpu::host_to_device);
 
-    xpu::run_kernel<K>(xpu::grid::n_blocks(1), a.device(), a.size(), b.device(), b.size(), dst.device());
+    xpu::run_kernel<K>(xpu::grid::n_blocks(1), a.d(), a.size(), b.d(), b.size(), dst.d());
 
     xpu::copy(dst, xpu::device_to_host);
 
-    float *h = dst.host();
+    float *h = dst.h();
     bool isSorted = true;
     for (size_t i = 1; i < dst.size(); i++) {
         isSorted &= (h[i-1] <= h[i]);
@@ -220,10 +220,10 @@ TEST(XPUTest, CanSetAndReadCMem) {
 
     xpu::set_constant<test_constants>(orig);
 
-    xpu::run_kernel<access_cmem>(xpu::grid::n_threads(1), out.device());
+    xpu::run_kernel<access_cmem>(xpu::grid::n_threads(1), out.d());
     xpu::copy(out, xpu::device_to_host);
 
-    float3_ result = *out.host();
+    float3_ result = *out.h();
     EXPECT_EQ(orig.x, result.x);
     EXPECT_EQ(orig.y, result.y);
     EXPECT_EQ(orig.z, result.z);
@@ -238,14 +238,14 @@ TEST(XPUTest, CanSetAndReadCMem) {
 TEST(XPUTest, CanGetThreadIdx) {
     xpu::hd_buffer<int> idx{64};
 
-    xpu::run_kernel<get_thread_idx>(xpu::grid::n_threads(64), idx.device());
+    xpu::run_kernel<get_thread_idx>(xpu::grid::n_threads(64), idx.d());
     xpu::copy(idx, xpu::device_to_host);
 
     for (int i = 0; i < 64; i++) {
         if (xpu::active_driver() == xpu::cpu) {
-            EXPECT_EQ(idx.host()[i], 0) << " with i = " << i;
+            EXPECT_EQ(idx.h()[i], 0) << " with i = " << i;
         } else {
-            EXPECT_EQ(idx.host()[i], i);
+            EXPECT_EQ(idx.h()[i], i);
         }
     }
 }
@@ -254,10 +254,10 @@ TEST(XPUTest, CanCallDeviceFuncs) {
     xpu::hd_buffer<variant> buf{NUM_DEVICE_FUNCS};
     xpu::memset(buf, 0);
 
-    xpu::run_kernel<test_device_funcs>(xpu::grid::n_blocks(1), buf.device());
+    xpu::run_kernel<test_device_funcs>(xpu::grid::n_blocks(1), buf.d());
     xpu::copy(buf, xpu::device_to_host);
 
-    variant *b = buf.host();
+    variant *b = buf.h();
 
     EXPECT_FLOAT_EQ(b[ABS].f, 1.f);
     EXPECT_FLOAT_EQ(b[ACOS].f, xpu::pi());
@@ -342,14 +342,14 @@ TEST(XPUTest, CollectsTimingData) {
     xpu::hd_buffer<float> b{NElems};
     xpu::hd_buffer<float> c{NElems};
 
-    std::fill_n(a.host(), a.size(), 24);
-    std::fill_n(b.host(), b.size(), 24);
+    std::fill_n(a.h(), a.size(), 24);
+    std::fill_n(b.h(), b.size(), 24);
 
     xpu::copy(a, xpu::host_to_device);
     xpu::copy(b, xpu::host_to_device);
 
     for (int i = 0; i < 10; i++) {
-        xpu::run_kernel<vector_add_timing>(xpu::grid::n_threads(NElems), a.device(), b.device(), c.device(), NElems);
+        xpu::run_kernel<vector_add_timing>(xpu::grid::n_threads(NElems), a.d(), b.d(), c.d(), NElems);
     }
 
     auto timings = xpu::get_timing<vector_add_timing>();

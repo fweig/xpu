@@ -134,10 +134,10 @@ public:
         float partial_sum = 0.f;
         auto rand_partial_sum = [&](){ partial_sum += dist(gen); return partial_sum; };
 
-        std::generate(a.host(), a.host()+buf_size, rand_partial_sum);
+        std::generate(a.h(), a.h()+buf_size, rand_partial_sum);
 
         partial_sum = 0.f;
-        std::generate(b.host(), b.host()+buf_size, rand_partial_sum);
+        std::generate(b.h(), b.h()+buf_size, rand_partial_sum);
     }
 
     void teardown() {
@@ -150,7 +150,7 @@ public:
         xpu::copy(a, xpu::host_to_device);
         xpu::copy(b, xpu::host_to_device);
 
-        xpu::run_kernel<Kernel>(xpu::grid::n_blocks(n_blocks), a.device(), b.device(), elems_per_block, c.device());
+        xpu::run_kernel<Kernel>(xpu::grid::n_blocks(n_blocks), a.d(), b.d(), elems_per_block, c.d());
 
         xpu::copy(c, xpu::device_to_host);
     }
@@ -189,7 +189,7 @@ public:
 
         auto rand = [&](){ return dist(gen); };
 
-        std::generate(a.host(), a.host()+buf_size, rand);
+        std::generate(a.h(), a.h()+buf_size, rand);
     }
 
     void teardown() {
@@ -200,7 +200,7 @@ public:
 
     void run() {
         xpu::copy(a, xpu::host_to_device);
-        xpu::run_kernel<Kernel>(xpu::grid::n_blocks(n_blocks), a.device(), elems_per_block, b.device(), dst.device());
+        xpu::run_kernel<Kernel>(xpu::grid::n_blocks(n_blocks), a.d(), elems_per_block, b.d(), dst.d());
         xpu::copy(dst, xpu::device_to_host);
     }
 

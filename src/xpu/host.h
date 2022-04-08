@@ -81,18 +81,18 @@ public:
     hd_buffer<T> &operator=(const hd_buffer<T> &) = delete;
     hd_buffer<T> &operator=(hd_buffer<T> &&);
 
-    size_t size() const { return _size; }
-    T *host() { return hostdata; }
-    T *device() { return devicedata; }
+    size_t size() const { return m_size; }
+    T *h() { return m_h; }
+    T *d() { return m_d; }
 
-    bool copy_required() const { return hostdata != devicedata; }
+    bool copy_required() const { return m_h != m_d; }
 
     void reset();
 
 private:
-    size_t _size = 0;
-    T *hostdata = nullptr;
-    T *devicedata = nullptr;
+    size_t m_size = 0;
+    T *m_h = nullptr;
+    T *m_d = nullptr;
 
 };
 
@@ -107,14 +107,14 @@ public:
     d_buffer<T> &operator=(const d_buffer<T> &) = delete;
     d_buffer<T> &operator=(d_buffer<T> &&);
 
-    size_t size() const { return _size; }
-    T *data() { return devicedata; }
+    size_t size() const { return m_size; }
+    T *d() { return m_d; }
 
     void reset();
 
 private:
-    size_t _size = 0;
-    T *devicedata = nullptr;
+    size_t m_size = 0;
+    T *m_d = nullptr;
 
 };
 

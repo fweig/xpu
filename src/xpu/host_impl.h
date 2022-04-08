@@ -64,13 +64,13 @@ void xpu::set_constant(const typename C::data_t &symbol) {
 
 template<typename T>
 xpu::hd_buffer<T>::hd_buffer(size_t N) {
-    _size = N;
-    hostdata = static_cast<T *>(std::malloc(sizeof(T) * N));
+    m_size = N;
+    m_h = static_cast<T *>(std::malloc(sizeof(T) * N));
 
     if (active_driver() == cpu) {
-        devicedata = hostdata;
+        m_d = m_h;
     } else {
-        devicedata = device_malloc<T>(N);
+        m_d = device_malloc<T>(N);
     }
 }
 
@@ -81,33 +81,34 @@ xpu::hd_buffer<T>::~hd_buffer() {
 
 template<typename T>
 xpu::hd_buffer<T> &xpu::hd_buffer<T>::operator=(hd_buffer<T> &&other)  {
+    if (this == &other) {
+        return *this;
+    }
     reset();
 
-    _size = other._size;
-    hostdata = other.hostdata;
-    devicedata = other.devicedata;
+    m_size = other.m_size;
+    m_h = other.m_h;
+    m_d = other.m_d;
 
-    other._size = 0;
-    other.hostdata = other.devicedata = nullptr;
+    other.m_size = 0;
+    other.m_h = other.m_d = nullptr;
     return *this;
 }
 
 template<typename T>
 void xpu::hd_buffer<T>::reset() {
-    if (hostdata != nullptr) {
-        std::free(hostdata);
-    }
+    std::free(m_h);
     if (copy_required()) {
-        xpu::free(devicedata);
+        xpu::free(m_d);
     }
-    hostdata = devicedata = nullptr;
-    _size = 0;
+    m_h = m_d = nullptr;
+    m_size = 0;
 }
 
 template<typename T>
 xpu::d_buffer<T>::d_buffer(size_t N) {
-    _size = N;
-    devicedata = device_malloc<T>(N);
+    m_size = N;
+    m_d = device_malloc<T>(N);
 }
 
 template<typename T>
@@ -119,21 +120,19 @@ template<typename T>
 xpu::d_buffer<T> &xpu::d_buffer<T>::operator=(xpu::d_buffer<T> &&other) {
     reset();
 
-    _size = other._size;
-    devicedata = other.devicedata;
+    m_size = other.m_size;
+    m_d = other.m_d;
 
-    other._size = 0;
-    other.devicedata = nullptr;
+    other.m_size = 0;
+    other.m_d = nullptr;
     return *this;
 }
 
 template<typename T>
 void xpu::d_buffer<T>::reset() {
-    if (devicedata != nullptr) {
-        free(devicedata);
-    }
-    devicedata = nullptr;
-    _size = 0;
+    free(m_d);
+    m_d = nullptr;
+    m_size = 0;
 }
 
 template<typename T>
@@ -149,25 +148,25 @@ void xpu::copy(hd_buffer<T> &buf, direction dir) {
 
     switch (dir) {
         case host_to_device:
-            copy<T>(buf.device(), buf.host(), buf.size());
+            copy<T>(buf.d(), buf.h(), buf.size());
             break;
         case device_to_host:
-            copy<T>(buf.host(), buf.device(), buf.size());
+            copy<T>(buf.h(), buf.d(), buf.size());
             break;
     }
 }
 
 template<typename T>
 void xpu::memset(hd_buffer<T> &buf, int ch) {
-    std::memset(buf.host(), ch, sizeof(T) * buf.size());
+    std::memset(buf.h(), ch, sizeof(T) * buf.size());
     if (buf.copy_required()) {
-        xpu::memset(buf.device(), ch, sizeof(T) * buf.size());
+        xpu::memset(buf.d(), ch, sizeof(T) * buf.size());
     }
 }
 
 template<typename T>
 void xpu::memset(d_buffer<T> &buf, int ch) {
-    xpu::memset(buf.data(), ch, sizeof(T) * buf.size());
+    xpu::memset(buf.d(), ch, sizeof(T) * buf.size());
 }
 
 // Define host specialization for constant memory helpers only here.

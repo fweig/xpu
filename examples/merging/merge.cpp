@@ -13,18 +13,18 @@ int main() {
     xpu::hd_buffer<float> dst{a.size() + b.size()};
 
     for (size_t i = 0; i < N; i++) {
-        a.host()[i] = 2*i;
-        b.host()[i] = 2*i+1;
+        a.h()[i] = 2*i;
+        b.h()[i] = 2*i+1;
     }
 
     xpu::copy(a, xpu::host_to_device);
     xpu::copy(b, xpu::host_to_device);
 
-    xpu::run_kernel<GpuMerge>(xpu::grid::n_blocks(1), a.device(), a.size(), b.device(), b.size(), dst.device());
+    xpu::run_kernel<GpuMerge>(xpu::grid::n_blocks(1), a.d(), a.size(), b.d(), b.size(), dst.d());
 
     xpu::copy(dst, xpu::device_to_host);
 
-    float *h = dst.host();
+    float *h = dst.h();
     bool isSorted = true;
     for (size_t i = 1; i < dst.size(); i++) {
         isSorted &= (h[i-1] <= h[i]);

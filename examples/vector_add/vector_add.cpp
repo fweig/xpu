@@ -13,20 +13,20 @@ int main() {
     xpu::initialize();
 
     xpu::hd_buffer<float> x{NElems};
-    std::fill_n(x.host(), NElems, 8);
+    std::fill_n(x.h(), NElems, 8);
     xpu::hd_buffer<float> y{NElems};
-    std::fill_n(y.host(), NElems, 8);
+    std::fill_n(y.h(), NElems, 8);
     xpu::hd_buffer<float> z{NElems};
 
     xpu::copy(x, xpu::host_to_device);
     xpu::copy(y, xpu::host_to_device);
 
-    xpu::run_kernel<VectorAdd>(xpu::grid::n_threads(NElems), x.device(), y.device(), z.device(), NElems);
+    xpu::run_kernel<VectorAdd>(xpu::grid::n_threads(NElems), x.d(), y.d(), z.d(), NElems);
 
     xpu::copy(z, xpu::device_to_host);
 
     for (int i = 0; i < NElems; i++) {
-        if (z.host()[i] != 16) {
+        if (z.h()[i] != 16) {
             std::cout << "ERROR" << std::endl;
             abort();
         }

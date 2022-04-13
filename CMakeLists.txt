@@ -53,7 +53,7 @@ message(STATUS "  XPU_DEBUG:          ${XPU_DEBUG}")
 if (XPU_STANDALONE)
     include(CheckCXXCompilerFlag)
     if (NOT DEFINED CMAKE_CXX_STANDARD)
-        set(CMAKE_CXX_STANDARD 11)
+        set(CMAKE_CXX_STANDARD 17)
     endif()
     set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
     # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g3 -Wall -Wextra -Werror -Wfatal-errors")
@@ -103,6 +103,7 @@ function(xpu_create_subproject Library DriverType UnitySrcAbsolute)
             -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=${OutputDir}
             -DCMAKE_CXX_COMPILER=${SubprojectCxx}
             -DCMAKE_C_COMPILER=${SubprojectC}
+            -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}
             .
         WORKING_DIRECTORY ${SrcDir}
         OUTPUT_QUIET

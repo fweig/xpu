@@ -1,9 +1,10 @@
 project(@DeviceLibrary@_@DriverType@)
-cmake_minimum_required(VERSION 3.11)
+cmake_minimum_required(VERSION 3.18)
 
 
 if (@DriverType@ STREQUAL "Cuda")
     enable_language(CUDA)
+    set(CMAKE_CUDA_STANDARD ${CMAKE_CXX_STANDARD})
     if (@XPU_DEBUG@)
         set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --debug --device-debug")
     else()

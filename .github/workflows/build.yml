@@ -87,7 +87,7 @@ jobs:
     strategy:
       matrix:
         compiler: [g++, clang++]
-        cxx_std: [17, 20]
+        cxx_std: [20]
 
     steps:
     - uses: actions/checkout@v3

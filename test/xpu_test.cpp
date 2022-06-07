@@ -6,6 +6,13 @@
 #include <unordered_set>
 #include <vector>
 
+TEST(XPUTest, CanCreatePointerBuffer) {
+    // Test for regression with ambigious free
+    // This only has to compile
+    xpu::d_buffer<key_value_t *> buf1{100};
+    xpu::hd_buffer<key_value_t *> buf2{100};
+}
+
 TEST(XPUTest, CanRunVectorAdd) {
     constexpr int NElems = 100;
 

@@ -130,7 +130,7 @@ xpu::d_buffer<T> &xpu::d_buffer<T>::operator=(xpu::d_buffer<T> &&other) {
 
 template<typename T>
 void xpu::d_buffer<T>::reset() {
-    free(m_d);
+    xpu::free(m_d);
     m_d = nullptr;
     m_size = 0;
 }

@@ -111,7 +111,7 @@ XPU_FORCE_INLINE float nan(const char *tagp) { return std::nanf(tagp); }
 XPU_FORCE_INLINE float nearbyint(float x) { return std::nearbyintf(x); }
 // XPU_FORCE_INLINE float nextafter(float x, float y) { return std::nextafterf(x, y); }
 
-float norm(int dim, const float *a) {
+inline float norm(int dim, const float *a) {
     float aggr = 0;
     for (int i = 0; i < dim; i++) {
         aggr += a[i] * a[i];
@@ -119,11 +119,11 @@ float norm(int dim, const float *a) {
     return sqrt(aggr);
 }
 
-float norm3d(float a, float b, float c) {
+inline float norm3d(float a, float b, float c) {
     return sqrt(a * a + b * b + c * c);
 }
 
-float norm4d(float a, float b, float c, float d) {
+inline float norm4d(float a, float b, float c, float d) {
     return sqrt(a * a + b * b + c * c + d * d);
 }
 

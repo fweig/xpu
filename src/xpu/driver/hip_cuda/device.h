@@ -10,11 +10,14 @@
 
 #if XPU_IS_CUDA
 #include <cub/cub.cuh>
-#else // XPU_IS_HIP
+#elif XPU_IS_HIP
 #include <hipcub/hipcub.hpp>
+#else
+#error "Internal XPU error: This should never happen."
 #endif
 
 #include <iostream>
+#include <type_traits>
 
 #if 0
 #define PRINT_B(message, ...) if (xpu::thread_idx::x() == 0) printf("t 0: " message "\n", ##__VA_ARGS__)
@@ -345,7 +348,10 @@ public:
     using block_merge_t = block_merge<data_t, BlockSize, ItemsPerThread>;
     //using storage_t = typename block_radix_sort::TempStorage;
 
+    static_assert(std::is_trivially_constructible_v<data_t>, "Sorted type needs trivial constructor.");
+
     union storage_t {
+        storage_t() = default;
         tempStorage sharedSortMem;
         #ifndef SEQ_MERGE
         typename block_merge_t::storage_t sharedMergeMem;
@@ -485,6 +491,8 @@ class block_merge<Key, BlockSize, ItemsPerThread, XPU_COMPILATION_TARGET> {
 
 public:
     using data_t = Key;
+
+    static_assert(std::is_trivially_constructible_v<data_t>, "Merged type needs trivial constructor.");
 
     struct storage_t {
         data_t sharedMergeMem[ItemsPerThread * BlockSize + 1];

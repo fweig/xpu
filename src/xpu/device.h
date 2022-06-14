@@ -5,6 +5,7 @@
 #include "common.h"
 
 #define _USE_MATH_DEFINES
+#define _GNU_SOURCE
 #include <cmath>
 #include <type_traits>
 

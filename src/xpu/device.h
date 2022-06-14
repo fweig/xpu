@@ -4,9 +4,6 @@
 #include "defines.h"
 #include "common.h"
 
-#define _USE_MATH_DEFINES
-#define _GNU_SOURCE
-#include <cmath>
 #include <type_traits>
 
 #define XPU_IMAGE(image) XPU_DETAIL_IMAGE(image)
@@ -57,35 +54,11 @@ struct no_smem {};
 template<typename C>
 XPU_D const typename C::data_t &cmem() { return C::get(); }
 
-XPU_D constexpr float pi() {
-#ifdef __APPLE__
-    return M_PI;
-#else
-    return M_PIf32;
-#endif
-}
-XPU_D constexpr float pi_2() {
-#ifdef __APPLE__
-    return M_PI_2;
-#else
-    return M_PI_2f32;
-#endif
-}
-XPU_D constexpr float pi_4() {
-#ifdef __APPLE__
-    return M_PI_4;
-#else
-    return M_PI_4f32;
-#endif
-}
-XPU_D constexpr float deg_to_rad() { return pi() / 180.f; }
-XPU_D constexpr float sqrt2() {
-#ifdef __APPLE__
-    return M_SQRT2;
-#else
-    return M_SQRT2f32;
-#endif
-}
+XPU_D constexpr float pi();
+XPU_D constexpr float pi_2();
+XPU_D constexpr float pi_4();
+XPU_D constexpr float deg_to_rad();
+XPU_D constexpr float sqrt2();
 
 XPU_D   int abs(int x);
 XPU_D float abs(float x);
@@ -331,6 +304,7 @@ public:
 } // namespace xpu
 
 #include "detail/dynamic_loader.h"
+#include "detail/constants.h"
 
 #if XPU_IS_HIP_CUDA
 #include "driver/hip_cuda/device.h"

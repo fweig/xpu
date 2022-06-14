@@ -10,11 +10,13 @@
 #define F32_CONSTANT(x) float(x)
 #endif
 
+namespace xpu {
 XPU_D constexpr float pi() { return F32_CONSTANT(M_PI); }
 XPU_D constexpr float pi_2() { return F32_CONSTANT(M_PI_2); }
 XPU_D constexpr float pi_4() { return F32_CONSTANT(M_PI_4); }
 XPU_D constexpr float deg_to_rad() { return pi() / 180.f; }
 XPU_D constexpr float sqrt2() { return F32_CONSTANT(M_SQRT2); }
+} // namespace xpu
 
 #undef F32_CONSTANT
 

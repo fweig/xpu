@@ -163,6 +163,14 @@ add_library(xpu SHARED
 target_link_libraries(xpu dl)
 target_include_directories(xpu PUBLIC src)
 
+install(TARGETS xpu
+    LIBRARY
+)
+
+install(DIRECTORY src/ TYPE INCLUDE
+    FILES_MATCHING PATTERN "*.h"
+)
+
 if (XPU_ENABLE_CUDA)
     xpu_create_subproject(
         xpu Cuda

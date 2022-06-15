@@ -24,8 +24,8 @@ if ("@DriverType@" STREQUAL "Hip")
 
     # Hip sets some clang flags that results in warnings
     add_compile_options(-Qunused-arguments)
-    # set(GPU_TARGETS "gfx906" CACHE STRING "AMD GPU targets to compile for")
-    list(APPEND CMAKE_PREFIX_PATH "$@XPU_ROCM_ROOT@/hip" "@XPU_ROCM_ROOT@")
+    set(GPU_TARGETS "@XPU_HIP_ARCH@")
+    list(APPEND CMAKE_PREFIX_PATH "@XPU_ROCM_ROOT@/hip" "@XPU_ROCM_ROOT@")
     find_package(hip REQUIRED)
 
     # On ROCm hipCUB requires rocPRIM

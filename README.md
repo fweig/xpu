@@ -28,6 +28,7 @@ CMake Options:
 - `XPU_ENABLE_CUDA`: Enable / Disable compilation for cuda. (default=`OFF`)
 - `XPU_CUDA_ARCHITECTURES`: List of target cuda architectures. (default=`75`)
 - `XPU_ENABLE_HIP`: Enable / Disable compilation for hip. (default=`OFF`)
+- `XPU_HIP_ARCH`: List of target hip architectures. (default=`gfx906;gfx908`)
 - `XPU_ROCM_ROOT`: Path to rocm. (default=`/opt/rocm`)
 - `XPU_DEBUG`: Build gpu code with debug symbols and disable optimizations. (default=`OFF`)
 - `XPU_BUILD_TESTS`: Build unittests and benchmarks. (default=`OFF`)

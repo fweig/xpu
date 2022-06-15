@@ -10,7 +10,7 @@ if (@DriverType@ STREQUAL "Cuda")
     else()
         add_definitions(-DNDEBUG)
     endif()
-    set(CMAKE_CUDA_ARCHITECTURES @XPU_CUDA_ARCHITECTURES@)
+    set(CMAKE_CUDA_ARCHITECTURES @XPU_CUDA_ARCH@)
     set_source_files_properties(@UnitySrcAbsolute@ PROPERTIES LANGUAGE CUDA)
 endif()
 

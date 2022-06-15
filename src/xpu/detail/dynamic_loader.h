@@ -36,12 +36,17 @@ struct action_interface {};
 
 template<typename Tag, typename... Args>
 struct action_interface<Tag, void(*)(Args...)> {
-    using type = void(*)(Args...);
+    using type = int(*)(Args...);
 };
 
 template<typename S, typename... Args>
 struct action_interface<kernel_tag, void(*)(S, Args...)> {
-    using type = void(*)(float *, grid, Args...);
+    using type = int(*)(float *, grid, Args...);
+};
+
+template<typename... Args>
+struct action_interface<constant_tag, int(*)(Args...)> {
+    using type = int(*)(Args...);
 };
 
 struct delete_me {};
@@ -136,21 +141,21 @@ public:
 
         other.handle = nullptr;
         other.context = nullptr;
-    } 
+    }
 
     template<typename F, typename... Args>
     typename std::enable_if<is_function<I, F>::value>::type call(Args&&... args) {
-        call_action<F>(args...);
+        return call_action<F>(args...);
     }
 
     template<typename F>
-    typename std::enable_if<is_constant<I, F>::value>::type set(const typename F::data_t &val) {
-        call_action<F>(val);
+    typename std::enable_if<is_constant<I, F>::value, int>::type set(const typename F::data_t &val) {
+        return call_action<F>(val);
     }
 
     template<typename K, typename... Args>
-    typename std::enable_if<is_kernel<I, K>::value>::type run_kernel(float *ms, grid g, Args&&... args) {
-        call_action<K>(ms, g, args...);
+    typename std::enable_if<is_kernel<I, K>::value, int>::type run_kernel(float *ms, grid g, Args&&... args) {
+        return call_action<K>(ms, g, args...);
     }
 
     void dump_symbols() {
@@ -161,7 +166,7 @@ public:
 
 private:
     template<typename F, typename... Args>
-    void call_action(Args... args) {
+    int call_action(Args... args) {
         auto *symbols = &context->get_symbols();
         size_t id = type_id<F, typename F::image>::get();
         if (id >= symbols->size()) {
@@ -171,7 +176,7 @@ private:
         auto symbol = symbols->at(id);
         assert(symbol.first == type_name<F>());
         auto *fn = reinterpret_cast<action_interface_t<F>>(symbol.second);
-        fn(args...);
+        return fn(args...);
     }
 
 };
@@ -184,8 +189,19 @@ struct action_runner<Tag, F, void(*)(Args...)> {
 
     using my_type = action_runner<Tag, F, void(*)(Args...)>;
 
-    static void call(Args... args) {
+    static int call(Args... args) {
         F::impl(args...);
+        return 0;
+    }
+};
+
+template<typename F, typename... Args>
+struct action_runner<constant_tag, F, int(*)(Args...)> {
+
+    using my_type = action_runner<constant_tag, F, int(*)(Args...)>;
+
+    static int call(Args... args) {
+        return F::impl(args...);
     }
 };
 
@@ -193,6 +209,10 @@ template<typename F>
 struct action_runner<F> : action_runner<typename F::tag, F, decltype(&F::impl)> {};
 
 #if XPU_IS_HIP_CUDA
+
+#define SAFE_CALL(call) if (int err = call; err != 0) return err
+#define ON_ERROR_GOTO(errvar, call, label) errvar = call; \
+    if (errvar != 0) goto label
 
 template<typename F, typename S, typename... Args>
 __global__ void kernel_entry(Args... args) {
@@ -209,7 +229,7 @@ struct action_runner<kernel_tag, K, S, void(*)(S &, Args...)> {
 
     using my_type = action_runner<kernel_tag, K, S, void(*)(S &, Args...)>;
 
-    static void call(float *ms, grid g, Args... args) {
+    static int call(float *ms, grid g, Args... args) {
         int bsize = block_size<K>::value;
 
         if (g.blocks.x == -1) {
@@ -218,29 +238,42 @@ struct action_runner<kernel_tag, K, S, void(*)(S &, Args...)> {
 
         bool measure_time = (ms != nullptr);
         cudaEvent_t start, end;
+        int err;
 
         if (measure_time) {
-            cudaEventCreate(&start);
-            cudaEventCreate(&end);
+            SAFE_CALL(cudaEventCreate(&start));
+            ON_ERROR_GOTO(err, cudaEventCreate(&end), cleanup_start_event);
         }
 
         XPU_LOG("Calling kernel '%s' [block_dim = (%d, %d, %d), grid_dim = (%d, %d, %d)] with CUDA driver.", type_name<K>(), bsize, 0, 0, g.blocks.x, 0, 0);
-        if (measure_time) {
-            cudaEventRecord(start);
-        }
-        kernel_entry<K, S, Args...><<<g.blocks.x, bsize>>>(args...);
-        if (measure_time) {
-            cudaEventRecord(end);
-        }
-        cudaDeviceSynchronize();
 
         if (measure_time) {
-            cudaEventSynchronize(end);
-            cudaEventElapsedTime(ms, start, end);
-            XPU_LOG("Kernel '%s' took %f ms", type_name<K>(), *ms);
-            cudaEventDestroy(start);
-            cudaEventDestroy(end);
+            ON_ERROR_GOTO(err, cudaEventRecord(start), cleanup_events);
         }
+
+        kernel_entry<K, S, Args...><<<g.blocks.x, bsize>>>(args...);
+
+        if (measure_time) {
+            ON_ERROR_GOTO(err, cudaEventRecord(end), cleanup_events);
+        }
+        SAFE_CALL(cudaDeviceSynchronize());
+
+        if (measure_time) {
+            ON_ERROR_GOTO(err, cudaEventSynchronize(end), cleanup_events);
+            ON_ERROR_GOTO(err, cudaEventElapsedTime(ms, start, end), cleanup_events);
+            XPU_LOG("Kernel '%s' took %f ms", type_name<K>(), *ms);
+        }
+
+    cleanup_events:
+        if (measure_time) {
+            SAFE_CALL(cudaEventDestroy(end));
+        }
+    cleanup_start_event:
+        if (measure_time) {
+            SAFE_CALL(cudaEventDestroy(start));
+        }
+
+        return err;
     }
 
 };
@@ -252,7 +285,7 @@ struct action_runner<kernel_tag, K, S, void(*)(S &, Args...)> {
 
     using my_type = action_runner<kernel_tag, K, S, void(*)(S &, Args...)>;
 
-    static void call(float *ms, grid g, Args... args) {
+    static int call(float *ms, grid g, Args... args) {
         int bsize = block_size<K>::value;
 
         if (g.blocks.x == -1) {
@@ -261,29 +294,39 @@ struct action_runner<kernel_tag, K, S, void(*)(S &, Args...)> {
 
         bool measure_time = (ms != nullptr);
         hipEvent_t start, end;
+        int err = 0;
 
         if (measure_time) {
-            hipEventCreate(&start);
-            hipEventCreate(&end);
+            SAFE_CALL(hipEventCreate(&start));
+            ON_ERROR_GOTO(err, hipEventCreate(&end), cleanup_start_event);
         }
 
         XPU_LOG("Calling kernel '%s' [block_dim = (%d, %d, %d), grid_dim = (%d, %d, %d)] with HIP driver.", type_name<K>(), bsize, 0, 0, g.blocks.x, 0, 0);
         if (measure_time) {
-            hipEventRecord(start);
+            ON_ERROR_GOTO(err, hipEventRecord(start), cleanup_events);
         }
         hipLaunchKernelGGL(HIP_KERNEL_NAME(kernel_entry<K, S, Args...>), dim3(g.blocks.x), dim3(bsize), 0, 0, args...);
         if (measure_time) {
-            hipEventRecord(end);
+            ON_ERROR_GOTO(err, hipEventRecord(end), cleanup_events);
         }
-        hipDeviceSynchronize();
+        SAFE_CALL(hipDeviceSynchronize());
 
         if (measure_time) {
-            hipEventSynchronize(end);
-            hipEventElapsedTime(ms, start, end);
+            ON_ERROR_GOTO(err, hipEventSynchronize(end), cleanup_events);
+            ON_ERROR_GOTO(err, hipEventElapsedTime(ms, start, end), cleanup_events);
             XPU_LOG("Kernel '%s' took %f ms", type_name<K>(), *ms);
-            hipEventDestroy(start);
-            hipEventDestroy(end);
         }
+
+    cleanup_events:
+        if (measure_time) {
+            SAFE_CALL(hipEventDestroy(end));
+        }
+    cleanup_start_event:
+        if (measure_time) {
+            SAFE_CALL(hipEventDestroy(start));
+        }
+
+        return err;
     }
 
 };
@@ -295,7 +338,7 @@ struct action_runner<kernel_tag, K, S, void(*)(S &, Args...)> {
 
     using my_type = action_runner<kernel_tag, K, S, void(*)(S &, Args...)>;
 
-    static void call(float *ms, grid g, Args... args) {
+    static int call(float *ms, grid g, Args... args) {
         if (g.threads.x == -1) {
             g.threads.x = g.blocks.x;
         }
@@ -326,6 +369,8 @@ struct action_runner<kernel_tag, K, S, void(*)(S &, Args...)> {
             *ms = elapsed.count();
             XPU_LOG("Kernel '%s' took %f ms", type_name<K>(), *ms);
         }
+
+        return 0;
     }
 
 };
@@ -376,13 +421,13 @@ struct register_kernel {
 
 #define XPU_DETAIL_EXPORT_FUNC(image, name, ...) \
     struct name : xpu::detail::action<image, xpu::detail::function_tag> { \
-        static void impl(__VA_ARGS__); \
+        static int impl(__VA_ARGS__); \
     }
 
 #define XPU_DETAIL_EXPORT_CONSTANT(image, type_, name) \
     struct name : xpu::detail::action<image, xpu::detail::constant_tag> { \
         using data_t = type_; \
-        static void impl(const data_t &); \
+        static int impl(const data_t &); \
         static XPU_D const data_t &get(); \
     }
 
@@ -397,8 +442,8 @@ struct register_kernel {
 #define XPU_DETAIL_CONSTANT(name) \
     static __constant__ typename name::data_t XPU_MAGIC_NAME(xpu_detail_constant); \
     \
-    void name::impl(const typename name::data_t &val) { \
-        cudaMemcpyToSymbol(XPU_MAGIC_NAME(xpu_detail_constant), &val, sizeof(name::data_t)); \
+    int name::impl(const typename name::data_t &val) { \
+        return cudaMemcpyToSymbol(XPU_MAGIC_NAME(xpu_detail_constant), &val, sizeof(name::data_t)); \
     } \
     \
     XPU_D const typename name::data_t &name::get() { \
@@ -412,8 +457,8 @@ struct register_kernel {
 #define XPU_DETAIL_CONSTANT(name) \
     static __constant__ typename name::data_t XPU_MAGIC_NAME(xpu_detail_constant); \
     \
-    void name::impl(const typename name::data_t &val) { \
-        hipMemcpyToSymbol(HIP_SYMBOL(XPU_MAGIC_NAME(xpu_detail_constant)), &val, sizeof(name::data_t)); \
+    int name::impl(const typename name::data_t &val) { \
+        return hipMemcpyToSymbol(HIP_SYMBOL(XPU_MAGIC_NAME(xpu_detail_constant)), &val, sizeof(name::data_t)); \
     } \
     \
     XPU_D const typename name::data_t &name::get() { \
@@ -427,8 +472,9 @@ struct register_kernel {
 #define XPU_DETAIL_CONSTANT(name) \
     static typename name::data_t XPU_MAGIC_NAME(xpu_detail_constant); \
     \
-    void name::impl(const typename name::data_t &val) { \
+    int name::impl(const typename name::data_t &val) { \
         XPU_MAGIC_NAME(xpu_detail_constant) = val; \
+        return 0; \
     } \
     \
     const typename name::data_t &name::get() { \
@@ -441,17 +487,17 @@ struct register_kernel {
 
 #define XPU_DETAIL_FUNC(name, ...) \
     static xpu::detail::register_action<name> XPU_MAGIC_NAME(xpu_detail_register_action){}; \
-    void name::impl(__VA_ARGS__)
+    int name::impl(__VA_ARGS__)
 
 #define XPU_DETAIL_FUNC_T(name, ...) \
-    void xpu::detail::impl(__VA_ARGS__)
+    int xpu::detail::impl(__VA_ARGS__)
 
 #define XPU_DETAIL_FUNC_TI(name) \
     static xpu::detail::register_action<name> XPU_MAGIC_NAME(xpu_detail_register_action){}
 
 #define XPU_DETAIL_FUNC_TS(name, ...) \
     static xpu::detail::register_action<name> XPU_MAGIC_NAME(xpu_detail_register_action){}; \
-    template<> void name::impl(__VA_ARGS__)
+    template<> int name::impl(__VA_ARGS__)
 
 #define XPU_DETAIL_KERNEL(name, shared_memory, ...) \
     static xpu::detail::register_kernel<name, shared_memory> XPU_MAGIC_NAME(xpu_detail_register_action){}; \

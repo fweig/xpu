@@ -56,12 +56,14 @@ public:
 
     device_prop device_properties();
 
+    // FIXME this clashes / is ambigious with private function get_active_driver
     driver_t active_driver() const { return _active_driver; }
 
     template<typename Kernel, typename... Args>
     void run_kernel(grid g, Args&&... args) {
         float ms;
-        get_image<Kernel>()->template run_kernel<Kernel>((measure_time ? &ms : nullptr), g, std::forward<Args>(args)...);
+        error err = get_image<Kernel>()->template run_kernel<Kernel>((measure_time ? &ms : nullptr), g, std::forward<Args>(args)...);
+        throw_on_driver_error(active_driver(), err);
 
         if (measure_time) {
             size_t id = type_id<Kernel, typename Kernel::image>::get();
@@ -76,7 +78,8 @@ public:
 
     template<typename C>
     void set_constant(const typename C::data_t &symbol) {
-        get_image<C>()->template set<C>(symbol);
+        error err = get_image<C>()->template set<C>(symbol);
+        throw_on_driver_error(active_driver(), err);
     }
 
     template<typename Kernel>

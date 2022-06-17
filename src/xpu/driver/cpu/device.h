@@ -11,22 +11,11 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <utility>
 
 #define XPU_DETAIL_ASSERT(x) assert(x)
 
 namespace xpu {
-
-namespace detail {
-
-// workaround until c++14 / c++17 with std::exchange is available
-template<class T>
-inline T exchange(T &obj, T new_val) {
-    T old_val = std::move(obj);
-    obj = new_val;
-    return old_val;
-}
-
-} // namespace detail
 
 XPU_FORCE_INLINE int thread_idx::x() { return 0; }
 XPU_FORCE_INLINE int block_dim::x() { return 1; }
@@ -195,15 +184,15 @@ inline float atomic_cas(float *addr, float compare, float val) {
 }
 
 inline int atomic_cas_block(int *addr, int compare, int val) {
-    return detail::exchange(*addr, (*addr == compare ? val : *addr));
+    return std::exchange(*addr, (*addr == compare ? val : *addr));
 }
 
 inline unsigned int atomic_cas_block(unsigned int *addr, unsigned int compare, unsigned int val) {
-    return detail::exchange(*addr, (*addr == compare ? val : *addr));
+    return std::exchange(*addr, (*addr == compare ? val : *addr));
 }
 
 inline float atomic_cas_block(float *addr, float compare, float val) {
-    return detail::exchange(*addr, (*addr == compare ? val : *addr));
+    return std::exchange(*addr, (*addr == compare ? val : *addr));
 }
 
 inline int atomic_add(int *addr, int val) {
@@ -227,15 +216,15 @@ inline float atomic_add(float *addr, float val) {
 }
 
 inline int atomic_add_block(int *addr, int val) {
-    return detail::exchange(*addr, *addr + val);
+    return std::exchange(*addr, *addr + val);
 }
 
 inline unsigned int atomic_add_block(unsigned int *addr, unsigned int val) {
-    return detail::exchange(*addr, *addr + val);
+    return std::exchange(*addr, *addr + val);
 }
 
 inline float atomic_add_block(float *addr, float val) {
-    return detail::exchange(*addr, *addr + val);
+    return std::exchange(*addr, *addr + val);
 }
 
 inline int atomic_sub(int *addr, int val) {
@@ -247,11 +236,11 @@ inline unsigned int atomic_sub(unsigned int *addr, unsigned int val) {
 }
 
 inline int atomic_sub_block(int *addr, int val) {
-    return detail::exchange(*addr, *addr - val);
+    return std::exchange(*addr, *addr - val);
 }
 
 inline unsigned int atomic_sub_block(unsigned int *addr, unsigned int val) {
-    return detail::exchange(*addr, *addr - val);
+    return std::exchange(*addr, *addr - val);
 }
 
 inline int atomic_and(int *addr, int val) {
@@ -263,11 +252,11 @@ inline unsigned int atomic_and(unsigned int *addr, unsigned int val) {
 }
 
 inline int atomic_and_block(int *addr, int val) {
-    return detail::exchange(*addr, *addr & val);
+    return std::exchange(*addr, *addr & val);
 }
 
 inline unsigned int atomic_and_block(unsigned int *addr, unsigned int val) {
-    return detail::exchange(*addr, *addr & val);
+    return std::exchange(*addr, *addr & val);
 }
 
 inline int atomic_or(int *addr, int val) {
@@ -279,11 +268,11 @@ inline unsigned int atomic_or(unsigned int *addr, unsigned int val) {
 }
 
 inline int atomic_or_block(int *addr, int val) {
-    return detail::exchange(*addr, *addr | val);
+    return std::exchange(*addr, *addr | val);
 }
 
 inline unsigned int atomic_or_block(unsigned int *addr, unsigned int val) {
-    return detail::exchange(*addr, *addr | val);
+    return std::exchange(*addr, *addr | val);
 }
 
 inline int atomic_xor(int *addr, int val) {
@@ -295,11 +284,11 @@ inline unsigned int atomic_xor(unsigned int *addr, unsigned int val) {
 }
 
 inline int atomic_xor_block(int *addr, int val) {
-    return detail::exchange(*addr, *addr ^ val);
+    return std::exchange(*addr, *addr ^ val);
 }
 
 inline unsigned int atomic_xor_block(unsigned int *addr, unsigned int val) {
-    return detail::exchange(*addr, *addr ^ val);
+    return std::exchange(*addr, *addr ^ val);
 }
 
 XPU_FORCE_INLINE void barrier() { return; }

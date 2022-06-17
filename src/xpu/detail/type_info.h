@@ -9,7 +9,7 @@ namespace detail {
 
 template <typename T>
 const char *type_name() noexcept {
-    // TODO use std::string_view here once c++17 is available.
+    // Not using std::string_view here, because it creates a lot of problems with the XPU_LOG macro
 #ifdef __clang__
     static const char *fname = __PRETTY_FUNCTION__;
     static const size_t start = 42;
@@ -55,14 +55,14 @@ struct is_function {
 
 template<typename M, typename F>
 struct is_constant {
-    static constexpr bool value = 
+    static constexpr bool value =
         std::is_same<typename F::image, M>::value
         && std::is_same<typename F::tag, constant_tag>::value;
 };
 
 template<typename I, typename F>
 struct is_kernel {
-    static constexpr bool value = 
+    static constexpr bool value =
         std::is_same<typename F::image, I>::value
         && std::is_same<typename F::tag, kernel_tag>::value;
 };

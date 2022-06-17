@@ -95,11 +95,12 @@ void runtime::initialize() {
             device_prop props;
             DRIVER_CALL_I(driver, get_properties(&props, i));
             if (props.driver != cpu) {
-                XPU_LOG("  %lu: %s(arch = %d%d)", m_devices.size(), props.name.c_str(), props.major, props.minor);
+                XPU_LOG("  %lu: %s (arch = %d%d)", m_devices.size(), props.name.c_str(), props.major, props.minor);
             } else {
                 XPU_LOG("  %lu: %s", m_devices.size(), props.name.c_str());
             }
             m_devices.push_back(props);
+            m_devices_by_driver[props.driver].push_back(props);
         }
     }
 
@@ -159,6 +160,28 @@ xpu::device_prop runtime::device_properties() {
 
 bool runtime::has_driver(driver_t d) const {
     return get_driver(d) != nullptr;
+}
+
+xpu::device_prop runtime::pointer_get_device(const void *ptr) {
+
+    for (driver_t driver_type : {cuda, hip, cpu}) {
+        auto *driver = get_driver(driver_type);
+        if (driver == nullptr) {
+            continue;
+        }
+        int platform_device = 0;
+        throw_on_driver_error(driver_type, driver->pointer_get_device(ptr, &platform_device));
+
+        if (platform_device == -1) {
+            continue;
+        }
+
+        return m_devices_by_driver[driver_type].at(platform_device);
+    }
+
+    // UNREACHABLE
+    // cpu driver is always available
+    throw exception{"Internal xpu error. This should never happen. Please file a bug."};
 }
 
 driver_interface *runtime::get_driver(driver_t d) const {

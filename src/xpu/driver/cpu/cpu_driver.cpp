@@ -70,6 +70,13 @@ error cpu_driver::get_properties(device_prop *props, int device) {
     return SUCCESS;
 }
 
+error cpu_driver::pointer_get_device(const void * /*ptr*/, int *device) {
+    // There's no way to query the actual device here for the pointer
+    // Therefore we have to assume it's pointing to cpu memory...
+    *device = 0;
+    return SUCCESS;
+}
+
 #ifdef __linux__
 error cpu_driver::meminfo(size_t *free, size_t *total) {
     size_t pagesize = sysconf(_SC_PAGESIZE);

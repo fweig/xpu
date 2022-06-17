@@ -8,10 +8,12 @@
 #if XPU_IS_CUDA
 #define CUHIP(expr) CONCAT(cuda, expr)
 using cuhip_device_prop = cudaDeviceProp;
+using cuhip_pointer_attributes = cudaPointerAttributes;
 #else
 #include <hip/hip_runtime_api.h>
 #define CUHIP(expr) CONCAT(hip, expr)
 using cuhip_device_prop = hipDeviceProp_t;
+using cuhip_pointer_attributes = hipPointerAttribute_t;
 #endif
 
 namespace xpu {
@@ -78,6 +80,40 @@ public:
         props->driver = get_type();
         props->major = cuprop.major;
         props->minor = cuprop.minor;
+
+        return 0;
+    }
+
+    error pointer_get_device(const void *ptr, int *device) override {
+        cuhip_pointer_attributes ptrattrs;
+        error err = CUHIP(PointerGetAttributes)(&ptrattrs, ptr);
+
+        #if XPU_IS_CUDA
+
+            if (err != 0) {
+                return err;
+            }
+
+            if (ptrattrs.type == cudaMemoryTypeUnregistered || ptrattrs.type == cudaMemoryTypeHost) {
+                *device = -1;
+            } else {
+                *device = ptrattrs.device;
+            }
+
+        #else // HIP
+
+            if (err == hipErrorInvalidValue) {
+                *device = -1;
+                return 0;
+            }
+
+            if (err != 0) {
+                return err;
+            }
+
+            *device = ptrattrs.device;
+
+        #endif
 
         return 0;
     }

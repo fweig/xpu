@@ -42,6 +42,10 @@ xpu::driver_t xpu::active_driver() {
     return detail::runtime::instance().active_driver();
 }
 
+xpu::device_prop xpu::pointer_get_device(const void *ptr) {
+    return detail::runtime::instance().pointer_get_device(ptr);
+}
+
 template<typename Kernel>
 const char *xpu::get_name() {
     return detail::type_name<Kernel>();

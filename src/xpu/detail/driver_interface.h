@@ -25,6 +25,7 @@ public:
     virtual error get_device(int *) = 0;
     virtual error device_synchronize() = 0;
     virtual error get_properties(device_prop *, int) = 0;
+    virtual error pointer_get_device(const void *, int *) = 0;
 
     virtual error meminfo(size_t *, size_t *) = 0;
 

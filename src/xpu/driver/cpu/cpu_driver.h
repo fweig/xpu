@@ -22,6 +22,7 @@ public:
     error get_device(int *) override;
     error device_synchronize() override;
     error get_properties(device_prop *, int) override;
+    error pointer_get_device(const void *, int *) override;
 
     error meminfo(size_t *, size_t *) override;
 

@@ -57,6 +57,7 @@ inline void memset(void *, int, size_t);
 
 inline device_prop device_properties();
 inline xpu::driver_t active_driver();
+inline device_prop pointer_get_device(const void *);
 
 template<typename Kernel>
 const char *get_name();

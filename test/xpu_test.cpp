@@ -13,6 +13,24 @@ TEST(XPUTest, CanCreatePointerBuffer) {
     xpu::hd_buffer<key_value_t *> buf2{100};
 }
 
+TEST(XPUTest, CanGetDeviceFromPointer) {
+    xpu::device_prop active_device = xpu::device_properties();
+
+    int h = 0;
+    xpu::device_prop prop = xpu::pointer_get_device(&h);
+    ASSERT_EQ(prop.driver, xpu::cpu);
+
+    xpu::hd_buffer<int> hdbuf{1};
+    prop = xpu::pointer_get_device(hdbuf.h());
+    ASSERT_EQ(prop.driver, xpu::cpu);
+    prop = xpu::pointer_get_device(hdbuf.d());
+    ASSERT_EQ(prop.name, active_device.name);
+
+    xpu::d_buffer<int> dbuf{1};
+    prop = xpu::pointer_get_device(dbuf.d());
+    ASSERT_EQ(prop.name, active_device.name);
+}
+
 TEST(XPUTest, CanRunVectorAdd) {
     constexpr int NElems = 100;
 

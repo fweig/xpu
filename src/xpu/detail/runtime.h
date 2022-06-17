@@ -61,6 +61,8 @@ public:
     // FIXME this clashes / is ambigious with private function get_active_driver
     driver_t active_driver() const { return m_active_driver; }
 
+    device_prop pointer_get_device(const void *);
+
     template<typename Kernel, typename... Args>
     void run_kernel(grid g, Args&&... args) {
         float ms;
@@ -109,6 +111,7 @@ private:
     std::vector<std::vector<float>> m_profiling;
 
     std::vector<device_prop> m_devices;
+    std::array<std::vector<device_prop>, 3> m_devices_by_driver;
 
     static bool getenv_bool(std::string name, bool fallback);
     static std::string getenv_str(std::string name, std::string_view fallback);

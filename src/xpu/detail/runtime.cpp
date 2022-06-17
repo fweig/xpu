@@ -143,10 +143,19 @@ void runtime::free(void *ptr) {
 }
 
 void runtime::memcpy(void *dst, const void *src, size_t bytes) {
+    if (logger::instance().active()) {
+        device_prop from = pointer_get_device(src);
+        device_prop to = pointer_get_device(dst);
+        XPU_LOG("Copy %lu bytes from %s to %s.", bytes, from.name.c_str(), to.name.c_str());
+    }
     DRIVER_CALL(memcpy(dst, src, bytes));
 }
 
 void runtime::memset(void *dst, int ch, size_t bytes) {
+    if (logger::instance().active()) {
+        device_prop dev = pointer_get_device(dst);
+        XPU_LOG("Setting %lu bytes on %s to %d.", bytes, dev.name.c_str(), ch);
+    }
     DRIVER_CALL(memset(dst, ch, bytes));
 }
 

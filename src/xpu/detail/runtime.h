@@ -8,6 +8,8 @@
 #include "log.h"
 
 #include <memory>
+#include <string>
+#include <string_view>
 
 namespace xpu {
 namespace detail {
@@ -57,22 +59,22 @@ public:
     device_prop device_properties();
 
     // FIXME this clashes / is ambigious with private function get_active_driver
-    driver_t active_driver() const { return _active_driver; }
+    driver_t active_driver() const { return m_active_driver; }
 
     template<typename Kernel, typename... Args>
     void run_kernel(grid g, Args&&... args) {
         float ms;
-        error err = get_image<Kernel>()->template run_kernel<Kernel>((measure_time ? &ms : nullptr), g, std::forward<Args>(args)...);
+        error err = get_image<Kernel>()->template run_kernel<Kernel>((m_measure_time ? &ms : nullptr), g, std::forward<Args>(args)...);
         throw_on_driver_error(active_driver(), err);
 
-        if (measure_time) {
+        if (m_measure_time) {
             size_t id = type_id<Kernel, typename Kernel::image>::get();
 
-            if (profiling.size() <= id) {
-                profiling.resize(id+1);
+            if (m_profiling.size() <= id) {
+                m_profiling.resize(id+1);
             }
 
-            profiling.at(id).push_back(ms);
+            m_profiling.at(id).push_back(ms);
         }
     }
 
@@ -87,30 +89,33 @@ public:
         size_t id = type_id<Kernel, typename Kernel::image>::get();
 
         // Profiling not enabled or kernel hasn't run yet.
-        if (profiling.size() <= id) {
+        if (m_profiling.size() <= id) {
             return {};
         }
 
-        return profiling.at(id);
+        return m_profiling.at(id);
     }
 
 private:
-    std::unique_ptr<cpu_driver> the_cpu_driver;
-    std::unique_ptr<lib_obj<driver_interface>> the_cuda_driver;
-    std::unique_ptr<lib_obj<driver_interface>> the_hip_driver;
+    std::unique_ptr<cpu_driver> m_cpu_driver;
+    std::unique_ptr<lib_obj<driver_interface>> m_cuda_driver;
+    std::unique_ptr<lib_obj<driver_interface>> m_hip_driver;
 
-    driver_t _active_driver = cpu;
+    driver_t m_active_driver = cpu;
 
-    image_pool images;
+    image_pool m_images;
 
-    bool measure_time = false;
-    std::vector<std::vector<float>> profiling;
+    bool m_measure_time = false;
+    std::vector<std::vector<float>> m_profiling;
 
-    std::vector<device_prop> devices;
+    std::vector<device_prop> m_devices;
+
+    static bool getenv_bool(std::string name, bool fallback);
+    static std::string getenv_str(std::string name, std::string_view fallback);
 
     template<typename A>
     image<typename A::image> *get_image() {
-        auto *img = images.find< image<typename A::image> >(active_driver());
+        auto *img = m_images.find< image<typename A::image> >(active_driver());
         if (img == nullptr) {
             img = load_image<typename A::image>(active_driver());
         }
@@ -133,7 +138,7 @@ private:
             i = new image<I>(complete_file_name(image_context<I>::file_name, d).c_str());
             break;
         }
-        images.add(i, d);
+        m_images.add(i, d);
         return i;
     }
 
@@ -146,6 +151,7 @@ private:
     const char *driver_str(driver_t) const;
 
     void throw_on_driver_error(driver_t, error) const;
+
 };
 
 } // namespace detail

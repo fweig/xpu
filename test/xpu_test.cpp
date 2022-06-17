@@ -31,6 +31,11 @@ TEST(XPUTest, CanGetDeviceFromPointer) {
     ASSERT_EQ(prop.name, active_device.name);
 }
 
+TEST(XPUTest, CanConvertTypenamesToString) {
+    ASSERT_STREQ(xpu::detail::type_name<int>(), "int");
+    ASSERT_STREQ(xpu::detail::type_name<xpu::device_prop>(), "xpu::device_prop");
+}
+
 TEST(XPUTest, CanRunVectorAdd) {
     constexpr int NElems = 100;
 

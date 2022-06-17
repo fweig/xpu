@@ -7,9 +7,11 @@
 #include "dynamic_loader.h"
 #include "log.h"
 
+#include <array>
 #include <memory>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace xpu {
 namespace detail {

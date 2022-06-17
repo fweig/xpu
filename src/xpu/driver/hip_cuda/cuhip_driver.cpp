@@ -67,7 +67,14 @@ public:
             return err;
         }
 
+        #if XPU_IS_CUDA
         props->name = cuprop.name;
+        #else // XPU_IS_HIP
+        // Name field (which returns marketing name) on HIP is bugged
+        // and returns empty string for some devices
+        // So just use the compute name instead
+        props->name = "gfx" + std::to_string(cuprop.gcnArch);
+        #endif
         props->driver = get_type();
         props->major = cuprop.major;
         props->minor = cuprop.minor;

@@ -9,8 +9,8 @@ XPU_IMAGE(bench_device);
 #endif
 
 #define MERGE_KERNEL(name, elems_per_thread) \
-    XPU_BLOCK_SIZE(name, MERGE_BLOCK_SIZE); \
-    using block_merge ## elems_per_thread = xpu::block_merge<float, xpu::block_size<name>{}, elems_per_thread>; \
+    XPU_BLOCK_SIZE_1D(name, MERGE_BLOCK_SIZE); \
+    using block_merge ## elems_per_thread = xpu::block_merge<float, xpu::block_size<name>::value.x, elems_per_thread>; \
     XPU_KERNEL(name, block_merge ## elems_per_thread::storage_t, const float *a, const float *b, size_t N, float *c) { \
         size_t items_per_block = N; \
         size_t offset = items_per_block * xpu::block_idx::x(); \
@@ -18,8 +18,8 @@ XPU_IMAGE(bench_device);
     }
 
 #define SORT_KERNEL(name, elems_per_thread) \
-    XPU_BLOCK_SIZE(name, MERGE_BLOCK_SIZE); \
-    using block_sort ## elems_per_thread = xpu::block_sort<float, float, xpu::block_size<name>{}, elems_per_thread>; \
+    XPU_BLOCK_SIZE_1D(name, MERGE_BLOCK_SIZE); \
+    using block_sort ## elems_per_thread = xpu::block_sort<float, float, xpu::block_size<name>::value.x, elems_per_thread>; \
     XPU_KERNEL(name, block_sort ## elems_per_thread::storage_t, float *a, size_t N, float *buf, float **dst) { \
         size_t items_per_block = N; \
         size_t offset = items_per_block * xpu::block_idx::x(); \

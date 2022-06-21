@@ -131,8 +131,9 @@ XPU_EXPORT_KERNEL(TestKernels, sort_struct, key_value_t *, int, key_value_t *, k
 XPU_EXPORT_KERNEL(TestKernels, merge, const float *, size_t, const float *, size_t, float *);
 XPU_EXPORT_KERNEL(TestKernels, merge_single, const float *, size_t, const float *, size_t, float *);
 XPU_EXPORT_KERNEL(TestKernels, access_cmem, float3_ *);
-XPU_EXPORT_KERNEL(TestKernels, get_thread_idx, int *);
-
+XPU_EXPORT_KERNEL(TestKernels, get_thread_idx_1d, int *, int *, int *, int *);
+XPU_EXPORT_KERNEL(TestKernels, get_thread_idx_2d, int *, int *, int *, int *);
+XPU_EXPORT_KERNEL(TestKernels, get_thread_idx_3d, int *, int *, int *, int *);
 XPU_EXPORT_KERNEL(TestKernels, test_device_funcs, variant *);
 
 #endif

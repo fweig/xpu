@@ -18,7 +18,9 @@
 #define XPU_FUNC_TI(name) XPU_DETAIL_FUNC_TI(name)
 #define XPU_FUNC_TS(name, ...) XPU_DETAIL_FUNC_TS(name, ##__VA_ARGS__)
 #define XPU_KERNEL(name, shared_memory, ...) XPU_DETAIL_KERNEL(name, shared_memory, ##__VA_ARGS__)
-#define XPU_BLOCK_SIZE(kernel, size) XPU_DETAIL_BLOCK_SIZE(kernel, size)
+#define XPU_BLOCK_SIZE_1D(kernel, size) XPU_DETAIL_BLOCK_SIZE_1D(kernel, size)
+#define XPU_BLOCK_SIZE_2D(kernel, size_x, size_y) XPU_DETAIL_BLOCK_SIZE_2D(kernel, size_x, size_y)
+#define XPU_BLOCK_SIZE_3D(kernel, size_x, size_y, size_z) XPU_DETAIL_BLOCK_SIZE_3D(kernel, size_x, size_y, size_z)
 
 #define XPU_ASSERT(x) XPU_DETAIL_ASSERT(x)
 
@@ -29,21 +31,28 @@ namespace xpu {
 struct thread_idx {
     thread_idx() = delete;
     XPU_D static int x();
+    XPU_D static int y();
+    XPU_D static int z();
 };
 
 struct block_dim {
     block_dim() = delete;
     XPU_D static int x();
-};
+    XPU_D static int y();
+    XPU_D static int z();};
 
 struct block_idx {
     block_idx() = delete;
     XPU_D static int x();
+    XPU_D static int y();
+    XPU_D static int z();
 };
 
 struct grid_dim {
     grid_dim() = delete;
     XPU_D static int x();
+    XPU_D static int y();
+    XPU_D static int z();
 };
 
 template<typename K>

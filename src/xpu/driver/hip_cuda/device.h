@@ -37,21 +37,18 @@
 
 namespace xpu {
 
-XPU_D XPU_FORCE_INLINE int thread_idx::x() {
-    return XPU_CHOOSE(hipThreadIdx_x, threadIdx.x);
-}
-
-XPU_D XPU_FORCE_INLINE int block_dim::x() {
-    return XPU_CHOOSE(hipBlockDim_x, blockDim.x);
-}
-
-XPU_D XPU_FORCE_INLINE int block_idx::x() {
-    return XPU_CHOOSE(hipBlockIdx_x, blockIdx.x);
-}
-
-XPU_D XPU_FORCE_INLINE int grid_dim::x() {
-    return XPU_CHOOSE(hipGridDim_x, gridDim.x);
-}
+XPU_D XPU_FORCE_INLINE int thread_idx::x() { return XPU_CHOOSE(hipThreadIdx_x, threadIdx.x); }
+XPU_D XPU_FORCE_INLINE int thread_idx::y() { return XPU_CHOOSE(hipThreadIdx_y, threadIdx.y); }
+XPU_D XPU_FORCE_INLINE int thread_idx::z() { return XPU_CHOOSE(hipThreadIdx_z, threadIdx.z); }
+XPU_D XPU_FORCE_INLINE int block_dim::x() { return XPU_CHOOSE(hipBlockDim_x, blockDim.x); }
+XPU_D XPU_FORCE_INLINE int block_dim::y() { return XPU_CHOOSE(hipBlockDim_y, blockDim.y); }
+XPU_D XPU_FORCE_INLINE int block_dim::z() { return XPU_CHOOSE(hipBlockDim_z, blockDim.z); }
+XPU_D XPU_FORCE_INLINE int block_idx::x() { return XPU_CHOOSE(hipBlockIdx_x, blockIdx.x); }
+XPU_D XPU_FORCE_INLINE int block_idx::y() { return XPU_CHOOSE(hipBlockIdx_y, blockIdx.y); }
+XPU_D XPU_FORCE_INLINE int block_idx::z() { return XPU_CHOOSE(hipBlockIdx_z, blockIdx.z); }
+XPU_D XPU_FORCE_INLINE int grid_dim::x() { return XPU_CHOOSE(hipGridDim_x, gridDim.x); }
+XPU_D XPU_FORCE_INLINE int grid_dim::y() { return XPU_CHOOSE(hipGridDim_y, gridDim.y); }
+XPU_D XPU_FORCE_INLINE int grid_dim::z() { return XPU_CHOOSE(hipGridDim_z, gridDim.z); }
 
 XPU_D XPU_FORCE_INLINE int abs(int a) { return ::abs(a); }
 XPU_D XPU_FORCE_INLINE float abs(float x) { return ::fabsf(x); }

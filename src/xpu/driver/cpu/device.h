@@ -18,9 +18,17 @@
 namespace xpu {
 
 XPU_FORCE_INLINE int thread_idx::x() { return 0; }
+XPU_FORCE_INLINE int thread_idx::y() { return 0; }
+XPU_FORCE_INLINE int thread_idx::z() { return 0; }
 XPU_FORCE_INLINE int block_dim::x() { return 1; }
+XPU_FORCE_INLINE int block_dim::y() { return 1; }
+XPU_FORCE_INLINE int block_dim::z() { return 1; }
 XPU_FORCE_INLINE int block_idx::x() { return detail::this_thread::block_idx.x; }
+XPU_FORCE_INLINE int block_idx::y() { return detail::this_thread::block_idx.y; }
+XPU_FORCE_INLINE int block_idx::z() { return detail::this_thread::block_idx.z; }
 XPU_FORCE_INLINE int grid_dim::x() { return detail::this_thread::grid_dim.x; }
+XPU_FORCE_INLINE int grid_dim::y() { return detail::this_thread::grid_dim.y; }
+XPU_FORCE_INLINE int grid_dim::z() { return detail::this_thread::grid_dim.z; }
 
 // math functions
 XPU_FORCE_INLINE float abs(float x) { return std::fabs(x); }

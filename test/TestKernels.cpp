@@ -69,9 +69,40 @@ XPU_KERNEL(access_cmem, xpu::no_smem, float3_ *out) {
     *out = in;
 }
 
-XPU_KERNEL(get_thread_idx, xpu::no_smem, int *idx) {
-    int iThread = xpu::block_idx::x() * xpu::block_dim::x() + xpu::thread_idx::x();
-    idx[iThread] = xpu::thread_idx::x();
+XPU_D void get_thread_idx(int *thread_idx, int *block_dim, int *block_idx, int *grid_dim) {
+    int threadsPerBlock = xpu::block_dim::x() * xpu::block_dim::y() * xpu::block_dim::z();
+    int threadIdxInBlock = xpu::block_dim::x() * xpu::block_dim::y() * xpu::thread_idx::z() + xpu::block_dim::x() * xpu::thread_idx::y() + xpu::thread_idx::x();
+    int blockNumInGrid = xpu::grid_dim::x() * xpu::grid_dim::y() * xpu::block_idx::z() + xpu::grid_dim::x() * xpu::block_idx::y() + xpu::block_idx::x();
+
+    int iThread = blockNumInGrid * threadsPerBlock + threadIdxInBlock;
+
+    thread_idx[iThread * 3 + 0] = xpu::thread_idx::x();
+    thread_idx[iThread * 3 + 1] = xpu::thread_idx::y();
+    thread_idx[iThread * 3 + 2] = xpu::thread_idx::z();
+    block_dim[iThread * 3 + 0] = xpu::block_dim::x();
+    block_dim[iThread * 3 + 1] = xpu::block_dim::y();
+    block_dim[iThread * 3 + 2] = xpu::block_dim::z();
+    block_idx[iThread * 3 + 0] = xpu::block_idx::x();
+    block_idx[iThread * 3 + 1] = xpu::block_idx::y();
+    block_idx[iThread * 3 + 2] = xpu::block_idx::z();
+    grid_dim[iThread * 3 + 0] = xpu::grid_dim::x();
+    grid_dim[iThread * 3 + 1] = xpu::grid_dim::y();
+    grid_dim[iThread * 3 + 2] = xpu::grid_dim::z();
+}
+
+XPU_BLOCK_SIZE_1D(get_thread_idx_1d, 64);
+XPU_KERNEL(get_thread_idx_1d, xpu::no_smem, int *thread_idx, int *block_dim, int *block_idx, int *grid_dim) {
+    get_thread_idx(thread_idx, block_dim, block_idx, grid_dim);
+}
+
+XPU_BLOCK_SIZE_2D(get_thread_idx_2d, 32, 8);
+XPU_KERNEL(get_thread_idx_2d, xpu::no_smem, int *thread_idx, int *block_dim, int *block_idx, int *grid_dim) {
+    get_thread_idx(thread_idx, block_dim, block_idx, grid_dim);
+}
+
+XPU_BLOCK_SIZE_3D(get_thread_idx_3d, 32, 8, 2);
+XPU_KERNEL(get_thread_idx_3d, xpu::no_smem, int *thread_idx, int *block_dim, int *block_idx, int *grid_dim) {
+    get_thread_idx(thread_idx, block_dim, block_idx, grid_dim);
 }
 
 XPU_KERNEL(test_device_funcs, xpu::no_smem, variant *out) {

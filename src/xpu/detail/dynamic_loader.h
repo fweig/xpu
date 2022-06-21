@@ -230,11 +230,12 @@ struct action_runner<kernel_tag, K, S, void(*)(S &, Args...)> {
     using my_type = action_runner<kernel_tag, K, S, void(*)(S &, Args...)>;
 
     static int call(float *ms, grid g, Args... args) {
-        int bsize = block_size<K>::value;
+        dim block_dim = block_size<K>::value;
+        dim grid_dim{};
 
-        if (g.blocks.x == -1) {
-            g.blocks.x = (g.threads.x + bsize - 1) / bsize;
-        }
+        g.get_compute_grid(block_dim, grid_dim);
+
+        XPU_LOG("Calling kernel '%s' [block_dim = (%d, %d, %d), grid_dim = (%d, %d, %d)] with CUDA driver.", type_name<K>(), block_dim.x, block_dim.y, block_dim.z, grid_dim.x, grid_dim.y, grid_dim.z);
 
         bool measure_time = (ms != nullptr);
         cudaEvent_t start, end;
@@ -245,13 +246,11 @@ struct action_runner<kernel_tag, K, S, void(*)(S &, Args...)> {
             ON_ERROR_GOTO(err, cudaEventCreate(&end), cleanup_start_event);
         }
 
-        XPU_LOG("Calling kernel '%s' [block_dim = (%d, %d, %d), grid_dim = (%d, %d, %d)] with CUDA driver.", type_name<K>(), bsize, 0, 0, g.blocks.x, 0, 0);
-
         if (measure_time) {
             ON_ERROR_GOTO(err, cudaEventRecord(start), cleanup_events);
         }
 
-        kernel_entry<K, S, Args...><<<g.blocks.x, bsize>>>(args...);
+        kernel_entry<K, S, Args...><<<grid_dim.as_cuda_grid(), block_dim.as_cuda_grid()>>>(args...);
 
         if (measure_time) {
             ON_ERROR_GOTO(err, cudaEventRecord(end), cleanup_events);
@@ -286,11 +285,12 @@ struct action_runner<kernel_tag, K, S, void(*)(S &, Args...)> {
     using my_type = action_runner<kernel_tag, K, S, void(*)(S &, Args...)>;
 
     static int call(float *ms, grid g, Args... args) {
-        int bsize = block_size<K>::value;
+        dim block_dim = block_size<K>::value;
+        dim grid_dim{};
 
-        if (g.blocks.x == -1) {
-            g.blocks.x = (g.threads.x + bsize - 1) / bsize;
-        }
+        g.get_compute_grid(block_dim, grid_dim);
+
+        XPU_LOG("Calling kernel '%s' [block_dim = (%d, %d, %d), grid_dim = (%d, %d, %d)] with HIP driver.", type_name<K>(), block_dim.x, block_dim.y, block_dim.z, grid_dim.x, grid_dim.y, grid_dim.z);
 
         bool measure_time = (ms != nullptr);
         hipEvent_t start, end;
@@ -301,11 +301,10 @@ struct action_runner<kernel_tag, K, S, void(*)(S &, Args...)> {
             ON_ERROR_GOTO(err, hipEventCreate(&end), cleanup_start_event);
         }
 
-        XPU_LOG("Calling kernel '%s' [block_dim = (%d, %d, %d), grid_dim = (%d, %d, %d)] with HIP driver.", type_name<K>(), bsize, 0, 0, g.blocks.x, 0, 0);
         if (measure_time) {
             ON_ERROR_GOTO(err, hipEventRecord(start), cleanup_events);
         }
-        hipLaunchKernelGGL(HIP_KERNEL_NAME(kernel_entry<K, S, Args...>), dim3(g.blocks.x), dim3(bsize), 0, 0, args...);
+        hipLaunchKernelGGL(HIP_KERNEL_NAME(kernel_entry<K, S, Args...>), grid_dim.as_cuda_grid(), block_dim.as_cuda_grid(), 0, 0, args...);
         if (measure_time) {
             ON_ERROR_GOTO(err, hipEventRecord(end), cleanup_events);
         }
@@ -339,10 +338,11 @@ struct action_runner<kernel_tag, K, S, void(*)(S &, Args...)> {
     using my_type = action_runner<kernel_tag, K, S, void(*)(S &, Args...)>;
 
     static int call(float *ms, grid g, Args... args) {
-        if (g.threads.x == -1) {
-            g.threads.x = g.blocks.x;
-        }
-        XPU_LOG("Calling kernel '%s' [block_dim = (1, 0, 0), grid_dim = (%d, %d, %d)] with CPU driver.", type_name<K>(), g.threads.x, 0, 0);
+        dim block_dim{1, 1, 1};
+        dim grid_dim{};
+
+        g.get_compute_grid(block_dim, grid_dim);
+        XPU_LOG("Calling kernel '%s' [block_dim = (%d, %d, %d), grid_dim = (%d, %d, %d)] with CPU driver.", type_name<K>(), block_dim.x, block_dim.y, block_dim.z, grid_dim.x, grid_dim.y, grid_dim.z);
 
         using clock = std::chrono::high_resolution_clock;
         using duration = std::chrono::duration<float, std::milli>;
@@ -355,13 +355,17 @@ struct action_runner<kernel_tag, K, S, void(*)(S &, Args...)> {
         }
 
         #ifdef _OPENMP
-        #pragma omp parallel for schedule(static)
+        #pragma omp parallel for schedule(static) collapse(3)
         #endif
-        for (int i = 0; i < g.threads.x; i++) {
-            S smem;
-            this_thread::block_idx.x = i;
-            this_thread::grid_dim.x = g.threads.x;
-            K::impl(smem, args...);
+        for (int i = 0; i < grid_dim.x; i++) {
+            for (int j = 0; j < grid_dim.y; j++) {
+                for (int k = 0; k < grid_dim.z; k++) {
+                    S smem;
+                    this_thread::block_idx = dim{i, j, k};
+                    this_thread::grid_dim = grid_dim;
+                    K::impl(smem, args...);
+                }
+            }
         }
 
         if (measure_time) {
@@ -503,7 +507,19 @@ struct register_kernel {
     static xpu::detail::register_kernel<name, shared_memory> XPU_MAGIC_NAME(xpu_detail_register_action){}; \
     template<> XPU_D void name::impl<shared_memory>(XPU_MAYBE_UNUSED shared_memory &smem, ##__VA_ARGS__)
 
-#define XPU_DETAIL_BLOCK_SIZE(kernel, size) \
-    template<> struct xpu::block_size<kernel> : std::integral_constant<int, size> {}
+#define XPU_DETAIL_BLOCK_SIZE_1D(kernel, size) \
+    template<> struct xpu::block_size<kernel> { \
+        static inline constexpr xpu::dim value{size}; \
+    }
+
+#define XPU_DETAIL_BLOCK_SIZE_2D(kernel, size_x, size_y) \
+    template<> struct xpu::block_size<kernel> { \
+        static inline constexpr xpu::dim value{size_x, size_y}; \
+    }
+
+#define XPU_DETAIL_BLOCK_SIZE_3D(kernel, size_x, size_y, size_z) \
+    template<> struct xpu::block_size<kernel> { \
+        static inline constexpr xpu::dim value{size_x, size_y, size_z}; \
+    }
 
 #endif

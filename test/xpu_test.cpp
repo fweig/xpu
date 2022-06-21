@@ -265,19 +265,94 @@ TEST(XPUTest, CanSetAndReadCMem) {
     // ASSERT_EQ(constants_orig.z, constants_copy.z);
 }
 
-TEST(XPUTest, CanGetThreadIdx) {
-    xpu::hd_buffer<int> idx{64};
+void test_thread_position(xpu::dim gpu_block_size, xpu::dim gpu_grid_dim) {
 
-    xpu::run_kernel<get_thread_idx>(xpu::grid::n_threads(64), idx.d());
-    xpu::copy(idx, xpu::device_to_host);
+    xpu::dim nthreads{
+        gpu_block_size.x * gpu_grid_dim.x,
+        gpu_block_size.y * gpu_grid_dim.y,
+        gpu_block_size.z * gpu_grid_dim.z,
+    };
 
-    for (int i = 0; i < 64; i++) {
-        if (xpu::active_driver() == xpu::cpu) {
-            EXPECT_EQ(idx.h()[i], 0) << " with i = " << i;
-        } else {
-            EXPECT_EQ(idx.h()[i], i);
+    size_t nthreads_total = nthreads.x * nthreads.y * nthreads.z;
+    xpu::hd_buffer<int> thread_idx{nthreads_total * 3};
+    xpu::hd_buffer<int> block_dim{nthreads_total * 3};
+    xpu::hd_buffer<int> block_idx{nthreads_total * 3};
+    xpu::hd_buffer<int> grid_dim{nthreads_total * 3};
+
+    xpu::grid exec_grid = xpu::grid::n_threads(nthreads);
+    switch (gpu_block_size.ndims()) {
+    case 1:
+        xpu::run_kernel<get_thread_idx_1d>(exec_grid, thread_idx.d(), block_dim.d(), block_idx.d(), grid_dim.d());
+        break;
+    case 2:
+        xpu::run_kernel<get_thread_idx_2d>(exec_grid, thread_idx.d(), block_dim.d(), block_idx.d(), grid_dim.d());
+        break;
+    case 3:
+        xpu::run_kernel<get_thread_idx_3d>(exec_grid, thread_idx.d(), block_dim.d(), block_idx.d(), grid_dim.d());
+        break;
+    default:
+        FAIL();
+        break;
+    }
+    xpu::copy(thread_idx, xpu::device_to_host);
+    xpu::copy(block_dim, xpu::device_to_host);
+    xpu::copy(block_idx, xpu::device_to_host);
+    xpu::copy(grid_dim, xpu::device_to_host);
+
+    xpu::dim exp_block_dim = (xpu::active_driver() == xpu::cpu ? xpu::dim{1, 1, 1} : gpu_block_size);
+    xpu::dim exp_grid_dim;
+    exec_grid.get_compute_grid(exp_block_dim, exp_grid_dim);
+    for (int i = 0; i < nthreads.x; i++) {
+        for (int j = 0; j < nthreads.y; j++) {
+            for (int k = 0; k < nthreads.z; k++) {
+
+                xpu::dim exp_thread_idx {
+                    i % exp_block_dim.x,
+                    j % exp_block_dim.y,
+                    k % exp_block_dim.z,
+                };
+
+                xpu::dim exp_block_idx {
+                    i / exp_block_dim.x,
+                    j / exp_block_dim.y,
+                    k / exp_block_dim.z,
+                };
+
+                int threadsPerBlock = exp_block_dim.x * exp_block_dim.y * exp_block_dim.z;
+                int threadIdxInBlock = exp_block_dim.x * exp_block_dim.y * exp_thread_idx.z + exp_block_dim.x * exp_thread_idx.y + exp_thread_idx.x;
+                int blockNumInGrid = exp_grid_dim.x * exp_grid_dim.y * exp_block_idx.z + exp_grid_dim.x * exp_block_idx.y + exp_block_idx.x;
+
+                int linear_id = blockNumInGrid * threadsPerBlock + threadIdxInBlock;
+                linear_id *= 3;
+
+                EXPECT_EQ(thread_idx.h()[linear_id + 0], exp_thread_idx.x);
+                EXPECT_EQ(thread_idx.h()[linear_id + 1], exp_thread_idx.y);
+                EXPECT_EQ(thread_idx.h()[linear_id + 2], exp_thread_idx.z);
+                EXPECT_EQ(block_dim.h()[linear_id + 0], exp_block_dim.x);
+                EXPECT_EQ(block_dim.h()[linear_id + 1], exp_block_dim.y);
+                EXPECT_EQ(block_dim.h()[linear_id + 2], exp_block_dim.z);
+                EXPECT_EQ(block_idx.h()[linear_id + 0], exp_block_idx.x);
+                EXPECT_EQ(block_idx.h()[linear_id + 1], exp_block_idx.y);
+                EXPECT_EQ(block_idx.h()[linear_id + 2], exp_block_idx.z);
+                EXPECT_EQ(grid_dim.h()[linear_id + 0], exp_grid_dim.x);
+                EXPECT_EQ(grid_dim.h()[linear_id + 1], exp_grid_dim.y);
+                EXPECT_EQ(grid_dim.h()[linear_id + 2], exp_grid_dim.z);
+            }
         }
     }
+
+}
+
+TEST(XPUTest, CanStartKernel1D) {
+    test_thread_position(xpu::dim{64}, xpu::dim{4});
+}
+
+TEST(XPUTest, CanStartKernel2D) {
+    test_thread_position(xpu::dim{32, 8}, xpu::dim{2, 2});
+}
+
+TEST(XPUTest, CanStartkernel3D) {
+    test_thread_position(xpu::dim{32, 8, 2}, xpu::dim{2, 2, 2});
 }
 
 TEST(XPUTest, CanCallDeviceFuncs) {

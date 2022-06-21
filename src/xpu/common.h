@@ -21,24 +21,31 @@ struct device_prop {
 };
 
 struct dim {
-    int x = 0;
-    int y = 0;
-    int z = 0;
+    int x = -1;
+    int y = -1;
+    int z = -1;
 
     dim() = default;
-    dim(int _x) : x(_x) {}
-    dim(int _x, int _y) : x(_x), y(_y) {}
-    dim(int _x, int _y, int _z) : x(_x), y(_y), z(_z) {}
+    constexpr dim(int _x) : x(_x) {}
+    constexpr dim(int _x, int _y) : x(_x), y(_y) {}
+    constexpr dim(int _x, int _y, int _z) : x(_x), y(_y), z(_z) {}
+
+    int ndims() const { return 3 - (y < 0) - (z < 0); }
+
+    #if XPU_IS_HIP || XPU_IS_CUDA
+    ::dim3 as_cuda_grid() const { return ::dim3{(unsigned int)x, (unsigned int)y, (unsigned int)z}; }
+    #endif
 };
 
 struct grid {
 
-    static inline grid n_blocks(dim blocks);
+    static inline grid n_blocks(dim nblocks);
+    static inline grid n_threads(dim nthreads);
 
-    static inline grid n_threads(dim threads);
+    dim nblocks;
+    dim nthreads;
 
-    dim blocks;
-    dim threads;
+    inline void get_compute_grid(dim &block_dim, dim &grid_dim) const;
 
 private:
     grid(dim b, dim t);

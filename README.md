@@ -37,7 +37,8 @@ CMake Options:
 Environment variables:
 
 - `XPU_PROFILE`: Enable collecting kernel times. (default=`0`)
-- `XPU_DEVICE`: Select the device to run kernels on. Values must have the form "`<driver><devicenr>`".  If `devicenr` is missing, defaults to device 0 of selected driver. Possible values are for example: `cpu`, `cuda0`, `cuda1`, `hip0`. (default=Device selected when calling `xpu::initialize`)
+- `XPU_VERBOSE`: Print debug information about memory allocations / memory transfer / kernel runs. (default=`0`)
+- `XPU_DEVICE`: Select the device to run kernels on. Values must have the form "`<driver><devicenr>`".  If `devicenr` is missing, defaults to device 0 of selected driver. Possible values are for example: `cpu`, `cuda0`, `cuda1`, `hip0`. (default=`cpu`)
 
 ---
 
@@ -55,9 +56,9 @@ To enable compilation for cuda, pass `-DXPU_ENABLE_CUDA=ON` to cmake as well. (O
 To build and run the tests:
 ```
 make
-XPU_DRIVER=cpu LD_LIBRARY_PATH=.:test ./test/xpu_test
+XPU_DEVICE=cpu LD_LIBRARY_PATH=.:test ./test/xpu_test
 ```
-If cuda was enabled, use `XPU_DRIVER=cuda` to run the tests on a GPU instead.
+If cuda was enabled, use `XPU_DEVICE=cuda0` to run the tests on the first Nvidia GPU instead.
 
 Run the examples with:
 ```

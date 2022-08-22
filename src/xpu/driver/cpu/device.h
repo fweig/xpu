@@ -318,6 +318,53 @@ inline float int_as_float(int val) {
     return xval.f;
 }
 
+template<typename T, int BlockSize>
+class block_scan<T, BlockSize, cpu> {
+
+public:
+    struct storage_t {};
+
+    XPU_D block_scan(storage_t &) {}
+
+    XPU_D void exclusive_sum(T /*input*/, T &output) { output = T{0}; }
+
+    template<typename ScanOp>
+    XPU_D void exclusive_sum(T /*input*/, T &output, T initial_value, ScanOp /*scan_op*/) { output = initial_value; }
+
+    template<int ItemsPerThread>
+    XPU_D void exclusive_sum(T(&input)[ItemsPerThread], T(&output)[ItemsPerThread]) {
+        exclusive_sum(input, output, T{0}, [](T a, T b) { return a + b; });
+    }
+
+    template<int ItemsPerThread, typename ScanOp>
+    XPU_D void exclusive_sum(T(&input)[ItemsPerThread], T(&output)[ItemsPerThread], T initial_value, ScanOp scan_op) {
+        static_assert(ItemsPerThread > 0);
+        output[0] = initial_value;
+        for (int i = 1; i < ItemsPerThread; i++) {
+            output[i] = scan_op(output[i - 1], input[i]);
+        }
+    }
+
+    XPU_D void inclusive_sum(T input, T &output) { output = input; }
+
+    template<typename ScanOp>
+    XPU_D void inclusive_sum(T input, T &output, T initial_value, ScanOp scan_op) { output = scan_op(initial_value, input); }
+
+    template<int ItemsPerThread>
+    XPU_D void inclusive_sum(T(&input)[ItemsPerThread], T(&output)[ItemsPerThread]) {
+        inclusive_sum(input, output, T{0}, [](T a, T b) { return a + b; });
+    }
+
+    template<int ItemsPerThread, typename ScanOp>
+    XPU_D void inclusive_sum(T(&input)[ItemsPerThread], T(&output)[ItemsPerThread], T initial_value, ScanOp scan_op) {
+        static_assert(ItemsPerThread > 0);
+        output[0] = scan_op(initial_value, input[0]);
+        for (int i = 1; i < ItemsPerThread; i++) {
+            output[i] = scan_op(output[i - 1], input[i]);
+        }
+    }
+};
+
 template<typename Key, typename KeyValueType, int BlockSize, int ItemsPerThread>
 class block_sort<Key, KeyValueType, BlockSize, ItemsPerThread, cpu> {
 

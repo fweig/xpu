@@ -285,6 +285,38 @@ XPU_D void barrier();
 XPU_D int float_as_int(float val);
 XPU_D float int_as_float(int val);
 
+
+template<typename T, int BlockSize, xpu::driver_t Impl=XPU_COMPILATION_TARGET>
+class block_scan {
+
+public:
+    struct storage_t {};
+
+    XPU_D block_scan(storage_t &);
+
+    XPU_D void exclusive_sum(T input, T &output);
+
+    template<typename ScanOp>
+    XPU_D void exclusive_sum(T input, T &output, T initial_value, ScanOp scan_op);
+
+    template<int ItemsPerThread>
+    XPU_D void exclusive_sum(T(&input)[ItemsPerThread], T(&output)[ItemsPerThread]);
+
+    template<int ItemsPerThread, typename ScanOp>
+    XPU_D void exclusive_sum(T(&input)[ItemsPerThread], T(&output)[ItemsPerThread], ScanOp scan_op);
+
+    XPU_D void inclusive_sum(T input, T &output);
+
+    template<typename ScanOp>
+    XPU_D void inclusive_sum(T input, T &output, T initial_value, ScanOp scan_op);
+
+    template<int ItemsPerThread>
+    XPU_D void inclusive_sum(T(&input)[ItemsPerThread], T(&output)[ItemsPerThread]);
+
+    template<int ItemsPerThread, typename ScanOp>
+    XPU_D void inclusive_sum(T(&input)[ItemsPerThread], T(&output)[ItemsPerThread], T initial_value, ScanOp scan_op);
+};
+
 template<typename Key, typename KeyValueType, int BlockSize, int ItemsPerThread=8, xpu::driver_t Impl=XPU_COMPILATION_TARGET>
 class block_sort {
 

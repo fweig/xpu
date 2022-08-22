@@ -334,6 +334,54 @@ struct numeric_limits<unsigned long int> {
 
 } // namespace detail
 
+template<typename T, int BlockSize>
+class block_scan<T, BlockSize, XPU_COMPILATION_TARGET> {
+
+private:
+    using block_scan_impl = detail::cub::BlockScan<T, BlockSize>;
+
+public:
+    struct storage_t {
+        typename block_scan_impl::TempStorage scanTemp;
+    };
+
+    XPU_D block_scan(storage_t &st) : impl(st.scanTemp) {}
+
+    XPU_D void exclusive_sum(T input, T &output) { impl.ExclusiveSum(input, output); }
+
+    template<typename ScanOp>
+    XPU_D void exclusive_sum(T input, T &output, T initial_value, ScanOp scan_op) {
+        impl.ExclusiveSum(input, output, initial_value, scan_op);
+    }
+
+    template<int ItemsPerThread>
+    XPU_D void exclusive_sum(T(&input)[ItemsPerThread], T(&output)[ItemsPerThread]) { impl.ExclusiveSum(input, output); }
+
+    template<int ItemsPerThread, typename ScanOp>
+    XPU_D void exclusive_sum(T(&input)[ItemsPerThread], T(&output)[ItemsPerThread], T initial_value, ScanOp scan_op) {
+        impl.ExclusiveSum(input, output, initial_value, scan_op);
+    }
+
+    XPU_D void inclusive_sum(T input, T &output) { impl.InclusiveSum(input, output); }
+
+    template<typename ScanOp>
+    XPU_D void inclusive_sum(T input, T &output, T initial_value, ScanOp scan_op) {
+        impl.InclusiveSum(input, output, initial_value, scan_op);
+    }
+
+    template<int ItemsPerThread>
+    XPU_D void inclusive_sum(T(&input)[ItemsPerThread], T(&output)[ItemsPerThread]) { impl.InclusiveSum(input, output); }
+
+    template<int ItemsPerThread, typename ScanOp>
+    XPU_D void inclusive_sum(T(&input)[ItemsPerThread], T(&output)[ItemsPerThread], T initial_value, ScanOp scan_op) {
+        impl.InclusiveSum(input, output, initial_value, scan_op);
+    }
+
+private:
+    block_scan_impl impl;
+
+};
+
 template<typename Key, typename T, int BlockSize, int ItemsPerThread>
 class block_sort<Key, T, BlockSize, ItemsPerThread, XPU_COMPILATION_TARGET> {
 

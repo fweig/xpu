@@ -65,6 +65,13 @@ XPU_KERNEL(merge_single, typename merge_single_t::storage_t, const float *a, siz
     merge_single_t(smem).merge(a, size_a, b, size_b, dst, [](float a, float b) { return a < b; });
 }
 
+using block_scan_t = xpu::block_scan<int, 64>;
+XPU_KERNEL(block_scan, block_scan_t::storage_t, int* incl, int* excl) {
+    block_scan_t scan{smem};
+    scan.inclusive_sum(1, incl[xpu::thread_idx::x()]);
+    scan.exclusive_sum(1, excl[xpu::thread_idx::x()]);
+}
+
 XPU_KERNEL(access_cmem, xpu::no_smem, float3_ *out) {
     if (xpu::thread_idx::x() > 0) {
         return;

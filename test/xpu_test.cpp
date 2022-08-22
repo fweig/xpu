@@ -244,6 +244,28 @@ TEST(XPUTest, CanMergeWithOneItemPerThread) {
     testMergeKernel<merge_single>(512, 512);
 }
 
+TEST(XPUTest, CanRunBlockScan) {
+    size_t blockSize = xpu::active_driver() == xpu::cpu ? 1 : 64;
+
+    xpu::hd_buffer<int> incl{blockSize};
+    xpu::hd_buffer<int> excl{blockSize};
+
+    xpu::run_kernel<block_scan>(xpu::grid::n_blocks(1), incl.d(), excl.d());
+
+    xpu::copy(incl, xpu::device_to_host);
+    xpu::copy(excl, xpu::device_to_host);
+
+    int inclSum = 1;
+    int exclSum = 0;
+
+    for (size_t i = 0; i < blockSize; i++) {
+        ASSERT_EQ(incl.h()[i], inclSum);
+        ASSERT_EQ(excl.h()[i], exclSum);
+        inclSum++;
+        exclSum++;
+    }
+}
+
 TEST(XPUTest, CanSetAndReadCMem) {
     float3_ orig{1, 2, 3};
     xpu::hd_buffer<float3_> out{1};

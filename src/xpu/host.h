@@ -10,6 +10,7 @@
 #include <iostream>
 #include <utility>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <vector>
 
@@ -26,11 +27,9 @@ struct is_kernel : std::is_base_of<detail::kernel_dispatcher, Kernel> {};
 class exception : public std::exception {
 
 public:
-    explicit exception(const std::string message_) : message(message_) {}
+    explicit exception(std::string_view message_) : message(message_) {}
 
-    const char *what() const noexcept override {
-        return message.c_str();
-    }
+    const char *what() const noexcept override { return message.c_str(); }
 
 private:
     std::string message;

@@ -7,6 +7,7 @@
 #define DRIVER_CALL_I(type, func) throw_on_driver_error((type), get_driver((type))->func)
 #define DRIVER_CALL(func) DRIVER_CALL_I(active_driver(), func)
 #define CPU_DRIVER_CALL(func) DRIVER_CALL_I(cpu, func)
+#define RAISE_INTERNAL_ERROR() raise_error(format("%s:%d: Internal xpu error. This should never happen! Please file a bug.", __FILE__, __LINE__))
 
 using namespace xpu::detail;
 
@@ -57,7 +58,7 @@ void runtime::initialize() {
         }
 
         if (not valid_driver) {
-            throw exception{"Requested unknown driver with environment variable XPU_DEVICE: " + device_env};
+            raise_error(format("Requested unknown driver with environment variable XPU_DEVICE='%s'", device_env.c_str()));
         }
 
         sscanf(device_env.c_str(), "%d", &target_device);
@@ -105,7 +106,7 @@ void runtime::initialize() {
     }
 
     if (not has_driver(target_driver)) {
-        throw exception{"xpu: Requested " + std::string{driver_str(target_driver)} + " device, but failed to load that driver."};
+        raise_error(format("xpu: Requested %s device, but failed to load that driver.", driver_str(target_driver)));
     }
     m_active_driver = target_driver;
     device_prop props;
@@ -190,7 +191,7 @@ xpu::device_prop runtime::pointer_get_device(const void *ptr) {
 
     // UNREACHABLE
     // cpu driver is always available
-    throw exception{"Internal xpu error. This should never happen. Please file a bug."};
+    RAISE_INTERNAL_ERROR();
 }
 
 driver_interface *runtime::get_driver(driver_t d) const {
@@ -200,7 +201,7 @@ driver_interface *runtime::get_driver(driver_t d) const {
         case hip: return m_hip_driver->obj;
     }
 
-    return nullptr; // UNREACHABLE;
+    RAISE_INTERNAL_ERROR();
 }
 
 driver_interface *runtime::get_active_driver() const {
@@ -224,7 +225,7 @@ const char *runtime::driver_str(driver_t d) const {
     case cuda: return "CUDA";
     case hip: return "HIP";
     }
-    return "UNKNOWN";
+    RAISE_INTERNAL_ERROR();
 }
 
 void runtime::throw_on_driver_error(driver_t d, error err) const {
@@ -232,10 +233,11 @@ void runtime::throw_on_driver_error(driver_t d, error err) const {
         return;
     }
 
-    std::stringstream ss;
-    ss << "xpu: Driver " << driver_str(d) <<  " raised error " << err << ": " << get_driver(d)->error_to_string(err);
+    raise_error(format("xpu: Driver '%s' raised error: %s", driver_str(d), get_driver(d)->error_to_string(err)));
+}
 
-    throw exception(ss.str());
+[[noreturn]] void runtime::raise_error(std::string_view error_msg) const {
+    throw xpu::exception(error_msg);
 }
 
 

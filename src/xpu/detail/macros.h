@@ -8,4 +8,6 @@
 
 #define XPU_MAYBE_UNUSED [[gnu::unused]]
 
+#define XPU_ATTR_FORMAT_PRINTF(...) __attribute__ ((format (__printf__, ##__VA_ARGS__)))
+
 #endif

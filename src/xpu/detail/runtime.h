@@ -20,9 +20,9 @@ class image_pool {
 
 public:
     template<typename I>
-    I *find(driver_t d) {
+    I *find(driver_t driver) {
         for (auto &e : entries) {
-            if (e.d == d && e.id == grouped_type_id<I, image_pool>::get()) {
+            if (e.driver == driver && e.id == grouped_type_id<I, image_pool>::get()) {
                 return static_cast<I *>(e.image);
             }
         }
@@ -30,13 +30,13 @@ public:
     }
 
     template<typename I>
-    void add(I *i, driver_t d) {
-        entries.push_back(basic_entry{d, grouped_type_id<I, image_pool>::get(), i});
+    void add(I *i, driver_t driver) {
+        entries.push_back(basic_entry{driver, grouped_type_id<I, image_pool>::get(), i});
     }
 
 private:
     struct basic_entry {
-        driver_t d;
+        driver_t driver;
         size_t id;
         void *image;
     };
@@ -125,8 +125,7 @@ private:
             img = load_image<typename A::image>(active_driver());
         }
         if (img == nullptr) {
-            XPU_LOG("Failed to load image for kernel '%s'.", type_name<A>());
-            std::abort();
+            raise_error(format("Failed to load image for kernel '%s'", type_name<A>()));
         }
         return img;
     }
@@ -156,6 +155,9 @@ private:
     const char *driver_str(driver_t) const;
 
     void throw_on_driver_error(driver_t, error) const;
+
+    // Exception are raised from a seperate function, to avoid circular dependency with host.h header/
+    [[noreturn]] void raise_error(std::string_view) const;
 
 };
 

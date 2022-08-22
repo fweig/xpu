@@ -441,6 +441,7 @@ TEST(XPUTest, CanCallDeviceFuncs) {
 }
 
 TEST(XPUTest, CollectsTimingData) {
+    constexpr int NRuns = 10;
     constexpr int NElems = 100000;
 
     xpu::hd_buffer<float> a{NElems};
@@ -453,17 +454,28 @@ TEST(XPUTest, CollectsTimingData) {
     xpu::copy(a, xpu::host_to_device);
     xpu::copy(b, xpu::host_to_device);
 
-    for (int i = 0; i < 10; i++) {
-        xpu::run_kernel<vector_add_timing>(xpu::grid::n_threads(NElems), a.d(), b.d(), c.d(), NElems);
+    for (int i = 0; i < NRuns; i++) {
+        xpu::run_kernel<vector_add_timing0>(xpu::grid::n_threads(NElems), a.d(), b.d(), c.d(), NElems);
+        xpu::run_kernel<vector_add_timing1>(xpu::grid::n_threads(NElems), a.d(), b.d(), c.d(), NElems);
     }
 
-    auto timings = xpu::get_timing<vector_add_timing>();
+    auto timings0 = xpu::get_timing<vector_add_timing0>();
 
-    ASSERT_EQ(timings.size(), 10);
+    ASSERT_EQ(timings0.size(), NRuns);
 
-    for (auto &t : timings) {
+    for (auto &t : timings0) {
         ASSERT_GT(t, 0.f);
     }
+
+    auto timings1 = xpu::get_timing<vector_add_timing1>();
+
+    ASSERT_EQ(timings1.size(), NRuns);
+
+    for (auto &t : timings1) {
+        ASSERT_GT(t, 0.f);
+    }
+
+    ASSERT_NE(timings0, timings1);
 }
 
 int main(int argc, char **argv) {

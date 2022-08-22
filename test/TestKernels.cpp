@@ -4,10 +4,7 @@ XPU_IMAGE(TestKernels);
 
 XPU_CONSTANT(test_constants);
 
-// Ensure that kernels without arguments can compile.
-XPU_KERNEL(empty_kernel, xpu::no_smem) {}
-
-XPU_KERNEL(vector_add, xpu::no_smem, const float *x, const float *y, float *z, int N) {
+XPU_D void do_vector_add(const float *x, const float *y, float *z, int N) {
     int iThread = xpu::block_idx::x() * xpu::block_dim::x() + xpu::thread_idx::x();
     if (iThread >= N) {
         return;
@@ -15,12 +12,19 @@ XPU_KERNEL(vector_add, xpu::no_smem, const float *x, const float *y, float *z, i
     z[iThread] = x[iThread] + y[iThread];
 }
 
-XPU_KERNEL(vector_add_timing, xpu::no_smem, const float *x, const float *y, float *z, int N) {
-    int iThread = xpu::block_idx::x() * xpu::block_dim::x() + xpu::thread_idx::x();
-    if (iThread >= N) {
-        return;
-    }
-    z[iThread] = x[iThread] + y[iThread];
+// Ensure that kernels without arguments can compile.
+XPU_KERNEL(empty_kernel, xpu::no_smem) {}
+
+XPU_KERNEL(vector_add, xpu::no_smem, const float *x, const float *y, float *z, int N) {
+    do_vector_add(x, y, z, N);
+}
+
+XPU_KERNEL(vector_add_timing0, xpu::no_smem, const float *x, const float *y, float *z, int N) {
+    do_vector_add(x, y, z, N);
+}
+
+XPU_KERNEL(vector_add_timing1, xpu::no_smem, const float *x, const float *y, float *z, int N) {
+    do_vector_add(x, y, z, N);
 }
 
 using block_sort_t = xpu::block_sort<float, float, 64, 2>;

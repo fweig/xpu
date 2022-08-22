@@ -125,7 +125,8 @@ XPU_EXPORT_CONSTANT(TestKernels, float3_, test_constants);
 
 XPU_EXPORT_KERNEL(TestKernels, empty_kernel);
 XPU_EXPORT_KERNEL(TestKernels, vector_add, const float *, const float *, float *, int);
-XPU_EXPORT_KERNEL(TestKernels, vector_add_timing, const float *, const float *, float *, int);
+XPU_EXPORT_KERNEL(TestKernels, vector_add_timing0, const float *, const float *, float *, int);
+XPU_EXPORT_KERNEL(TestKernels, vector_add_timing1, const float *, const float *, float *, int);
 XPU_EXPORT_KERNEL(TestKernels, sort_float, float *, int, float *, float **);
 XPU_EXPORT_KERNEL(TestKernels, sort_struct, key_value_t *, int, key_value_t *, key_value_t **);
 XPU_EXPORT_KERNEL(TestKernels, merge, const float *, size_t, const float *, size_t, float *);

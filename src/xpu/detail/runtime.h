@@ -22,7 +22,7 @@ public:
     template<typename I>
     I *find(driver_t d) {
         for (auto &e : entries) {
-            if (e.d == d && e.id == type_id<I, image_pool>::get()) {
+            if (e.d == d && e.id == grouped_type_id<I, image_pool>::get()) {
                 return static_cast<I *>(e.image);
             }
         }
@@ -31,7 +31,7 @@ public:
 
     template<typename I>
     void add(I *i, driver_t d) {
-        entries.push_back(basic_entry{d, type_id<I, image_pool>::get(), i});
+        entries.push_back(basic_entry{d, grouped_type_id<I, image_pool>::get(), i});
     }
 
 private:
@@ -72,7 +72,7 @@ public:
         throw_on_driver_error(active_driver(), err);
 
         if (m_measure_time) {
-            size_t id = type_id<Kernel, typename Kernel::image>::get();
+            size_t id = linear_type_id<Kernel>::get();
 
             if (m_profiling.size() <= id) {
                 m_profiling.resize(id+1);
@@ -90,7 +90,7 @@ public:
 
     template<typename Kernel>
     std::vector<float> get_timing() {
-        size_t id = type_id<Kernel, typename Kernel::image>::get();
+        size_t id = linear_type_id<Kernel>::get();
 
         // Profiling not enabled or kernel hasn't run yet.
         if (m_profiling.size() <= id) {

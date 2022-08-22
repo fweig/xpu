@@ -26,7 +26,7 @@ const char *type_name() noexcept {
     return tname.c_str();
 }
 
-template<typename G>
+template<typename Group = void>
 struct type_seq {
     static size_t next() {
         static size_t value = 0;
@@ -34,13 +34,30 @@ struct type_seq {
     }
 };
 
-template<typename T, typename G>
-struct type_id {
+// xpu needs to two different type ids internally.
+// A global one, and one that splits types into groups instead.
+// The latter is used to assign kernels ids that are unique only in their specific
+// and to exclude image ids from global ids. While the former allows mapping all kernels
+// onto a global unique id.
+
+template<typename T, typename Group>
+struct grouped_type_id {
+    static_assert(not std::is_same_v<Group, void>);
+
     static size_t get() {
-        static const size_t id = type_seq<G>::next();
+        static const size_t id = type_seq<Group>::next();
         return id;
     }
 };
+
+template<typename T>
+struct linear_type_id {
+    static size_t get() {
+        static const size_t id = type_seq<>::next();
+        return id;
+    }
+};
+
 
 struct constant_tag {};
 struct function_tag {};

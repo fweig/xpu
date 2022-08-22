@@ -82,7 +82,7 @@ public:
     void add_symbol(void *symbol) {
         auto it = ids().find(type_name<A>());
         if (it == ids().end()) {
-            ids()[type_name<A>()] = type_id<A, typename A::image>::get();
+            ids()[type_name<A>()] = grouped_type_id<A, typename A::image>::get();
         }
         size_t id = ids()[type_name<A>()];
         if (symbols.size() <= id) {
@@ -168,7 +168,7 @@ private:
     template<typename F, typename... Args>
     int call_action(Args... args) {
         auto *symbols = &context->get_symbols();
-        size_t id = type_id<F, typename F::image>::get();
+        size_t id = grouped_type_id<F, typename F::image>::get();
         if (id >= symbols->size()) {
             dump_symbols();
         }

@@ -20,36 +20,36 @@ bool logger::active() const {
     return m_write_out != nullptr;
 }
 
-void logger::write(const char *format, ...) {
+void logger::write(const char *formatstr, ...) {
     if (not active()) {
         return;
     }
 
     std::va_list args;
-    va_start(args, format);
-    int buf_size = std::vsnprintf(nullptr, 0, format, args) + 1;
+    va_start(args, formatstr);
+    int buf_size = std::vsnprintf(nullptr, 0, formatstr, args);
     va_end(args);
 
-    std::unique_ptr<char[]> formatted{new char[buf_size]};
+    std::string formatted(size_t(buf_size), '\0');
 
-    va_start(args, format);
-    std::vsnprintf(formatted.get(), buf_size, format, args);
+    va_start(args, formatstr);
+    std::vsnprintf(formatted.data(), buf_size + 1, formatstr, args);
     va_end(args);
 
-    m_write_out(formatted.get());
+    m_write_out(formatted.c_str());
 }
 
 std::string xpu::detail::format(const char *format, ...) {
     std::va_list args;
     va_start(args, format);
-    int buf_size = std::vsnprintf(nullptr, 0, format, args) + 1;
+    int buf_size = std::vsnprintf(nullptr, 0, format, args);
     va_end(args);
 
-    std::unique_ptr<char[]> formatted{new char[buf_size]};
+    std::string formatted(size_t(buf_size), '\0');
 
     va_start(args, format);
-    std::vsnprintf(formatted.get(), buf_size, format, args);
+    std::vsnprintf(formatted.data(), buf_size + 1, format, args);
     va_end(args);
 
-    return std::string{formatted.get()};
+    return formatted;
 }

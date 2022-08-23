@@ -6,8 +6,7 @@
 #include <functional>
 #include <string>
 
-namespace xpu {
-namespace detail {
+namespace xpu::detail {
 
 class logger {
 
@@ -25,8 +24,7 @@ private:
 
 std::string format(const char *, ... ) XPU_ATTR_FORMAT_PRINTF(1, 2);
 
-} // namespace detail
-} // namespace xpu
+} // namespace xpu::detail
 
 #define XPU_LOG(format, ...) xpu::detail::logger::instance().write("xpu: " format, ##__VA_ARGS__)
 

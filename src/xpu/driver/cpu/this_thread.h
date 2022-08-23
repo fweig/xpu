@@ -3,13 +3,11 @@
 
 #include "../../common.h"
 
-namespace xpu {
-namespace detail {
-namespace this_thread {
+namespace xpu::detail::this_thread {
+
 extern thread_local dim block_idx;
 extern thread_local dim grid_dim;
-} // namespace this_thread
-} // namespace detail
-} // namespace xpu
+
+} // namespace xpu::detail::this_thread
 
 #endif

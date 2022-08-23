@@ -3,8 +3,7 @@
 
 #include <string>
 
-namespace xpu {
-namespace detail {
+namespace xpu::detail {
 
 // Some utility classes for loading shared libraries at runtime
 class library_loader {
@@ -55,7 +54,6 @@ private:
 
 };
 
-} // namespace detail
-} // namespace xpu
+} // namespace xpu::detail
 
 #endif

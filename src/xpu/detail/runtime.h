@@ -13,8 +13,7 @@
 #include <string_view>
 #include <vector>
 
-namespace xpu {
-namespace detail {
+namespace xpu::detail {
 
 class image_pool {
 
@@ -161,7 +160,6 @@ private:
 
 };
 
-} // namespace detail
-} // namespace xpu
+} // namespace xpu::detail
 
 #endif

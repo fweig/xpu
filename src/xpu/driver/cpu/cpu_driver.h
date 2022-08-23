@@ -3,8 +3,7 @@
 
 #include "../../detail/driver_interface.h"
 
-namespace xpu {
-namespace detail {
+namespace xpu::detail {
 
 class cpu_driver : public driver_interface {
 
@@ -40,7 +39,6 @@ private:
 
 };
 
-} // namespace detail
-} // namespace xpu
+} // namespace xpu::detail
 
 #endif

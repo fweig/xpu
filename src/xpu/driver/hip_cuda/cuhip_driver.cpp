@@ -16,8 +16,7 @@ using cuhip_device_prop = hipDeviceProp_t;
 using cuhip_pointer_attributes = hipPointerAttribute_t;
 #endif
 
-namespace xpu {
-namespace detail {
+namespace xpu::detail {
 
 class cuhip_driver : public driver_interface {
 
@@ -132,8 +131,7 @@ public:
 
 };
 
-} // namespace detail
-} // namespace xpu
+} // namespace xpu::detail
 
 extern "C" xpu::detail::driver_interface *create() {
     return new xpu::detail::cuhip_driver{};

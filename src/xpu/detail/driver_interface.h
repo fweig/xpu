@@ -6,8 +6,7 @@
 
 #include <cstddef>
 
-namespace xpu {
-namespace detail {
+namespace xpu::detail {
 
 class driver_interface {
 
@@ -35,7 +34,6 @@ public:
 
 };
 
-} // namespace detail
-} // namespace xpu
+} // namespace xpu::detail
 
 #endif

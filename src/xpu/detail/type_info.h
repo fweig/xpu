@@ -4,8 +4,7 @@
 #include <string>
 #include <type_traits>
 
-namespace xpu {
-namespace detail {
+namespace xpu::detail {
 
 template <typename T>
 const char *type_name() noexcept {
@@ -84,7 +83,6 @@ struct is_kernel {
         && std::is_same<typename F::tag, kernel_tag>::value;
 };
 
-} // namespace detail
-} // namespace xpu
+} // namespace xpu::detail
 
 #endif

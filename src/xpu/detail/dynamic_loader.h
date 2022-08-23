@@ -22,8 +22,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace xpu {
-namespace detail {
+namespace xpu::detail {
 
 template<typename I, typename T>
 struct action {
@@ -395,8 +394,7 @@ struct register_kernel {
     }
 };
 
-} // namespace detail
-} // namespace xpu
+} // namespace xpu::detail
 
 #if XPU_IS_CPU
 #define XPU_DETAIL_TYPE_ID_MAP(image) \

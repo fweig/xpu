@@ -82,8 +82,15 @@ public:
     hd_buffer<T> &operator=(hd_buffer<T> &&);
 
     size_t size() const { return m_size; }
-    T *h() { return m_h; }
-    T *d() { return m_d; }
+
+          T *h()       { return m_h; }
+    const T *h() const { return m_h; }
+
+          T *d()       { return m_d; }
+    const T *d() const { return m_d; }
+
+          T &operator[](size_t idx)       { return m_h[idx]; }
+    const T &operator[](size_t idx) const { return m_h[idx]; }
 
     bool copy_required() const { return m_h != m_d; }
 
@@ -108,7 +115,9 @@ public:
     d_buffer<T> &operator=(d_buffer<T> &&);
 
     size_t size() const { return m_size; }
-    T *d() { return m_d; }
+
+          T *d()       { return m_d; }
+    const T *d() const { return m_d; }
 
     void reset();
 

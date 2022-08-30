@@ -61,29 +61,29 @@ using action_interface_t = typename action_interface<typename A::tag, A>::type;
 
 using symbol_table = std::vector<std::pair<std::string, void *>>;
 
+template<typename I>
+struct image_file_name {
+    const char *operator()() const;
+};
+
 template <typename I>
 class image_context {
 
 public:
-    static const char *file_name;
-    static std::unordered_map<std::string, size_t> &ids();
-
     static image_context<I> *instance();
 
-    image_context() {
-        name = type_name<I>();
-    }
+    image_context() { name = type_name<I>(); }
 
     symbol_table &get_symbols() { return symbols; }
     std::string get_name() const { return name; }
 
     template<typename A>
     void add_symbol(void *symbol) {
-        auto it = ids().find(type_name<A>());
-        if (it == ids().end()) {
-            ids()[type_name<A>()] = grouped_type_id<A, typename A::image>::get();
+        auto it = ids.find(type_name<A>());
+        if (it == ids.end()) {
+            ids[type_name<A>()] = grouped_type_id<A, typename A::image>::get();
         }
-        size_t id = ids()[type_name<A>()];
+        size_t id = ids[type_name<A>()];
         if (symbols.size() <= id) {
             symbols.resize(id+1);
         }
@@ -91,6 +91,7 @@ public:
     }
 
 private:
+    std::unordered_map<std::string, size_t> ids;
     symbol_table symbols;
 
     std::string name;
@@ -397,17 +398,20 @@ struct register_kernel {
 } // namespace xpu::detail
 
 #if XPU_IS_CPU
+
 #define XPU_DETAIL_TYPE_ID_MAP(image) \
     template<> \
-    const char *xpu::detail::image_context<image>::file_name = XPU_IMAGE_FILE; \
-    \
-    template<> \
-    std::unordered_map<std::string, size_t> &xpu::detail::image_context<image>::ids() { \
-        static std::unordered_map<std::string, size_t> ids; \
-        return ids; \
-    }
-#else
+    const char *xpu::detail::image_file_name<image>::operator()() const { return XPU_IMAGE_FILE; }
+#define XPU_DETAIL_IMAGE_CONTEXT_GETTER(image)
+
+#else // HIP OR CUDA
+
 #define XPU_DETAIL_TYPE_ID_MAP(image)
+#define XPU_DETAIL_IMAGE_CONTEXT_GETTER(image) \
+    extern "C" xpu::detail::image_context<image> *xpu_detail_get_context() { \
+        return xpu::detail::image_context<image>::instance(); \
+    }
+
 #endif
 
 #define XPU_DETAIL_IMAGE(image) \
@@ -417,9 +421,9 @@ struct register_kernel {
         static image_context<image> ctx; \
         return &ctx; \
     } \
-    extern "C" xpu::detail::image_context<image> *xpu_detail_get_context() { \
-        return xpu::detail::image_context<image>::instance(); \
-    }
+    XPU_DETAIL_IMAGE_CONTEXT_GETTER(image) \
+    void xpu_detail_dummy_func() // Force semicolon at the end of macro
+
 
 #define XPU_DETAIL_EXPORT_FUNC(image, name, ...) \
     struct name : xpu::detail::action<image, xpu::detail::function_tag> { \

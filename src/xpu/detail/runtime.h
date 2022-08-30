@@ -138,7 +138,7 @@ private:
             break;
         case cuda:
         case hip:
-            i = new image<I>(complete_file_name(image_context<I>::file_name, d).c_str());
+            i = new image<I>(complete_file_name(image_file_name<I>{}(), d).c_str());
             break;
         }
         m_images.add(i, d);

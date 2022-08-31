@@ -130,7 +130,7 @@ Example:
 #include <xpu/host.h>
 
 int main() {
-    xpu::initialize(xpu::driver::cpu); // or xpu::driver::cuda
+    xpu::initialize();
 
     xpu::run_kernel<kernelName>(
         xpu::grid::n_blocks(NumOfBlocks), arg0, arg1, ...);

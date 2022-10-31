@@ -128,11 +128,12 @@ function(xpu_attach Library)
 
     get_filename_component(KernelDeclFullPath "${KernelDecl}" REALPATH)
 
-    target_compile_definitions(${Library} PRIVATE XPU_IMAGE_FILE="${Library}")
-    target_compile_options(${Library} PUBLIC -fPIC)
-    target_link_libraries(${Library} xpu)
+    set_property(TARGET ${Library} APPEND PROPERTY COMPILE_DEFINITIONS XPU_IMAGE_FILE="${Library}")
+    set_property(TARGET ${Library} PROPERTY POSITION_INDEPENDENT_CODE TRUE)
+    set_property(TARGET ${Library} APPEND PROPERTY LINK_LIBRARIES xpu)
+
     if (TARGET OpenMP::OpenMP_CXX)
-        target_link_libraries(${Library} OpenMP::OpenMP_CXX)
+        set_property(TARGET ${Library} APPEND PROPERTY LINK_LIBRARIES OpenMP::OpenMP_CXX)
     endif()
 
     file(REMOVE ${UnitySrcAbsolute})

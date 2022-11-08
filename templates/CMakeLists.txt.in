@@ -1,4 +1,4 @@
-project(@DeviceLibrary@_@DriverType@)
+project(@Library@_@DriverType@)
 cmake_minimum_required(VERSION 3.18)
 
 
@@ -38,7 +38,8 @@ endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Try to get complete list of include directories with this: https://stackoverflow.com/questions/43554085/target-link-libraries-and-include-directories-property
-include_directories(@IncludeDirectories@)
+# include_directories(@IncludeDirectories@)
+include(@Library@_@DriverType@-include-dirs.cmake)
 add_library(@Library@_@DriverType@ MODULE @UnitySrcAbsolute@)
 
 if ("@DriverType@" STREQUAL "Hip")

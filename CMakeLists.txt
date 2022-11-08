@@ -71,6 +71,8 @@ if (XPU_STANDALONE)
 endif()
 
 function(xpu_create_subproject Library DriverType UnitySrcAbsolute)
+    include(ExternalProject)
+
     set(OutputDir ${CMAKE_CURRENT_BINARY_DIR})
     set(SubLibraryName ${Library}_${DriverType})
     set(SubLibraryFullPath ${OutputDir}/${CMAKE_SHARED_LIBRARY_PREFIX}${SubLibraryName}${CMAKE_SHARED_LIBRARY_SUFFIX})
@@ -97,26 +99,32 @@ function(xpu_create_subproject Library DriverType UnitySrcAbsolute)
     )
 
     message(STATUS "Generating library ${SubLibraryName}.")
-    execute_process(
-        COMMAND ${CMAKE_COMMAND}
+    ExternalProject_Add(${SubLibraryName}
+        SOURCE_DIR "${SrcDir}"
+        CMAKE_ARGS
             -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=${OutputDir}
             -DCMAKE_CXX_COMPILER=${SubprojectCxx}
             -DCMAKE_C_COMPILER=${SubprojectC}
             -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}
-            .
-        WORKING_DIRECTORY ${SrcDir}
-        OUTPUT_QUIET
+        PREFIX "${SrcDir}"
+        BUILD_ALWAYS TRUE
+        STEP_TARGETS build
+        EXCLUDE_FROM_ALL TRUE
+        LOG_CONFIGURE TRUE
+        LOG_BUILD TRUE
+        LOG_MERGED_STDOUTERR TRUE
+        LOG_OUTPUT_ON_FAILURE TRUE
     )
 
-    # Use $(make) instead of "cmake --build" here to suppress warnings about make jobserver...
-    add_custom_target(${SubLibraryName}
-        COMMAND $(MAKE) > /dev/null
+    ExternalProject_Add_Step(${SubLibraryName} export-include-dirs
+        COMMAND ${CMAKE_COMMAND} -E echo "include_directories($<TARGET_PROPERTY:${Library},INCLUDE_DIRECTORIES>)" > "${SubLibraryName}-include-dirs.cmake"
         WORKING_DIRECTORY ${SrcDir}
-        BYPRODUCTS ${SubLibraryFullPath} ${SrcDir}
-        COMMENT "Building target ${SubLibraryName}"
+        BYPRODUCTS "${SrcDir}/${SubLibraryName}-include-dirs.cmake"
+        # COMMENT "${SubLibraryName}: Export include directories"
+        DEPENDERS configure
     )
 
-    add_dependencies(${Library} ${SubLibraryName})
+    add_dependencies(${Library} ${SubLibraryName}-build)
 endfunction()
 
 function(xpu_attach Library)

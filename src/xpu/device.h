@@ -56,7 +56,9 @@ struct grid_dim {
 };
 
 template<typename K>
-struct block_size : std::integral_constant<int, 64> {};
+struct block_size {
+    static inline constexpr xpu::dim value{64};
+};
 
 struct no_smem {};
 

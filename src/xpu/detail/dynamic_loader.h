@@ -220,6 +220,12 @@ __global__ void kernel_entry(Args... args) {
     F::impl(smem, args...);
 }
 
+template<typename F, typename S, int MaxThreadsPerBlock, typename... Args>
+__global__ void __launch_bounds__(MaxThreadsPerBlock) kernel_entry_bounded(Args... args) {
+    __shared__ S smem;
+    F::impl(smem, args...);
+}
+
 #endif
 
 #if XPU_IS_CUDA
@@ -250,7 +256,7 @@ struct action_runner<kernel_tag, K, S, void(*)(S &, Args...)> {
             ON_ERROR_GOTO(err, cudaEventRecord(start), cleanup_events);
         }
 
-        kernel_entry<K, S, Args...><<<grid_dim.as_cuda_grid(), block_dim.as_cuda_grid()>>>(args...);
+        kernel_entry_bounded<K, S, block_size<K>::value.linear(), Args...><<<grid_dim.as_cuda_grid(), block_dim.as_cuda_grid()>>>(args...);
 
         if (measure_time) {
             ON_ERROR_GOTO(err, cudaEventRecord(end), cleanup_events);
@@ -304,7 +310,7 @@ struct action_runner<kernel_tag, K, S, void(*)(S &, Args...)> {
         if (measure_time) {
             ON_ERROR_GOTO(err, hipEventRecord(start), cleanup_events);
         }
-        hipLaunchKernelGGL(HIP_KERNEL_NAME(kernel_entry<K, S, Args...>), grid_dim.as_cuda_grid(), block_dim.as_cuda_grid(), 0, 0, args...);
+        hipLaunchKernelGGL(HIP_KERNEL_NAME(kernel_entry_bounded<K, S, block_size<K>::value.linear(), Args...>), grid_dim.as_cuda_grid(), block_dim.as_cuda_grid(), 0, 0, args...);
         if (measure_time) {
             ON_ERROR_GOTO(err, hipEventRecord(end), cleanup_events);
         }

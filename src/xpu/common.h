@@ -30,7 +30,11 @@ struct dim {
     constexpr dim(int _x, int _y) : x(_x), y(_y) {}
     constexpr dim(int _x, int _y, int _z) : x(_x), y(_y), z(_z) {}
 
-    int ndims() const { return 3 - (y < 0) - (z < 0); }
+    constexpr int ndims() const { return 3 - (y < 0) - (z < 0); }
+
+    constexpr int linear() const {
+        return x * (y <= 0 ? 1 : y) * (z <= 0 ? 1 : z);
+    }
 
     #if XPU_IS_HIP || XPU_IS_CUDA
     ::dim3 as_cuda_grid() const { return ::dim3{(unsigned int)x, (unsigned int)y, (unsigned int)z}; }

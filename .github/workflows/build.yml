@@ -3,12 +3,8 @@ name: build
 on: [push, pull_request]
 
 jobs:
-  linux:
-    # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
-    # You can convert this to a matrix build if you need cross-platform coverage.
-    # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
-    runs-on: ubuntu-latest
-
+  linux-legacy:
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
         compiler:
@@ -16,40 +12,71 @@ jobs:
             exe: g++-7
           - pkg: g++-8
             exe: g++-8
-          - pkg: g++-9
-            exe: g++-9
-          - pkg: g++-10
-            exe: g++-10
           - pkg: clang-8
             exe: clang++-8
           - pkg: clang-9
             exe: clang++-9
           - pkg: clang-10
             exe: clang++-10
-          - pkg: clang-11
-            exe: clang++-11
-          - pkg: clang-12
-            exe: clang++-12
-
     steps:
     - uses: actions/checkout@v3
-
     - name: Install compiler
       run: |
         sudo apt update
         sudo apt install -y ${{ matrix.compiler.pkg }}
-
     - name: Configure CMake
       env:
         CXX: ${{ matrix.compiler.exe }}
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       run: cmake -B ${{github.workspace}}/build -DXPU_BUILD_TESTS=ON -DXPU_BUILD_EXAMPLES=ON
-
     - name: Build
       # Build your program with the given configuration
       run: cmake --build ${{github.workspace}}/build -j4
+    - name: Test
+      working-directory: ${{github.workspace}}/build
+      # Execute tests defined by the CMake configuration.
+      # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
+      env:
+        CTEST_OUTPUT_ON_FAILURE: 1
+      run: ctest
 
+  linux:
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        compiler:
+          - pkg: g++-9
+            exe: g++-9
+          - pkg: g++-10
+            exe: g++-10
+          - pkg: g++-11
+            exe: g++-11
+          - pkg: g++-12
+            exe: g++-12
+          - pkg: clang-11
+            exe: clang++-11
+          - pkg: clang-12
+            exe: clang++-12
+          - pkg: clang-13
+            exe: clang++-13
+          - pkg: clang-14
+            exe: clang++-14
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install compiler
+      run: |
+        sudo apt update
+        sudo apt install -y ${{ matrix.compiler.pkg }}
+    - name: Configure CMake
+      env:
+        CXX: ${{ matrix.compiler.exe }}
+      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+      run: cmake -B ${{github.workspace}}/build -DXPU_BUILD_TESTS=ON -DXPU_BUILD_EXAMPLES=ON
+    - name: Build
+      # Build your program with the given configuration
+      run: cmake --build ${{github.workspace}}/build -j4
     - name: Test
       working-directory: ${{github.workspace}}/build
       # Execute tests defined by the CMake configuration.
@@ -60,17 +87,13 @@ jobs:
 
   linux-gpu:
     runs-on: self-hosted
-
     steps:
     - uses: actions/checkout@v3
-
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -DXPU_ENABLE_CUDA=ON -DXPU_ENABLE_HIP=ON -DXPU_BUILD_TESTS=ON -DXPU_BUILD_EXAMPLES=ON
-
     - name: Build
       # Build your program with the given configuration
       run: cmake --build ${{github.workspace}}/build -j4
-
     - name: Test
       working-directory: ${{github.workspace}}/build
       # Execute tests defined by the CMake configuration.
@@ -78,7 +101,6 @@ jobs:
       env:
         CTEST_OUTPUT_ON_FAILURE: 1
       run: ctest -j4
-
 
   linux-extra:
 
@@ -111,7 +133,6 @@ jobs:
         CTEST_OUTPUT_ON_FAILURE: 1
       run: ctest
 
-
   macos:
     runs-on: macOS-latest
 
@@ -142,44 +163,6 @@ jobs:
       env:
         CTEST_OUTPUT_ON_FAILURE: 1
       run: ctest
-
-  linux-future:
-    runs-on: ubuntu-22.04
-
-    strategy:
-      matrix:
-        compiler:
-          - pkg: g++-11
-            exe: g++-11
-          - pkg: g++-12
-            exe: g++-12
-          - pkg: clang-13
-            exe: clang++-13
-          - pkg: clang-14
-            exe: clang++-14
-
-    steps:
-    - uses: actions/checkout@v3
-
-    - name: Install compiler
-      run: |
-        sudo apt update
-        sudo apt install -y ${{ matrix.compiler.pkg }}
-
-    - name: Configure CMake
-      env:
-        CXX: ${{ matrix.compiler.exe }}
-      run: cmake -B ${{github.workspace}}/build -DXPU_BUILD_TESTS=ON -DXPU_BUILD_EXAMPLES=ON
-
-    - name: Build
-      run: cmake --build ${{github.workspace}}/build -j4
-
-    - name: Test
-      working-directory: ${{github.workspace}}/build
-      env:
-        CTEST_OUTPUT_ON_FAILURE: 1
-      run: ctest
-
 
   macos-future:
     runs-on: macOS-12

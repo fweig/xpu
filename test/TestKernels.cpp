@@ -4,6 +4,17 @@ XPU_IMAGE(TestKernels);
 
 XPU_CONSTANT(test_constants);
 
+XPU_FUNC(get_driver_type, xpu::driver_t *driver) {
+    #if XPU_IS_CPU
+        *driver = xpu::cpu;
+    #elif XPU_IS_HIP
+        *driver = xpu::hip;
+    #elif XPU_IS_CUDA
+        *driver = xpu::cuda;
+    #endif
+    return 0;
+}
+
 XPU_D void do_vector_add(const float *x, const float *y, float *z, int N) {
     int iThread = xpu::block_idx::x() * xpu::block_dim::x() + xpu::thread_idx::x();
     if (iThread >= N) {

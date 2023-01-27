@@ -61,6 +61,11 @@ void xpu::run_kernel(grid params, Args&&... args) {
     detail::runtime::instance().run_kernel<Kernel>(params, std::forward<Args>(args)...);
 }
 
+template<typename Func, typename... Args>
+void xpu::call(Args&&... args) {
+    detail::runtime::instance().call<Func>(std::forward<Args>(args)...);
+}
+
 template<typename C>
 void xpu::set_constant(const typename C::data_t &symbol) {
     detail::runtime::instance().set_constant<C>(symbol);

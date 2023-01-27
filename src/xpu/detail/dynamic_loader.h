@@ -38,6 +38,11 @@ struct action_interface<Tag, void(*)(Args...)> {
     using type = int(*)(Args...);
 };
 
+template<typename... Args>
+struct action_interface<function_tag, int(*)(Args...)> {
+    using type = int(*)(Args...);
+};
+
 template<typename S, typename... Args>
 struct action_interface<kernel_tag, void(*)(S, Args...)> {
     using type = int(*)(float *, grid, Args...);
@@ -144,7 +149,7 @@ public:
     }
 
     template<typename F, typename... Args>
-    typename std::enable_if<is_function<I, F>::value>::type call(Args&&... args) {
+    typename std::enable_if<is_function<I, F>::value, int>::type call(Args&&... args) {
         return call_action<F>(args...);
     }
 
@@ -184,14 +189,13 @@ private:
 template<typename...>
 struct action_runner {};
 
-template<typename Tag, typename F, typename... Args>
-struct action_runner<Tag, F, void(*)(Args...)> {
+template<typename F, typename... Args>
+struct action_runner<function_tag, F, int(*)(Args...)> {
 
-    using my_type = action_runner<Tag, F, void(*)(Args...)>;
+    using my_type = action_runner<function_tag, F, int(*)(Args...)>;
 
     static int call(Args... args) {
-        F::impl(args...);
-        return 0;
+        return F::impl(args...);
     }
 };
 

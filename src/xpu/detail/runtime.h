@@ -66,6 +66,8 @@ public:
 
     template<typename Kernel, typename... Args>
     void run_kernel(grid g, Args&&... args) {
+        static_assert(std::is_same_v<typename Kernel::tag, kernel_tag>);
+
         float ms;
         error err = get_image<Kernel>()->template run_kernel<Kernel>((m_measure_time ? &ms : nullptr), g, std::forward<Args>(args)...);
         throw_on_driver_error(active_driver(), err);
@@ -81,8 +83,16 @@ public:
         }
     }
 
+    template<typename Func, typename... Args>
+    void call(Args&&... args) {
+        static_assert(std::is_same_v<typename Func::tag, function_tag>);
+        error err = get_image<Func>()->template call<Func>(std::forward<Args>(args)...);
+        throw_on_driver_error(active_driver(), err);
+    }
+
     template<typename C>
     void set_constant(const typename C::data_t &symbol) {
+        static_assert(std::is_same_v<typename C::tag, constant_tag>);
         error err = get_image<C>()->template set<C>(symbol);
         throw_on_driver_error(active_driver(), err);
     }

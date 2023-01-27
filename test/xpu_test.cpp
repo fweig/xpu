@@ -500,6 +500,15 @@ TEST(XPUTest, CollectsTimingData) {
     ASSERT_NE(timings0, timings1);
 }
 
+TEST(XPUTest, CanCallImageFunction) {
+    xpu::driver_t driver;
+    xpu::call<get_driver_type>(&driver);
+
+    xpu::driver_t expected_driver = xpu::active_driver();
+
+    ASSERT_EQ(driver, expected_driver);
+}
+
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
     setenv("XPU_PROFILE", "1", 1); // always enable profiling in unittests

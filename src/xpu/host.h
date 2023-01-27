@@ -67,6 +67,9 @@ std::vector<float> get_timing();
 template<typename Kernel, typename... Args>
 void run_kernel(grid params, Args&&... args);
 
+template<typename Func, typename... Args>
+void call(Args&&... args);
+
 template<typename C>
 void set_constant(const typename C::data_t &symbol);
 

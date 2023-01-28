@@ -1,17 +1,15 @@
 #include "../../detail/driver_interface.h"
 #include "../../detail/log.h"
+#include "../../detail/macros.h"
 #include "../../common.h"
 
-#define CONCAT_I(a, b) a ## b
-#define CONCAT(a, b) CONCAT_I(a, b)
-
 #if XPU_IS_CUDA
-#define CUHIP(expr) CONCAT(cuda, expr)
+#define CUHIP(expr) XPU_CONCAT(cuda, expr)
 using cuhip_device_prop = cudaDeviceProp;
 using cuhip_pointer_attributes = cudaPointerAttributes;
 #else
 #include <hip/hip_runtime_api.h>
-#define CUHIP(expr) CONCAT(hip, expr)
+#define CUHIP(expr) XPU_CONCAT(hip, expr)
 using cuhip_device_prop = hipDeviceProp_t;
 using cuhip_pointer_attributes = hipPointerAttribute_t;
 #endif

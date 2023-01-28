@@ -2,9 +2,10 @@
 
 XPU_IMAGE(TestKernels);
 
-XPU_CONSTANT(test_constants);
+XPU_EXPORT(test_constants);
 
-XPU_FUNC(get_driver_type, xpu::driver_t *driver) {
+XPU_EXPORT(get_driver_type);
+int get_driver_type::operator()(xpu::driver_t *driver) {
     #if XPU_IS_CPU
         *driver = xpu::cpu;
     #elif XPU_IS_HIP
@@ -24,66 +25,61 @@ XPU_D void do_vector_add(const float *x, const float *y, float *z, int N) {
 }
 
 // Ensure that kernels without arguments can compile.
-XPU_KERNEL(empty_kernel, xpu::no_smem) {}
+XPU_EXPORT(empty_kernel);
+XPU_D void empty_kernel::operator()(context &) {}
 
-XPU_KERNEL(vector_add, xpu::no_smem, const float *x, const float *y, float *z, int N) {
+XPU_EXPORT(vector_add);
+XPU_D void vector_add::operator()(context &, const float *x, const float *y, float *z, int N) {
     do_vector_add(x, y, z, N);
 }
 
-XPU_KERNEL(vector_add_timing0, xpu::no_smem, const float *x, const float *y, float *z, int N) {
+XPU_EXPORT(vector_add_timing0);
+XPU_D void vector_add_timing0::operator()(context &, const float *x, const float *y, float *z, int N) {
     do_vector_add(x, y, z, N);
 }
 
-XPU_KERNEL(vector_add_timing1, xpu::no_smem, const float *x, const float *y, float *z, int N) {
+XPU_EXPORT(vector_add_timing1);
+XPU_D void vector_add_timing1::operator()(context &, const float *x, const float *y, float *z, int N) {
     do_vector_add(x, y, z, N);
 }
 
-using block_sort_t = xpu::block_sort<float, float, 64, 2>;
-struct sort_floats_smem {
-    using sort_buf_t = typename block_sort_t::storage_t;
-    sort_buf_t sortbuf;
-};
-
-XPU_KERNEL(sort_float, sort_floats_smem, float *items, int N, float *buf, float **dst) {
-    float *res = block_sort_t(smem.sortbuf).sort(items, N, buf, [](const float &x) { return x; });
+XPU_EXPORT(sort_float);
+XPU_D void sort_float::operator()(context &ctx, float *items, int N, float *buf, float **dst) {
+    float *res = sort_t{ctx.smem()}.sort(items, N, buf, [](const float &x) { return x; });
 
     if (xpu::block_idx::x() == 0) {
         *dst = res;
     }
 }
 
-using block_sort_kv_t = xpu::block_sort<unsigned int, key_value_t, 64, 8>;
-struct sort_kv_smem {
-    using sort_buf_kv_t = typename block_sort_kv_t::storage_t;
-    sort_buf_kv_t sortbuf;
-};
-
-XPU_KERNEL(sort_struct, sort_kv_smem, key_value_t *items, int N, key_value_t *buf, key_value_t **dst) {
-    key_value_t *res = block_sort_kv_t(smem.sortbuf).sort(items, N, buf, [](const key_value_t &pair) { return pair.key; });
+XPU_EXPORT(sort_struct);
+XPU_D void sort_struct::operator()(context &ctx, key_value_t *items, int N, key_value_t *buf, key_value_t **dst) {
+    key_value_t *res = sort_t{ctx.smem()}.sort(items, N, buf, [](const key_value_t &pair) { return pair.key; });
 
     if (xpu::block_idx::x() == 0) {
         *dst = res;
     }
 }
 
-using merge_t = xpu::block_merge<float, 64, 8>;
-XPU_KERNEL(merge, merge_t::storage_t, const float *a, size_t size_a, const float *b, size_t size_b, float *dst) {
-    merge_t(smem).merge(a, size_a, b, size_b, dst, [](float a, float b) { return a < b; });
+XPU_EXPORT(merge);
+XPU_D void merge::operator()(context &ctx, const float *a, size_t size_a, const float *b, size_t size_b, float *dst) {
+    merge_t(ctx.smem()).merge(a, size_a, b, size_b, dst, [](float a, float b) { return a < b; });
 }
 
-using merge_single_t = xpu::block_merge<float, 64, 1>;
-XPU_KERNEL(merge_single, typename merge_single_t::storage_t, const float *a, size_t size_a, const float *b, size_t size_b, float *dst) {
-    merge_single_t(smem).merge(a, size_a, b, size_b, dst, [](float a, float b) { return a < b; });
+XPU_EXPORT(merge_single);
+XPU_D void merge_single::operator()(context &ctx, const float *a, size_t size_a, const float *b, size_t size_b, float *dst) {
+    merge_t(ctx.smem()).merge(a, size_a, b, size_b, dst, [](float a, float b) { return a < b; });
 }
 
-using block_scan_t = xpu::block_scan<int, 64>;
-XPU_KERNEL(block_scan, block_scan_t::storage_t, int* incl, int* excl) {
-    block_scan_t scan{smem};
+XPU_EXPORT(block_scan);
+XPU_D void block_scan::operator()(context &ctx, int *incl, int *excl) {
+    scan_t scan{ctx.smem()};
     scan.inclusive_sum(1, incl[xpu::thread_idx::x()]);
     scan.exclusive_sum(1, excl[xpu::thread_idx::x()]);
 }
 
-XPU_KERNEL(access_cmem, xpu::no_smem, float3_ *out) {
+XPU_EXPORT(access_cmem);
+XPU_D void access_cmem::operator()(context &, float3_ *out) {
     if (xpu::thread_idx::x() > 0) {
         return;
     }
@@ -112,22 +108,23 @@ XPU_D void get_thread_idx(int *thread_idx, int *block_dim, int *block_idx, int *
     grid_dim[iThread * 3 + 2] = xpu::grid_dim::z();
 }
 
-XPU_BLOCK_SIZE_1D(get_thread_idx_1d, 64);
-XPU_KERNEL(get_thread_idx_1d, xpu::no_smem, int *thread_idx, int *block_dim, int *block_idx, int *grid_dim) {
+XPU_EXPORT(get_thread_idx_1d);
+XPU_D void get_thread_idx_1d::operator()(context &, int *thread_idx, int *block_dim, int *block_idx, int *grid_dim) {
     get_thread_idx(thread_idx, block_dim, block_idx, grid_dim);
 }
 
-XPU_BLOCK_SIZE_2D(get_thread_idx_2d, 32, 8);
-XPU_KERNEL(get_thread_idx_2d, xpu::no_smem, int *thread_idx, int *block_dim, int *block_idx, int *grid_dim) {
+XPU_EXPORT(get_thread_idx_2d);
+XPU_D void get_thread_idx_2d::operator()(context &, int *thread_idx, int *block_dim, int *block_idx, int *grid_dim) {
     get_thread_idx(thread_idx, block_dim, block_idx, grid_dim);
 }
 
-XPU_BLOCK_SIZE_3D(get_thread_idx_3d, 32, 8, 2);
-XPU_KERNEL(get_thread_idx_3d, xpu::no_smem, int *thread_idx, int *block_dim, int *block_idx, int *grid_dim) {
+XPU_EXPORT(get_thread_idx_3d);
+XPU_D void get_thread_idx_3d::operator()(context &, int *thread_idx, int *block_dim, int *block_idx, int *grid_dim) {
     get_thread_idx(thread_idx, block_dim, block_idx, grid_dim);
 }
 
-XPU_KERNEL(test_device_funcs, xpu::no_smem, variant *out) {
+XPU_EXPORT(test_device_funcs);
+XPU_D void test_device_funcs::operator()(context &, variant *out) {
     if (xpu::thread_idx::x() > 0) {
         return;
     }

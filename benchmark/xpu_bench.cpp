@@ -219,28 +219,28 @@ int main() {
 
     benchmark_runner runner;
 
-    runner.add(new sort_bench<sort_i1>{});
+    runner.add(new sort_bench<sort<1>>{});
     // Parameters don't have an effect on cpu merge, so running one sort benchmark is enough
     if (xpu::active_driver() != xpu::cpu) {
-        runner.add(new sort_bench<sort_i2>{});
-        runner.add(new sort_bench<sort_i4>{});
-        runner.add(new sort_bench<sort_i8>{});
-        runner.add(new sort_bench<sort_i12>{});
-        runner.add(new sort_bench<sort_i16>{});
-        runner.add(new sort_bench<sort_i32>{});
-        runner.add(new sort_bench<sort_i48>{});
-        runner.add(new sort_bench<sort_i64>{});
+        runner.add(new sort_bench<sort<2>>{});
+        runner.add(new sort_bench<sort<4>>{});
+        runner.add(new sort_bench<sort<8>>{});
+        runner.add(new sort_bench<sort<12>>{});
+        runner.add(new sort_bench<sort<16>>{});
+        runner.add(new sort_bench<sort<32>>{});
+        runner.add(new sort_bench<sort<48>>{});
+        runner.add(new sort_bench<sort<64>>{});
     }
 
-    runner.add(new merge_bench<merge_i4>{});
+    runner.add(new merge_bench<merge<4>>{});
     // Parameters don't have an effect on cpu sort, so running one sort benchmark is enough
     if (xpu::active_driver() != xpu::cpu) {
-        runner.add(new merge_bench<merge_i8>{});
-        runner.add(new merge_bench<merge_i12>{});
-        runner.add(new merge_bench<merge_i16>{});
-        runner.add(new merge_bench<merge_i32>{});
-        runner.add(new merge_bench<merge_i48>{});
-        runner.add(new merge_bench<merge_i64>{});
+        runner.add(new merge_bench<merge<8>>{});
+        runner.add(new merge_bench<merge<12>>{});
+        runner.add(new merge_bench<merge<16>>{});
+        runner.add(new merge_bench<merge<32>>{});
+        runner.add(new merge_bench<merge<48>>{});
+        runner.add(new merge_bench<merge<64>>{});
     }
 
     runner.run(10);

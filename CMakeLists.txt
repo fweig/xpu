@@ -205,4 +205,11 @@ if (XPU_BUILD_EXAMPLES)
     add_subdirectory(examples/merging)
     add_subdirectory(examples/vector_add)
     add_subdirectory(examples/sorting)
+
+    add_custom_target(examples
+        DEPENDS
+            merge
+            vector_add
+            sort_struct
+    )
 endif()

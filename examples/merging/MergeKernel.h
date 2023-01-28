@@ -5,6 +5,11 @@
 
 struct MergeKernel {};
 
-XPU_EXPORT_KERNEL(MergeKernel, GpuMerge, const float *, size_t, const float *, size_t, float *);
+struct GpuMerge : xpu::kernel<MergeKernel> {
+    using merge_t = xpu::block_merge<float, 64, 4>;
+    using shared_memory = merge_t::storage_t;
+    using context = xpu::kernel_context<shared_memory>;
+    XPU_D void operator()(context &, const float *, size_t, const float *, size_t, float *);
+};
 
 #endif

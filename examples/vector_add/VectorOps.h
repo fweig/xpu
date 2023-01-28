@@ -4,4 +4,7 @@
 
 struct VectorOps {};
 
-XPU_EXPORT_KERNEL(VectorOps, VectorAdd, const float *, const float * , float *, size_t);
+struct VectorAdd : xpu::kernel<VectorOps> {
+    using context = xpu::kernel_context<xpu::no_smem>;
+    XPU_D void operator()(context &, const float *, const float *, float *, size_t);
+};

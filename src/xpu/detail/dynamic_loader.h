@@ -4,6 +4,7 @@
 #include "../common.h"
 #include "../defines.h"
 #include "../driver/cpu/this_thread.h"
+#include "constant_memory.h"
 #include "log.h"
 #include "macros.h"
 #include "type_info.h"
@@ -25,12 +26,7 @@
 
 namespace xpu::detail {
 
-template<typename I, typename T>
-struct action {
-    using image = I;
-    using tag = T;
-};
-
+// FIXME: member_fn and action_interface belong into type_info.h
 template<typename...>
 struct member_fn {};
 
@@ -57,18 +53,14 @@ struct action_interface<kernel_tag, void(*)(S, Args...)> {
     using type = int(*)(float *, grid, Args...);
 };
 
-template<typename... Args>
-struct action_interface<constant_tag, int(*)(Args...)> {
-    using type = int(*)(Args...);
+template<typename Constant>
+struct action_interface<constant_tag, Constant> {
+    using data_t = typename Constant::data_t;
+    using type = int(*)(const data_t &);
 };
-
-struct delete_me {};
 
 template<typename T, typename A>
 struct action_interface<T, A> : action_interface<T, typename member_fn<decltype(&A::operator())>::type> {};
-
-template<typename A>
-struct action_interface<kernel_tag, A> : action_interface<kernel_tag, typename member_fn<decltype(&A::template operator()<delete_me>)>::type> {};
 
 template<typename A>
 using action_interface_t = typename action_interface<typename A::tag, A>::type;
@@ -197,26 +189,10 @@ struct action_runner {};
 
 template<typename F, typename... Args>
 struct action_runner<function_tag, F, int(F::*)(Args...)> {
-
-    using my_type = action_runner<function_tag, F, int(*)(Args...)>;
-
     static int call(Args... args) {
         return F{}(args...);
     }
 };
-
-template<typename F, typename... Args>
-struct action_runner<constant_tag, F, int(F::*)(Args...)> {
-
-    using my_type = action_runner<constant_tag, F, int(*)(Args...)>;
-
-    static int call(Args... args) {
-        return F{}(args...);
-    }
-};
-
-template<typename F>
-struct action_runner<F> : action_runner<typename F::tag, F, decltype(&F::operator())> {};
 
 #if XPU_IS_HIP_CUDA
 
@@ -226,27 +202,38 @@ struct action_runner<F> : action_runner<typename F::tag, F, decltype(&F::operato
 
 template<typename F, typename S, typename... Args>
 __global__ void kernel_entry(Args... args) {
-    __shared__ S smem;
-    F{}(smem, args...);
+    using shared_memory = typename F::shared_memory;
+    using context = kernel_context<shared_memory>;
+    __shared__ shared_memory smem;
+    F{}(context{smem}, args...);
 }
 
-template<typename F, typename S, int MaxThreadsPerBlock, typename... Args>
+template<typename F, int MaxThreadsPerBlock, typename... Args>
 __global__ void __launch_bounds__(MaxThreadsPerBlock) kernel_entry_bounded(Args... args) {
-    __shared__ S smem;
-    F{}(smem, args...);
+    using shared_memory = typename F::shared_memory;
+    using context = kernel_context<shared_memory>;
+    __shared__ shared_memory smem;
+    context ctx{smem};
+    F{}(ctx, args...);
 }
 
 #endif
 
 #if XPU_IS_CUDA
 
-template<typename K, typename S, typename... Args>
-struct action_runner<kernel_tag, K, S, void(K::*)(S &, Args...)> {
+template<typename F>
+struct action_runner<constant_tag, F> {
+    using data_t = typename F::data_t;
+    static int call(const data_t &val) {
+        return cudaMemcpyToSymbol(constant_memory<F>, &val, sizeof(data_t));
+    }
+};
 
-    using my_type = action_runner<kernel_tag, K, S, void(*)(S &, Args...)>;
+template<typename K, typename... Args>
+struct action_runner<kernel_tag, K, void(K::*)(kernel_context<typename K::shared_memory> &, Args...)> {
 
     static int call(float *ms, grid g, Args... args) {
-        dim block_dim = block_size<K>::value;
+        dim block_dim = K::block_size::value;
         dim grid_dim{};
 
         g.get_compute_grid(block_dim, grid_dim);
@@ -266,7 +253,7 @@ struct action_runner<kernel_tag, K, S, void(K::*)(S &, Args...)> {
             ON_ERROR_GOTO(err, cudaEventRecord(start), cleanup_events);
         }
 
-        kernel_entry_bounded<K, S, block_size<K>::value.linear(), Args...><<<grid_dim.as_cuda_grid(), block_dim.as_cuda_grid()>>>(args...);
+        kernel_entry_bounded<K, K::block_size::value.linear(), Args...><<<grid_dim.as_cuda_grid(), block_dim.as_cuda_grid()>>>(args...);
 
         if (measure_time) {
             ON_ERROR_GOTO(err, cudaEventRecord(end), cleanup_events);
@@ -295,13 +282,21 @@ struct action_runner<kernel_tag, K, S, void(K::*)(S &, Args...)> {
 
 #elif XPU_IS_HIP
 
-template<typename K, typename S, typename... Args>
-struct action_runner<kernel_tag, K, S, void(K::*)(S &, Args...)> {
+template<typename F>
+struct action_runner<constant_tag, F> {
+    using data_t = typename F::data_t;
+    static int call(const data_t &val) {
+        return hipMemcpyToSymbol(HIP_SYMBOL(constant_memory<F>), &val, sizeof(data_t));
+    }
+};
 
-    using my_type = action_runner<kernel_tag, K, S, void(*)(S &, Args...)>;
+template<typename K, typename... Args>
+struct action_runner<kernel_tag, K, void(K::*)(kernel_context<typename K::shared_memory> &, Args...)> {
+
+    using shared_memory = typename K::shared_memory;
 
     static int call(float *ms, grid g, Args... args) {
-        dim block_dim = block_size<K>::value;
+        dim block_dim = K::block_size::value;
         dim grid_dim{};
 
         g.get_compute_grid(block_dim, grid_dim);
@@ -320,7 +315,7 @@ struct action_runner<kernel_tag, K, S, void(K::*)(S &, Args...)> {
         if (measure_time) {
             ON_ERROR_GOTO(err, hipEventRecord(start), cleanup_events);
         }
-        hipLaunchKernelGGL(HIP_KERNEL_NAME(kernel_entry_bounded<K, S, block_size<K>::value.linear(), Args...>), grid_dim.as_cuda_grid(), block_dim.as_cuda_grid(), 0, 0, args...);
+        hipLaunchKernelGGL(HIP_KERNEL_NAME(kernel_entry_bounded<K, K::block_size::value.linear(), Args...>), grid_dim.as_cuda_grid(), block_dim.as_cuda_grid(), 0, 0, args...);
         if (measure_time) {
             ON_ERROR_GOTO(err, hipEventRecord(end), cleanup_events);
         }
@@ -348,10 +343,20 @@ struct action_runner<kernel_tag, K, S, void(K::*)(S &, Args...)> {
 
 #else // XPU_IS_CPU
 
-template<typename K, typename S, typename... Args>
-struct action_runner<kernel_tag, K, S, void(K::*)(S &, Args...)> {
+template<typename F>
+struct action_runner<constant_tag, F> {
+    using data_t = typename F::data_t;
+    static int call(const data_t &val) {
+        constant_memory<F> = val;
+        return 0;
+    }
+};
 
-    using my_type = action_runner<kernel_tag, K, S, void(*)(S &, Args...)>;
+template<typename K, typename... Args>
+struct action_runner<kernel_tag, K, void(K::*)(kernel_context<typename K::shared_memory> &, Args...)> {
+
+    using shared_memory = typename K::shared_memory;
+    using context = kernel_context<shared_memory>;
 
     static int call(float *ms, grid g, Args... args) {
         dim block_dim{1, 1, 1};
@@ -376,10 +381,11 @@ struct action_runner<kernel_tag, K, S, void(K::*)(S &, Args...)> {
         for (int i = 0; i < grid_dim.x; i++) {
             for (int j = 0; j < grid_dim.y; j++) {
                 for (int k = 0; k < grid_dim.z; k++) {
-                    S smem;
+                    shared_memory smem;
+                    kernel_context ctx{smem};
                     this_thread::block_idx = dim{i, j, k};
                     this_thread::grid_dim = grid_dim;
-                    K{}(smem, args...);
+                    K{}(ctx, args...);
                 }
             }
         }
@@ -397,27 +403,26 @@ struct action_runner<kernel_tag, K, S, void(K::*)(S &, Args...)> {
 
 #endif
 
-template<typename A>
+template<typename A, xpu::driver_t D = XPU_COMPILATION_TARGET>
 struct register_action {
+
+    using image = typename A::image;
+    using tag = typename A::tag;
+
     register_action() {
-        image_context<typename A::image>::instance()->template add_symbol<A>((void *)&action_runner<A>::call);
+        printf("Registering action '%s'...\n", type_name<A>());
+        if constexpr (std::is_same_v<tag, kernel_tag> || std::is_same_v<tag, function_tag>) {
+            image_context<image>::instance()->template add_symbol<A>((void *)&action_runner<tag, A, decltype(&A::operator())>::call);
+        } else if constexpr (std::is_same_v<tag, constant_tag>) {
+            image_context<image>::instance()->template add_symbol<A>((void *)&action_runner<tag, A>::call);
+        }
     }
+
+    static register_action<A, D> instance;
 };
 
-template<typename F>
-struct register_function {
-    register_function() {
-        image_context<typename F::image>::instance()->template add_symbol<F>((void *)&action_runner<function_tag, F, decltype(&F::operator())>::call);
-    }
-};
-
-
-template<typename K, typename S>
-struct register_kernel {
-    register_kernel() {
-        image_context<typename K::image>::instance()->template add_symbol<K>((void *)&action_runner<kernel_tag, K, S, decltype(&K::template operator()<S>)>::call);
-    }
-};
+template<typename A, xpu::driver_t D>
+xpu::detail::register_action<A, D> xpu::detail::register_action<A, D>::instance{};
 
 } // namespace xpu::detail
 
@@ -448,104 +453,7 @@ struct register_kernel {
     XPU_DETAIL_IMAGE_CONTEXT_GETTER(image) \
     void xpu_detail_dummy_func() // Force semicolon at the end of macro
 
-
-#define XPU_DETAIL_EXPORT_FUNC(image, name, ...) \
-    struct name : xpu::detail::action<image, xpu::detail::function_tag> { \
-        int operator()(__VA_ARGS__); \
-    }
-
-#define XPU_DETAIL_EXPORT_CONSTANT(image, type_, name) \
-    struct name : xpu::detail::action<image, xpu::detail::constant_tag> { \
-        using data_t = type_; \
-        int operator()(const data_t &); \
-        static XPU_D const data_t &get(); \
-    }
-
-#define XPU_DETAIL_EXPORT_KERNEL(image, name, ...) \
-    struct name : xpu::detail::action<image, xpu::detail::kernel_tag> { \
-        template<typename S> \
-        XPU_D void operator()(S &, ##__VA_ARGS__); \
-    }
-
-#if XPU_IS_CUDA
-
-#define XPU_DETAIL_CONSTANT(name) \
-    static __constant__ typename name::data_t XPU_MAGIC_NAME(xpu_detail_constant); \
-    \
-    int name::operator()(const typename name::data_t &val) { \
-        return cudaMemcpyToSymbol(XPU_MAGIC_NAME(xpu_detail_constant), &val, sizeof(name::data_t)); \
-    } \
-    \
-    XPU_D const typename name::data_t &name::get() { \
-        return XPU_MAGIC_NAME(xpu_detail_constant); \
-    } \
-    \
-    static xpu::detail::register_action<name> XPU_MAGIC_NAME(xpu_detail_register_action){}
-
-#elif XPU_IS_HIP
-
-#define XPU_DETAIL_CONSTANT(name) \
-    static __constant__ typename name::data_t XPU_MAGIC_NAME(xpu_detail_constant); \
-    \
-    int name::operator()(const typename name::data_t &val) { \
-        return hipMemcpyToSymbol(HIP_SYMBOL(XPU_MAGIC_NAME(xpu_detail_constant)), &val, sizeof(name::data_t)); \
-    } \
-    \
-    XPU_D const typename name::data_t &name::get() { \
-        return XPU_MAGIC_NAME(xpu_detail_constant); \
-    } \
-    \
-    static xpu::detail::register_action<name> XPU_MAGIC_NAME(xpu_detail_register_action){}
-
-#else // XPU_IS_CPU
-
-#define XPU_DETAIL_CONSTANT(name) \
-    static typename name::data_t XPU_MAGIC_NAME(xpu_detail_constant); \
-    \
-    int name::operator()(const typename name::data_t &val) { \
-        XPU_MAGIC_NAME(xpu_detail_constant) = val; \
-        return 0; \
-    } \
-    \
-    const typename name::data_t &name::get() { \
-        return XPU_MAGIC_NAME(xpu_detail_constant); \
-    } \
-    \
-    static xpu::detail::register_action<name> XPU_MAGIC_NAME(xpu_detail_register_action){}
-
-#endif
-
-#define XPU_DETAIL_FUNC(name, ...) \
-    static xpu::detail::register_function<name> XPU_MAGIC_NAME(xpu_detail_register_action){}; \
-    int name::operator()(__VA_ARGS__)
-
-#define XPU_DETAIL_FUNC_T(name, ...) \
-    int xpu::detail::impl(__VA_ARGS__)
-
-#define XPU_DETAIL_FUNC_TI(name) \
-    static xpu::detail::register_action<name> XPU_MAGIC_NAME(xpu_detail_register_action){}
-
-#define XPU_DETAIL_FUNC_TS(name, ...) \
-    static xpu::detail::register_action<name> XPU_MAGIC_NAME(xpu_detail_register_action){}; \
-    template<> int name::impl(__VA_ARGS__)
-
-#define XPU_DETAIL_KERNEL(name, shared_memory, ...) \
-    static xpu::detail::register_kernel<name, shared_memory> XPU_MAGIC_NAME(xpu_detail_register_action){}; \
-    template<> XPU_D void name::operator()<shared_memory>(XPU_MAYBE_UNUSED shared_memory &smem, ##__VA_ARGS__)
-
-#define XPU_DETAIL_BLOCK_SIZE_1D(kernel, size) \
-    template<> struct xpu::block_size<kernel> { \
-        static inline constexpr xpu::dim value{size}; \
-    }
-
-#define XPU_DETAIL_BLOCK_SIZE_2D(kernel, size_x, size_y) \
-    template<> struct xpu::block_size<kernel> { \
-        static inline constexpr xpu::dim value{size_x, size_y}; \
-    }
-
-#define XPU_DETAIL_BLOCK_SIZE_3D(kernel, size_x, size_y, size_z) \
-    template<> struct xpu::block_size<kernel> { \
-        static inline constexpr xpu::dim value{size_x, size_y, size_z}; \
-    }
+#define XPU_DETAIL_EXPORT(name) \
+    template struct xpu::detail::register_action<name, XPU_DETAIL_COMPILATION_TARGET>
 
 #endif

@@ -366,7 +366,7 @@ void test_thread_position(xpu::dim gpu_block_size, xpu::dim gpu_grid_dim) {
 }
 
 TEST(XPUTest, CanStartKernel1D) {
-    test_thread_position(xpu::dim{64}, xpu::dim{4});
+    test_thread_position(xpu::dim{128}, xpu::dim{4});
 }
 
 TEST(XPUTest, CanStartKernel2D) {

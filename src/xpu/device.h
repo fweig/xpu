@@ -3,24 +3,15 @@
 
 #include "defines.h"
 #include "common.h"
+#include "detail/common.h"
+#include "detail/constant_memory.h"
+#include "detail/type_info.h"
 
 #include <type_traits>
 
 #define XPU_IMAGE(image) XPU_DETAIL_IMAGE(image)
-
-#define XPU_EXPORT_CONSTANT(image, type_, name) XPU_DETAIL_EXPORT_CONSTANT(image, type_, name)
-#define XPU_EXPORT_FUNC(image, name, ...) XPU_DETAIL_EXPORT_FUNC(image, name, ##__VA_ARGS__)
-#define XPU_EXPORT_KERNEL(image, name, ...) XPU_DETAIL_EXPORT_KERNEL(image, name, ##__VA_ARGS__)
-
+#define XPU_EXPORT(obj) XPU_DETAIL_EXPORT(obj)
 #define XPU_CONSTANT(name) XPU_DETAIL_CONSTANT(name)
-#define XPU_FUNC(name, ...) XPU_DETAIL_FUNC(name, ##__VA_ARGS__)
-#define XPU_FUNC_T(name, ...) XPU_DETAIL_FUNC_T(name, ##__VA_ARGS__)
-#define XPU_FUNC_TI(name) XPU_DETAIL_FUNC_TI(name)
-#define XPU_FUNC_TS(name, ...) XPU_DETAIL_FUNC_TS(name, ##__VA_ARGS__)
-#define XPU_KERNEL(name, shared_memory, ...) XPU_DETAIL_KERNEL(name, shared_memory, ##__VA_ARGS__)
-#define XPU_BLOCK_SIZE_1D(kernel, size) XPU_DETAIL_BLOCK_SIZE_1D(kernel, size)
-#define XPU_BLOCK_SIZE_2D(kernel, size_x, size_y) XPU_DETAIL_BLOCK_SIZE_2D(kernel, size_x, size_y)
-#define XPU_BLOCK_SIZE_3D(kernel, size_x, size_y, size_z) XPU_DETAIL_BLOCK_SIZE_3D(kernel, size_x, size_y, size_z)
 
 #define XPU_ASSERT(x) XPU_DETAIL_ASSERT(x)
 
@@ -39,7 +30,8 @@ struct block_dim {
     block_dim() = delete;
     XPU_D static int x();
     XPU_D static int y();
-    XPU_D static int z();};
+    XPU_D static int z();
+};
 
 struct block_idx {
     block_idx() = delete;
@@ -55,15 +47,32 @@ struct grid_dim {
     XPU_D static int z();
 };
 
-template<typename K>
+template<int X, int Y = -1, int Z = -1>
 struct block_size {
-    static inline constexpr xpu::dim value{64};
+    static inline constexpr xpu::dim value{X, Y, Z};
 };
 
 struct no_smem {};
 
+template<typename Image>
+struct kernel : detail::action<Image, detail::kernel_tag> {
+    // Defaults
+    using block_size = xpu::block_size<64>;
+    // using constants = xpu::cmem<>; // TODO: Implement later
+    using shared_memory = xpu::no_smem;
+};
+
+template<typename Image>
+struct function : detail::action<Image, detail::function_tag> {
+};
+
+template<typename Image, typename Data>
+struct constant : detail::action<Image, detail::constant_tag> {
+    using data_t = Data;
+};
+
 template<typename C>
-XPU_D const typename C::data_t &cmem() { return C::get(); }
+XPU_D const typename C::data_t &cmem() { return detail::constant_memory<C>; }
 
 XPU_D constexpr float pi();
 XPU_D constexpr float pi_2();

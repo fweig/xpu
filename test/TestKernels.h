@@ -121,23 +121,93 @@ struct key_value_t {
     unsigned int value;
 };
 
-XPU_EXPORT_CONSTANT(TestKernels, float3_, test_constants);
+struct test_constants : xpu::constant<TestKernels, float3_> {};
 
-XPU_EXPORT_FUNC(TestKernels, get_driver_type, xpu::driver_t *);
+struct get_driver_type : xpu::function<TestKernels> {
+    int operator()(xpu::driver_t *);
+};
 
-XPU_EXPORT_KERNEL(TestKernels, empty_kernel);
-XPU_EXPORT_KERNEL(TestKernels, vector_add, const float *, const float *, float *, int);
-XPU_EXPORT_KERNEL(TestKernels, vector_add_timing0, const float *, const float *, float *, int);
-XPU_EXPORT_KERNEL(TestKernels, vector_add_timing1, const float *, const float *, float *, int);
-XPU_EXPORT_KERNEL(TestKernels, sort_float, float *, int, float *, float **);
-XPU_EXPORT_KERNEL(TestKernels, sort_struct, key_value_t *, int, key_value_t *, key_value_t **);
-XPU_EXPORT_KERNEL(TestKernels, merge, const float *, size_t, const float *, size_t, float *);
-XPU_EXPORT_KERNEL(TestKernels, merge_single, const float *, size_t, const float *, size_t, float *);
-XPU_EXPORT_KERNEL(TestKernels, block_scan, int *, int *);
-XPU_EXPORT_KERNEL(TestKernels, access_cmem, float3_ *);
-XPU_EXPORT_KERNEL(TestKernels, get_thread_idx_1d, int *, int *, int *, int *);
-XPU_EXPORT_KERNEL(TestKernels, get_thread_idx_2d, int *, int *, int *, int *);
-XPU_EXPORT_KERNEL(TestKernels, get_thread_idx_3d, int *, int *, int *, int *);
-XPU_EXPORT_KERNEL(TestKernels, test_device_funcs, variant *);
+struct empty_kernel : xpu::kernel<TestKernels> {
+    using context = xpu::kernel_context<xpu::no_smem>;
+    XPU_D void operator()(context &);
+};
+
+struct vector_add : xpu::kernel<TestKernels> {
+    using context = xpu::kernel_context<xpu::no_smem>;
+    XPU_D void operator()(context &, const float *, const float *, float *, int);
+};
+
+struct vector_add_timing0 : xpu::kernel<TestKernels> {
+    using context = xpu::kernel_context<xpu::no_smem>;
+    XPU_D void operator()(context &, const float *, const float *, float *, int);
+};
+
+struct vector_add_timing1 : xpu::kernel<TestKernels> {
+    using context = xpu::kernel_context<xpu::no_smem>;
+    XPU_D void operator()(context &, const float *, const float *, float *, int);
+};
+
+struct sort_float : xpu::kernel<TestKernels> {
+    using sort_t = xpu::block_sort<float, float, 64, 2>;
+    using shared_memory = sort_t::storage_t;
+    using context = xpu::kernel_context<shared_memory>;
+    XPU_D void operator()(context &, float *, int, float *, float **);
+};
+
+struct sort_struct : xpu::kernel<TestKernels> {
+    using sort_t = xpu::block_sort<unsigned int, key_value_t, 64, 8>;
+    using shared_memory = sort_t::storage_t;
+    using context = xpu::kernel_context<shared_memory>;
+    XPU_D void operator()(context &, key_value_t *, int, key_value_t *, key_value_t **);
+};
+
+struct merge : xpu::kernel<TestKernels> {
+    using merge_t = xpu::block_merge<float, block_size::value.x, 8>;
+    using shared_memory = merge_t::storage_t;
+    using context = xpu::kernel_context<shared_memory>;
+    XPU_D void operator()(context &, const float *, size_t, const float *, size_t, float *);
+};
+
+struct merge_single : xpu::kernel<TestKernels> {
+    using merge_t = xpu::block_merge<float, block_size::value.x, 1>;
+    using shared_memory = merge_t::storage_t;
+    using context = xpu::kernel_context<shared_memory>;
+    XPU_D void operator()(context &, const float *, size_t, const float *, size_t, float *);
+};
+
+struct block_scan : xpu::kernel<TestKernels> {
+    using scan_t = xpu::block_scan<int, block_size::value.x>;
+    using shared_memory = scan_t::storage_t;
+    using context = xpu::kernel_context<shared_memory>;
+    XPU_D void operator()(context &, int *, int *);
+};
+
+struct access_cmem : xpu::kernel<TestKernels> {
+    using context = xpu::kernel_context<xpu::no_smem>;
+    XPU_D void operator()(context &, float3_ *);
+};
+
+struct get_thread_idx_1d : xpu::kernel<TestKernels> {
+    using block_size = xpu::block_size<128>;
+    using context = xpu::kernel_context<xpu::no_smem>;
+    XPU_D void operator()(context &, int *, int *, int *, int *);
+};
+
+struct get_thread_idx_2d : xpu::kernel<TestKernels> {
+    using block_size = xpu::block_size<32, 8>;
+    using context = xpu::kernel_context<xpu::no_smem>;
+    XPU_D void operator()(context &, int *, int *, int *, int *);
+};
+
+struct get_thread_idx_3d : xpu::kernel<TestKernels> {
+    using block_size = xpu::block_size<32, 8, 2>;
+    using context = xpu::kernel_context<xpu::no_smem>;
+    XPU_D void operator()(context &, int *, int *, int *, int *);
+};
+
+struct test_device_funcs : xpu::kernel<TestKernels> {
+    using context = xpu::kernel_context<xpu::no_smem>;
+    XPU_D void operator()(context &, variant *);
+};
 
 #endif

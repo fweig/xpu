@@ -20,6 +20,7 @@
 #include <string>
 #include <type_traits>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace xpu::detail {
@@ -149,11 +150,8 @@ public:
     image(const image<I> &) = delete;
 
     image(image<I> &&other) {
-        handle = other.handle;
-        context = other.context;
-
-        other.handle = nullptr;
-        other.context = nullptr;
+        handle = std::exchange(other.handle, nullptr);
+        context = std::exchange(other.context, nullptr);
     }
 
     template<typename F, typename... Args>

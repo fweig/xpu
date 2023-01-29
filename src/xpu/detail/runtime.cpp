@@ -247,7 +247,7 @@ void runtime::throw_on_driver_error(driver_t d, error err) const {
         return;
     }
 
-    raise_error(format("xpu: Driver '%s' raised error: %s", driver_str(d), get_driver(d)->error_to_string(err)));
+    raise_error(format("xpu: Driver '%s' raised error: %s (code %d)", driver_str(d), get_driver(d)->error_to_string(err), err));
 }
 
 void runtime::raise_error_if(bool condition, std::string_view error_msg) const {

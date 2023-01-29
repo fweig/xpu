@@ -249,7 +249,7 @@ struct action_runner<kernel_tag, K, S, void(*)(S &, Args...)> {
 
         bool measure_time = (ms != nullptr);
         cudaEvent_t start, end;
-        int err;
+        int err = 0;
 
         if (measure_time) {
             SAFE_CALL(cudaEventCreate(&start));

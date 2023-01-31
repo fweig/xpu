@@ -8,11 +8,11 @@ struct bench_device {};
 template<int elems_per_thread>
 struct merge : xpu::kernel<bench_device> {
     using block_size    = xpu::block_size<
-    #if XPU_IS_CUDA
-        32
-    #else
-        64
-    #endif
+        #if XPU_IS_CUDA
+            32
+        #else
+            64
+        #endif
     >;
 
     using merge_t       = xpu::block_merge<float, block_size::value.x, elems_per_thread>;

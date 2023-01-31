@@ -3,7 +3,7 @@ name: build
 on: [push, pull_request]
 
 jobs:
-  linux-legacy:
+  ubuntu-20:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
@@ -41,7 +41,7 @@ jobs:
         CTEST_OUTPUT_ON_FAILURE: 1
       run: ctest
 
-  linux:
+  ubuntu-22:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
@@ -102,7 +102,7 @@ jobs:
         CTEST_OUTPUT_ON_FAILURE: 1
       run: ctest -j4
 
-  linux-extra:
+  cpp20:
 
     runs-on: ubuntu-latest
 
@@ -133,7 +133,7 @@ jobs:
         CTEST_OUTPUT_ON_FAILURE: 1
       run: ctest
 
-  macos:
+  macos-11:
     runs-on: macOS-latest
 
     strategy:
@@ -164,7 +164,7 @@ jobs:
         CTEST_OUTPUT_ON_FAILURE: 1
       run: ctest
 
-  macos-future:
+  macos-12:
     runs-on: macOS-12
 
     strategy:

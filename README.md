@@ -29,7 +29,7 @@ CMake Options:
 - `XPU_CUDA_ARCH`: List of target cuda architectures. (default=`75`)
 - `XPU_ENABLE_HIP`: Enable / Disable compilation for hip. (default=`OFF`)
 - `XPU_HIP_ARCH`: List of target hip architectures. (default=`gfx906;gfx908`)
-- `XPU_ROCM_ROOT`: Path to rocm. (default=`/opt/rocm`)
+- `XPU_ROCM_ROOT`: Path to rocm installation. (default=`/opt/rocm`)
 - `XPU_DEBUG`: Build gpu code with debug symbols and disable optimizations. (default=`OFF`)
 - `XPU_BUILD_TESTS`: Build unittests and benchmarks. (default=`OFF`)
 - `XPU_BUILD_EXAMPLES`: Build examples. (default=`OFF`)
@@ -83,14 +83,14 @@ In addition to the device sources, a special def-file is required that describes
 
 Assuming you have those things, creating the device library is done in CMake by calling `xpu_attach`:
 ```
-add_library(Library SHARED LibrarySources)
-xpu_attach(Library DeviceSources)
+add_library(Library SHARED ${LibrarySources})
+xpu_attach(Library ${DeviceSources})
 ```
 `DeviceSources` should the subset of `LibrarySources` that is compiled for GPU plus any additional dependencies that may be required. The files in `DeviceSources` are compiled for GPU as a unity-build without linking to against any additional libraries.
 
 ### Declaring and implementing kernels
 
-Kernels are declared inside header-files like regular C++ functions, but the declaration is wrapped inside the `XPU_EXPORT_KERNEL` macro.
+Kernels are declared inside header-files as Functors that inherit from xpu::kernel.
 For example:
 ```
 #include <xpu/device.h>
@@ -100,6 +100,15 @@ struct DeviceLib {}; // Dummy type to match kernels to a library.
 XPU_BLOCK_SIZE(VectorAdd, 128); // Set the block size. Default is 64.
 
 XPU_EXPORT_KERNERL(DeviceLib, VectorAdd, const float *, const float *, float *, size_t);
+
+struct VectorAdd : xpu::kernel<DeviceLib> {
+    using block_size = xpu::block_size<128>; // Optional: Set block size, default is 64.
+    using shared_memory = SMemType; // Declare shared memory type,
+                                    // defaults to xpu::no_smem to that no shared memory should be allocated.
+    using context = xpu::kernel_context<shared_memory>; // optional shorthand
+    XPU_D void operator()(context &ctx, const float *, const float *, float *, size_t);
+};
+
 ```
 would declare a kernel `VectorAdd` that receives three float-pointers and an integer of type `size_t` as arguments.
 
@@ -110,14 +119,13 @@ A kernel is implemented like any regular C++-function. But the function header m
 XPU_IMAGE(DeviceLib); // XPU_IMAGE must be called exactly once in one of device
                       // sources
 
-XPU_KERNEL(kernelName, SMemType, Type0 arg0, Type1 arg1, ...) {
+XPU_EXPORT(VectorAdd); // Export kernel. Only then is available to be called via xpu::run_kernel in host code.
+
+// Kernel implementation
+XPU_D void VectorAdd::operator()(context &ctx, const float *a, const float *b, float *c, size_t n) {
     // Your code here
 }
 ```
-Where `deviceLib` is the name of the device library that contains the kernel,
-`kernelName` is the name of the kernel, `SMemTyp` is the type that is allocated in shared memory.
-(The special type `xpu::no_smem` may be used to indicate that a kernel doesn't need to allocate shared memory.)
-Followed by the arguments that the kernel receives.
 
 ### Calling a kernel on the host side
 

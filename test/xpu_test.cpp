@@ -462,6 +462,22 @@ TEST(XPUTest, CanCallDeviceFuncs) {
     EXPECT_FLOAT_EQ(b[YN].f, -1.6506826f);
 }
 
+TEST(XPUTest, CanRunTemplatedKernels) {
+    xpu::hd_buffer<int> a{1};
+
+    xpu::run_kernel<templated_kernel<0>>(xpu::grid::n_threads(1), a.d());
+    xpu::copy(a, xpu::device_to_host);
+    ASSERT_EQ(a[0], 0);
+
+    xpu::run_kernel<templated_kernel<1>>(xpu::grid::n_threads(1), a.d());
+    xpu::copy(a, xpu::device_to_host);
+    ASSERT_EQ(a[0], 1);
+
+    xpu::run_kernel<templated_kernel<42>>(xpu::grid::n_threads(1), a.d());
+    xpu::copy(a, xpu::device_to_host);
+    ASSERT_EQ(a[0], 42);
+}
+
 TEST(XPUTest, CollectsTimingData) {
     constexpr int NRuns = 10;
     constexpr int NElems = 100000;

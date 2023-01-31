@@ -205,3 +205,11 @@ XPU_D void test_device_funcs::operator()(context &, variant *out) {
     out[Y1].f = xpu::y1(1.f);
     out[YN].f = xpu::yn(2, 1.f);
 }
+
+XPU_EXPORT(templated_kernel<0>);
+XPU_EXPORT(templated_kernel<1>);
+XPU_EXPORT(templated_kernel<42>);
+template<int N>
+XPU_D void templated_kernel<N>::operator()(context &, int *out) {
+    *out = N;
+}

@@ -210,4 +210,10 @@ struct test_device_funcs : xpu::kernel<TestKernels> {
     XPU_D void operator()(context &, variant *);
 };
 
+template<int N>
+struct templated_kernel : xpu::kernel<TestKernels> {
+    using context = xpu::kernel_context<xpu::no_smem>;
+    XPU_D void operator()(context &, int *);
+};
+
 #endif

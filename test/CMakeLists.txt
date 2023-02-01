@@ -19,15 +19,17 @@ xpu_attach(TestKernels ${deviceSrcs})
 add_executable(xpu_test xpu_test.cpp)
 target_link_libraries(xpu_test xpu TestKernels gtest)
 
+get_target_property(libDir TestKernels LIBRARY_OUTPUT_DIRECTORY)
+
 add_test(NAME xpu_test_cpu COMMAND xpu_test)
-set_tests_properties(xpu_test_cpu PROPERTIES ENVIRONMENT "XPU_DEVICE=cpu;LD_LIBRARY_PATH=..:.")
+set_tests_properties(xpu_test_cpu PROPERTIES ENVIRONMENT "XPU_DEVICE=cpu;LD_LIBRARY_PATH=${libDir}")
 
 if (XPU_ENABLE_CUDA)
   add_test(NAME xpu_test_cuda COMMAND xpu_test)
-  set_tests_properties(xpu_test_cuda PROPERTIES ENVIRONMENT "XPU_DEVICE=cuda0;LD_LIBRARY_PATH=..:.")
+  set_tests_properties(xpu_test_cuda PROPERTIES ENVIRONMENT "XPU_DEVICE=cuda0;LD_LIBRARY_PATH=${libDir}")
 endif()
 
 if (XPU_ENABLE_HIP)
   add_test(NAME xpu_test_hip COMMAND xpu_test)
-  set_tests_properties(xpu_test_hip PROPERTIES ENVIRONMENT "XPU_DEVICE=hip0;LD_LIBRARY_PATH=..:.")
+  set_tests_properties(xpu_test_hip PROPERTIES ENVIRONMENT "XPU_DEVICE=hip0;LD_LIBRARY_PATH=${libDir}")
 endif()

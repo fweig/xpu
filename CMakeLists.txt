@@ -68,12 +68,14 @@ if (XPU_STANDALONE)
     else()
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
     endif()
+
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 endif()
 
 function(xpu_create_subproject Library DriverType UnitySrcAbsolute)
     include(ExternalProject)
 
-    set(OutputDir ${CMAKE_CURRENT_BINARY_DIR})
+    get_target_property(OutputDir ${Library} LIBRARY_OUTPUT_DIRECTORY)
     set(SubLibraryName ${Library}_${DriverType})
     set(SubLibraryFullPath ${OutputDir}/${CMAKE_SHARED_LIBRARY_PREFIX}${SubLibraryName}${CMAKE_SHARED_LIBRARY_SUFFIX})
     set(SrcDir "${CMAKE_CURRENT_BINARY_DIR}/${SubLibraryName}")

@@ -80,11 +80,6 @@ function(xpu_create_subproject Library DriverType UnitySrcAbsolute)
     set(SubLibraryFullPath ${OutputDir}/${CMAKE_SHARED_LIBRARY_PREFIX}${SubLibraryName}${CMAKE_SHARED_LIBRARY_SUFFIX})
     set(SrcDir "${CMAKE_CURRENT_BINARY_DIR}/${SubLibraryName}")
 
-    get_target_property(IncludeDirectories ${Library} INCLUDE_DIRECTORIES)
-    if (NOT ${XPU_ROOT_DIR}/src IN_LIST IncludeDirectories)
-        set(IncludeDirectories ${IncludeDirectries} ${XPU_ROOT_DIR}/src)
-    endif()
-
     if (DriverType STREQUAL "Hip")
         set(HipClang "${XPU_ROCM_ROOT}/llvm/bin/clang")
         set(SubprojectCxx ${HipClang}++)

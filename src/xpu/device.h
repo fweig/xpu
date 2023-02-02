@@ -71,6 +71,25 @@ struct constant : detail::action<Image, detail::constant_tag> {
     using data_t = Data;
 };
 
+template<typename SharedMemory>
+class kernel_context {
+
+public:
+    using shared_memory = SharedMemory;
+    // using constants = Constants;
+
+    XPU_D kernel_context(shared_memory &smem) : m_smem(smem) {}
+
+    XPU_D       shared_memory &smem()       { return m_smem; }
+    XPU_D const shared_memory &smem() const { return m_smem; }
+
+private:
+    shared_memory &m_smem;
+    // constants &m_cmem; TODO: implement later in preparation for SYCL backend
+    // position &m_pos; TODO: implement later in preparation for SYCL backend
+
+};
+
 template<typename C>
 XPU_D const typename C::data_t &cmem() { return detail::constant_memory<C>; }
 

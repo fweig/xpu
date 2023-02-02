@@ -400,4 +400,66 @@ public:
 
 } // namespace xpu
 
+namespace xpu::detail {
+
+template<typename F>
+struct action_runner<constant_tag, F> {
+    using data_t = typename F::data_t;
+    static int call(const data_t &val) {
+        constant_memory<F> = val;
+        return 0;
+    }
+};
+
+template<typename K, typename... Args>
+struct action_runner<kernel_tag, K, void(K::*)(kernel_context<typename K::shared_memory> &, Args...)> {
+
+    using shared_memory = typename K::shared_memory;
+    using context = kernel_context<shared_memory>;
+
+    static int call(float *ms, grid g, Args... args) {
+        dim block_dim{1, 1, 1};
+        dim grid_dim{};
+
+        g.get_compute_grid(block_dim, grid_dim);
+        XPU_LOG("Calling kernel '%s' [block_dim = (%d, %d, %d), grid_dim = (%d, %d, %d)] with CPU driver.", type_name<K>(), block_dim.x, block_dim.y, block_dim.z, grid_dim.x, grid_dim.y, grid_dim.z);
+
+        using clock = std::chrono::high_resolution_clock;
+        using duration = std::chrono::duration<float, std::milli>;
+
+        bool measure_time = (ms != nullptr);
+        clock::time_point start;
+
+        if (measure_time) {
+            start = clock::now();
+        }
+
+        #ifdef _OPENMP
+        #pragma omp parallel for schedule(static) collapse(3)
+        #endif
+        for (int i = 0; i < grid_dim.x; i++) {
+            for (int j = 0; j < grid_dim.y; j++) {
+                for (int k = 0; k < grid_dim.z; k++) {
+                    shared_memory smem;
+                    kernel_context ctx{smem};
+                    this_thread::block_idx = dim{i, j, k};
+                    this_thread::grid_dim = grid_dim;
+                    K{}(ctx, args...);
+                }
+            }
+        }
+
+        if (measure_time) {
+            duration elapsed = clock::now() - start;
+            *ms = elapsed.count();
+            XPU_LOG("Kernel '%s' took %f ms", type_name<K>(), *ms);
+        }
+
+        return 0;
+    }
+
+};
+
+} // namespace xpu::detail
+
 #endif

@@ -56,26 +56,6 @@ private:
 
 };
 
-// FIXME: This really belongs into device.h, but can't be put there because of circular dependencies
-template<typename SharedMemory>
-class kernel_context {
-
-public:
-    using shared_memory = SharedMemory;
-    // using constants = Constants;
-
-    XPU_D kernel_context(shared_memory &smem) : m_smem(smem) {}
-
-    XPU_D       shared_memory &smem()       { return m_smem; }
-    XPU_D const shared_memory &smem() const { return m_smem; }
-
-private:
-    shared_memory &m_smem;
-    // constants &m_cmem; TODO: implement later in preparation for SYCL backend
-    // position &m_pos; TODO: implement later in preparation for SYCL backend
-
-};
-
 enum class side {
     host,
     device,

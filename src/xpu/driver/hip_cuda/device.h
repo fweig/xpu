@@ -750,4 +750,156 @@ private:
 
 } // namespace xpu
 
+#define SAFE_CALL(call) if (int err = call; err != 0) return err
+#define ON_ERROR_GOTO(errvar, call, label) errvar = call; \
+    if (errvar != 0) goto label
+
+namespace xpu::detail {
+
+template<typename F, typename S, typename... Args>
+__global__ void kernel_entry(Args... args) {
+    using shared_memory = typename F::shared_memory;
+    using context = kernel_context<shared_memory>;
+    __shared__ shared_memory smem;
+    F{}(context{smem}, args...);
+}
+
+template<typename F, int MaxThreadsPerBlock, typename... Args>
+__global__ void __launch_bounds__(MaxThreadsPerBlock) kernel_entry_bounded(Args... args) {
+    using shared_memory = typename F::shared_memory;
+    using context = kernel_context<shared_memory>;
+    __shared__ shared_memory smem;
+    context ctx{smem};
+    F{}(ctx, args...);
+}
+
+#if XPU_IS_CUDA
+
+template<typename F>
+struct action_runner<constant_tag, F> {
+    using data_t = typename F::data_t;
+    static int call(const data_t &val) {
+        return cudaMemcpyToSymbol(constant_memory<F>, &val, sizeof(data_t));
+    }
+};
+
+template<typename K, typename... Args>
+struct action_runner<kernel_tag, K, void(K::*)(kernel_context<typename K::shared_memory> &, Args...)> {
+
+    static int call(float *ms, grid g, Args... args) {
+        dim block_dim = K::block_size::value;
+        dim grid_dim{};
+
+        g.get_compute_grid(block_dim, grid_dim);
+
+        XPU_LOG("Calling kernel '%s' [block_dim = (%d, %d, %d), grid_dim = (%d, %d, %d)] with CUDA driver.", type_name<K>(), block_dim.x, block_dim.y, block_dim.z, grid_dim.x, grid_dim.y, grid_dim.z);
+
+        bool measure_time = (ms != nullptr);
+        cudaEvent_t start, end;
+        int err = 0;
+
+        if (measure_time) {
+            SAFE_CALL(cudaEventCreate(&start));
+            ON_ERROR_GOTO(err, cudaEventCreate(&end), cleanup_start_event);
+        }
+
+        if (measure_time) {
+            ON_ERROR_GOTO(err, cudaEventRecord(start), cleanup_events);
+        }
+
+        kernel_entry_bounded<K, K::block_size::value.linear(), Args...><<<grid_dim.as_cuda_grid(), block_dim.as_cuda_grid()>>>(args...);
+
+        if (measure_time) {
+            ON_ERROR_GOTO(err, cudaEventRecord(end), cleanup_events);
+        }
+        SAFE_CALL(cudaDeviceSynchronize());
+
+        if (measure_time) {
+            ON_ERROR_GOTO(err, cudaEventSynchronize(end), cleanup_events);
+            ON_ERROR_GOTO(err, cudaEventElapsedTime(ms, start, end), cleanup_events);
+            XPU_LOG("Kernel '%s' took %f ms", type_name<K>(), *ms);
+        }
+
+    cleanup_events:
+        if (measure_time) {
+            SAFE_CALL(cudaEventDestroy(end));
+        }
+    cleanup_start_event:
+        if (measure_time) {
+            SAFE_CALL(cudaEventDestroy(start));
+        }
+
+        return err;
+    }
+
+};
+
+#elif XPU_IS_HIP
+
+template<typename F>
+struct action_runner<constant_tag, F> {
+    using data_t = typename F::data_t;
+    static int call(const data_t &val) {
+        return hipMemcpyToSymbol(HIP_SYMBOL(constant_memory<F>), &val, sizeof(data_t));
+    }
+};
+
+template<typename K, typename... Args>
+struct action_runner<kernel_tag, K, void(K::*)(kernel_context<typename K::shared_memory> &, Args...)> {
+
+    using shared_memory = typename K::shared_memory;
+
+    static int call(float *ms, grid g, Args... args) {
+        dim block_dim = K::block_size::value;
+        dim grid_dim{};
+
+        g.get_compute_grid(block_dim, grid_dim);
+
+        XPU_LOG("Calling kernel '%s' [block_dim = (%d, %d, %d), grid_dim = (%d, %d, %d)] with HIP driver.", type_name<K>(), block_dim.x, block_dim.y, block_dim.z, grid_dim.x, grid_dim.y, grid_dim.z);
+
+        bool measure_time = (ms != nullptr);
+        hipEvent_t start, end;
+        int err = 0;
+
+        if (measure_time) {
+            SAFE_CALL(hipEventCreate(&start));
+            ON_ERROR_GOTO(err, hipEventCreate(&end), cleanup_start_event);
+        }
+
+        if (measure_time) {
+            ON_ERROR_GOTO(err, hipEventRecord(start), cleanup_events);
+        }
+        hipLaunchKernelGGL(HIP_KERNEL_NAME(kernel_entry_bounded<K, K::block_size::value.linear(), Args...>), grid_dim.as_cuda_grid(), block_dim.as_cuda_grid(), 0, 0, args...);
+        if (measure_time) {
+            ON_ERROR_GOTO(err, hipEventRecord(end), cleanup_events);
+        }
+        SAFE_CALL(hipDeviceSynchronize());
+
+        if (measure_time) {
+            ON_ERROR_GOTO(err, hipEventSynchronize(end), cleanup_events);
+            ON_ERROR_GOTO(err, hipEventElapsedTime(ms, start, end), cleanup_events);
+            XPU_LOG("Kernel '%s' took %f ms", type_name<K>(), *ms);
+        }
+
+    cleanup_events:
+        if (measure_time) {
+            SAFE_CALL(hipEventDestroy(end));
+        }
+    cleanup_start_event:
+        if (measure_time) {
+            SAFE_CALL(hipEventDestroy(start));
+        }
+
+        return err;
+    }
+
+};
+
+#endif
+
+} // namespace xpu::detail
+
+#undef SAFE_CALL
+#undef ON_ERROR_GOTO
+
 #endif

@@ -19,34 +19,6 @@
 
 namespace xpu {
 
-struct thread_idx {
-    thread_idx() = delete;
-    XPU_D static int x();
-    XPU_D static int y();
-    XPU_D static int z();
-};
-
-struct block_dim {
-    block_dim() = delete;
-    XPU_D static int x();
-    XPU_D static int y();
-    XPU_D static int z();
-};
-
-struct block_idx {
-    block_idx() = delete;
-    XPU_D static int x();
-    XPU_D static int y();
-    XPU_D static int z();
-};
-
-struct grid_dim {
-    grid_dim() = delete;
-    XPU_D static int x();
-    XPU_D static int y();
-    XPU_D static int z();
-};
-
 template<int X, int Y = -1, int Z = -1>
 struct block_size {
     static inline constexpr xpu::dim value{X, Y, Z};
@@ -71,6 +43,29 @@ struct constant : detail::action<Image, detail::constant_tag> {
     using data_t = Data;
 };
 
+template<xpu::driver_t Impl=XPU_COMPILATION_TARGET>
+class tpos_impl {
+
+public:
+    XPU_D int thread_idx_x() const;
+    XPU_D int thread_idx_y() const;
+    XPU_D int thread_idx_z() const;
+
+    XPU_D int block_dim_x() const;
+    XPU_D int block_dim_y() const;
+    XPU_D int block_dim_z() const;
+
+    XPU_D int block_idx_x() const;
+    XPU_D int block_idx_y() const;
+    XPU_D int block_idx_z() const;
+
+    XPU_D int grid_dim_x() const;
+    XPU_D int grid_dim_y() const;
+    XPU_D int grid_dim_z() const;
+};
+
+using tpos = tpos_impl<>;
+
 template<typename SharedMemory>
 class kernel_context {
 
@@ -78,15 +73,18 @@ public:
     using shared_memory = SharedMemory;
     // using constants = Constants;
 
-    XPU_D kernel_context(shared_memory &smem) : m_smem(smem) {}
+    XPU_D kernel_context(tpos &pos, shared_memory &smem) : m_pos(pos), m_smem(smem) {}
 
     XPU_D       shared_memory &smem()       { return m_smem; }
     XPU_D const shared_memory &smem() const { return m_smem; }
 
+    XPU_D       tpos &pos()       { return m_pos; }
+    XPU_D const tpos &pos() const { return m_pos; }
+
 private:
+    tpos          &m_pos;
     shared_memory &m_smem;
     // constants &m_cmem; TODO: implement later in preparation for SYCL backend
-    // position &m_pos; TODO: implement later in preparation for SYCL backend
 
 };
 
@@ -353,7 +351,7 @@ class block_sort {
 public:
     struct storage_t {};
 
-    XPU_D block_sort(storage_t &);
+    XPU_D block_sort(tpos &, storage_t &);
 
     template<typename KeyGetter>
     XPU_D KeyValueType *sort(KeyValueType *vals, size_t N, KeyValueType *buf, KeyGetter &&getKey);
@@ -365,7 +363,7 @@ class block_merge {
 public:
     struct storage_t {};
 
-    XPU_D block_merge(storage_t &);
+    XPU_D block_merge(tpos &, storage_t &);
 
     template<typename Compare>
     XPU_D void merge(const Key *a, size_t size_a, const Key *b, size_t size_b, Key *dst, Compare &&);

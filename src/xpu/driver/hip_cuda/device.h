@@ -11,6 +11,7 @@
 #if XPU_IS_CUDA
 #include <cub/cub.cuh>
 #elif XPU_IS_HIP
+#include <hip/hip_runtime.h>
 #include <hipcub/hipcub.hpp>
 #else
 #error "Internal XPU error: This should never happen."
@@ -20,8 +21,8 @@
 #include <type_traits>
 
 #if 0
-#define PRINT_B(message, ...) if (xpu::thread_idx::x() == 0) printf("t 0: " message "\n", ##__VA_ARGS__)
-#define PRINT_T(message, ...) do { printf("t %d: " message "\n", xpu::thread_idx::x(), ##__VA_ARGS__); } while (0)
+#define PRINT_B(message, ...) if (xpu::pos.thread_idx_x() == 0) printf("t 0: " message "\n", ##__VA_ARGS__)
+#define PRINT_T(message, ...) do { printf("t %d: " message "\n", xpu::pos.thread_idx_x(), ##__VA_ARGS__); } while (0)
 #else
 #define PRINT_B(...) ((void)0)
 #define PRINT_T(...) ((void)0)
@@ -37,18 +38,26 @@
 
 namespace xpu {
 
-XPU_D XPU_FORCE_INLINE int thread_idx::x() { return XPU_CHOOSE(hipThreadIdx_x, threadIdx.x); }
-XPU_D XPU_FORCE_INLINE int thread_idx::y() { return XPU_CHOOSE(hipThreadIdx_y, threadIdx.y); }
-XPU_D XPU_FORCE_INLINE int thread_idx::z() { return XPU_CHOOSE(hipThreadIdx_z, threadIdx.z); }
-XPU_D XPU_FORCE_INLINE int block_dim::x() { return XPU_CHOOSE(hipBlockDim_x, blockDim.x); }
-XPU_D XPU_FORCE_INLINE int block_dim::y() { return XPU_CHOOSE(hipBlockDim_y, blockDim.y); }
-XPU_D XPU_FORCE_INLINE int block_dim::z() { return XPU_CHOOSE(hipBlockDim_z, blockDim.z); }
-XPU_D XPU_FORCE_INLINE int block_idx::x() { return XPU_CHOOSE(hipBlockIdx_x, blockIdx.x); }
-XPU_D XPU_FORCE_INLINE int block_idx::y() { return XPU_CHOOSE(hipBlockIdx_y, blockIdx.y); }
-XPU_D XPU_FORCE_INLINE int block_idx::z() { return XPU_CHOOSE(hipBlockIdx_z, blockIdx.z); }
-XPU_D XPU_FORCE_INLINE int grid_dim::x() { return XPU_CHOOSE(hipGridDim_x, gridDim.x); }
-XPU_D XPU_FORCE_INLINE int grid_dim::y() { return XPU_CHOOSE(hipGridDim_y, gridDim.y); }
-XPU_D XPU_FORCE_INLINE int grid_dim::z() { return XPU_CHOOSE(hipGridDim_z, gridDim.z); }
+template<>
+class tpos_impl<XPU_COMPILATION_TARGET> {
+
+public:
+    XPU_D int thread_idx_x() const { return XPU_CHOOSE(hipThreadIdx_x, threadIdx.x); }
+    XPU_D int thread_idx_y() const { return XPU_CHOOSE(hipThreadIdx_y, threadIdx.y); }
+    XPU_D int thread_idx_z() const { return XPU_CHOOSE(hipThreadIdx_z, threadIdx.z); }
+
+    XPU_D int block_dim_x() const { return XPU_CHOOSE(hipBlockDim_x, blockDim.x); }
+    XPU_D int block_dim_y() const { return XPU_CHOOSE(hipBlockDim_y, blockDim.y); }
+    XPU_D int block_dim_z() const { return XPU_CHOOSE(hipBlockDim_z, blockDim.z); }
+
+    XPU_D int block_idx_x() const { return XPU_CHOOSE(hipBlockIdx_x, blockIdx.x); }
+    XPU_D int block_idx_y() const { return XPU_CHOOSE(hipBlockIdx_y, blockIdx.y); }
+    XPU_D int block_idx_z() const { return XPU_CHOOSE(hipBlockIdx_z, blockIdx.z); }
+
+    XPU_D int grid_dim_x() const { return XPU_CHOOSE(hipGridDim_x, gridDim.x); }
+    XPU_D int grid_dim_y() const { return XPU_CHOOSE(hipGridDim_y, gridDim.y); }
+    XPU_D int grid_dim_z() const { return XPU_CHOOSE(hipGridDim_z, gridDim.z); }
+};
 
 XPU_D XPU_FORCE_INLINE int abs(int a) { return ::abs(a); }
 XPU_D XPU_FORCE_INLINE float abs(float x) { return ::fabsf(x); }
@@ -403,7 +412,7 @@ public:
         #endif
     };
 
-    __device__ block_sort(storage_t &storage_) : storage(storage_) {}
+    __device__ block_sort(tpos &position, storage_t &storage_) : pos(position), storage(storage_) {}
 
     //KHUN
     template<typename KeyGetter>
@@ -417,6 +426,7 @@ public:
     // }
 
 private:
+    tpos &pos;
     storage_t &storage;
 
     template<typename KeyGetter>
@@ -433,7 +443,7 @@ private:
         for (size_t i = 0; i < nItemBlocks; i++) {
             size_t start = i * ItemsPerBlock;
             for (size_t b = 0; b < ItemsPerThread; b++) {
-                short idx = b * BlockSize + xpu::thread_idx::x();
+                short idx = b * BlockSize + pos.thread_idx_x();;
                 size_t global_idx = start + idx;
                 if (global_idx < N) {
                     keys_local[b] = getKey(data[global_idx]);
@@ -456,7 +466,7 @@ private:
             __syncthreads();
 
             for (size_t b = 0; b < ItemsPerThread; b++) {
-                size_t to = start + thread_idx::x() * ItemsPerThread + b;
+                size_t to = start + pos.thread_idx_x() * ItemsPerThread + b;
                 if (to < N) {
                     data[to] = tmp[b];
                 }
@@ -482,11 +492,11 @@ private:
                 seq_merge(&src[st], &src[st2], blockSize, blockSize2, &dst[st], getKey);
                 #else
                 auto comp = [&](const data_t &a, const data_t &b) { return getKey(a) < getKey(b); };
-                block_merge_t(storage.sharedMergeMem).merge(&src[st], blockSize, &src[st2], blockSize2, &dst[st], comp);
+                block_merge_t(pos, storage.sharedMergeMem).merge(&src[st], blockSize, &src[st2], blockSize2, &dst[st], comp);
                 #endif
             }
 
-            for (size_t i = carryStart + thread_idx::x(); i < N; i += block_dim::x()) {
+            for (size_t i = carryStart + pos.thread_idx_x(); i < N; i += pos.block_dim_x()) {
                 dst[i] = src[i];
             }
 
@@ -502,7 +512,7 @@ private:
 
     template<typename KeyGetter>
     __device__ void seq_merge(const data_t *block1, const data_t *block2, size_t block_size1, size_t block_size2, data_t *out, KeyGetter &&getKey) {
-        if (thread_idx::x() > 0) {
+        if (pos.thread_idx_x() > 0) {
             return;
         }
 
@@ -543,7 +553,7 @@ public:
         data_t sharedMergeMem[ItemsPerThread * BlockSize + 1];
     };
 
-    XPU_D block_merge(storage_t &storage) : storage(storage) {}
+    XPU_D block_merge(tpos& pos, storage_t &storage) : pos(pos), storage(storage) {}
 
     template<typename Compare>
     XPU_D void merge(const data_t *a, size_t size_a, const data_t *b, size_t size_b, data_t *dst, Compare &&comp) {
@@ -581,6 +591,7 @@ public:
     }
 
 private:
+    tpos &pos;
     storage_t &storage;
 
     /*********************************************** KHUN BEGIN *******************************************************/
@@ -605,7 +616,7 @@ private:
         load_to_shared(a + a0, aCount, b + b0, bCount, data_shared, true);
 
         // Run a merge path to find the start of the serial merge for each thread.
-        int diag = ItemsPerThread * thread_idx::x();
+        int diag = ItemsPerThread * pos.thread_idx_x();
         int diag_next = min(diag + ItemsPerThread, aCount + bCount);
         int mp = merge_path<MgpuBoundsLower>(data_shared, aCount, data_shared + aCount, bCount, diag, comp);
         int mp_next = merge_path<MgpuBoundsLower>(data_shared, aCount, data_shared + aCount, bCount, diag_next, comp);
@@ -669,7 +680,7 @@ private:
         while (begin < end) {
             int mid = (begin + end) >> 1;
             data_t aKey = a[mid];
-            // printf("tid %d: bidx = %d\n", thread_idx::x(), diag-1-mid);
+            // printf("tid %d: bidx = %d\n", pos.thread_idx_x(), diag-1-mid);
 
             PRINT_T("b_idx = %d", diag-1-mid);
             data_t bKey = b[diag - 1 - mid];
@@ -690,8 +701,8 @@ private:
 
         #pragma unroll
         for(int i = 0; i < ItemsPerThread; ++i) {
-            assert(BlockSize * i + thread_idx::x() < BlockSize * ItemsPerThread);
-            dest[BlockSize * i + thread_idx::x()] = reg[i];
+            assert(BlockSize * i + pos.thread_idx_x() < BlockSize * ItemsPerThread);
+            dest[BlockSize * i + pos.thread_idx_x()] = reg[i];
         }
 
         if(sync) {
@@ -706,7 +717,7 @@ private:
 
         #pragma unroll
         for (int i = 0; i < ItemsPerThread; ++i) {
-            int index = BlockSize * i + thread_idx::x();
+            int index = BlockSize * i + pos.thread_idx_x();
             if (index < aCount) reg[i] = a_global[index];
             else if (index < total) reg[i] = b_global[index];
         }
@@ -725,8 +736,8 @@ private:
     __device__ void thread_to_shared(const data_t* threadReg, data_t* shared, bool sync) {
         #pragma unroll
         for(int i = 0; i < ItemsPerThread; ++i) {
-            assert(ItemsPerThread * thread_idx::x() + i < BlockSize * ItemsPerThread);
-            shared[ItemsPerThread * thread_idx::x() + i] = threadReg[i];
+            assert(ItemsPerThread * pos.thread_idx_x() + i < BlockSize * ItemsPerThread);
+            shared[ItemsPerThread * pos.thread_idx_x() + i] = threadReg[i];
         }
 
         if(sync) {
@@ -737,7 +748,7 @@ private:
     __device__ void shared_to_global(int count, const data_t* source, data_t *dest, bool sync) {
         #pragma unroll
         for(int i = 0; i < ItemsPerThread; ++i) {
-            int index = BlockSize * i + thread_idx::x();
+            int index = BlockSize * i + pos.thread_idx_x();
             if(index < count) {
                 dest[index] = source[index];
             }
@@ -761,7 +772,8 @@ __global__ void kernel_entry(Args... args) {
     using shared_memory = typename F::shared_memory;
     using context = kernel_context<shared_memory>;
     __shared__ shared_memory smem;
-    F{}(context{smem}, args...);
+    tpos pos{};
+    F{}(context{pos, smem}, args...);
 }
 
 template<typename F, int MaxThreadsPerBlock, typename... Args>
@@ -769,7 +781,8 @@ __global__ void __launch_bounds__(MaxThreadsPerBlock) kernel_entry_bounded(Args.
     using shared_memory = typename F::shared_memory;
     using context = kernel_context<shared_memory>;
     __shared__ shared_memory smem;
-    context ctx{smem};
+    tpos pos{};
+    context ctx{pos, smem};
     F{}(ctx, args...);
 }
 

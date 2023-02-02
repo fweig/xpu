@@ -17,18 +17,26 @@
 
 namespace xpu {
 
-XPU_FORCE_INLINE int thread_idx::x() { return 0; }
-XPU_FORCE_INLINE int thread_idx::y() { return 0; }
-XPU_FORCE_INLINE int thread_idx::z() { return 0; }
-XPU_FORCE_INLINE int block_dim::x() { return 1; }
-XPU_FORCE_INLINE int block_dim::y() { return 1; }
-XPU_FORCE_INLINE int block_dim::z() { return 1; }
-XPU_FORCE_INLINE int block_idx::x() { return detail::this_thread::block_idx.x; }
-XPU_FORCE_INLINE int block_idx::y() { return detail::this_thread::block_idx.y; }
-XPU_FORCE_INLINE int block_idx::z() { return detail::this_thread::block_idx.z; }
-XPU_FORCE_INLINE int grid_dim::x() { return detail::this_thread::grid_dim.x; }
-XPU_FORCE_INLINE int grid_dim::y() { return detail::this_thread::grid_dim.y; }
-XPU_FORCE_INLINE int grid_dim::z() { return detail::this_thread::grid_dim.z; }
+template<>
+class tpos_impl<driver_t::cpu> {
+
+public:
+    inline int thread_idx_x() const { return 0; }
+    inline int thread_idx_y() const { return 0; }
+    inline int thread_idx_z() const { return 0; }
+
+    inline int block_dim_x() const { return 1; }
+    inline int block_dim_y() const { return 1; }
+    inline int block_dim_z() const { return 1; }
+
+    inline int block_idx_x() const { return detail::this_thread::block_idx.x; }
+    inline int block_idx_y() const { return detail::this_thread::block_idx.y; }
+    inline int block_idx_z() const { return detail::this_thread::block_idx.z; }
+
+    inline int grid_dim_x() const { return detail::this_thread::grid_dim.x; }
+    inline int grid_dim_y() const { return detail::this_thread::grid_dim.y; }
+    inline int grid_dim_z() const { return detail::this_thread::grid_dim.z; }
+};
 
 // math functions
 XPU_FORCE_INLINE float abs(float x) { return std::fabs(x); }
@@ -371,7 +379,7 @@ class block_sort<Key, KeyValueType, BlockSize, ItemsPerThread, cpu> {
 public:
     struct storage_t {};
 
-    block_sort(storage_t &) {}
+    block_sort(tpos &, storage_t &) {}
 
     template<typename KeyGetter>
     KeyValueType *sort(KeyValueType *vals, size_t N, KeyValueType *, KeyGetter &&getKey) {
@@ -389,7 +397,7 @@ class block_merge<Key, BlockSize, ItemsPerThread, cpu> {
 public:
     struct storage_t {};
 
-    block_merge(storage_t &) {}
+    block_merge(tpos &, storage_t &) {}
 
     template<typename Compare>
     void merge(const Key *a, size_t size_a, const Key *b, size_t size_b, Key *dst, Compare &&comp) {
@@ -441,7 +449,8 @@ struct action_runner<kernel_tag, K, void(K::*)(kernel_context<typename K::shared
             for (int j = 0; j < grid_dim.y; j++) {
                 for (int k = 0; k < grid_dim.z; k++) {
                     shared_memory smem;
-                    kernel_context ctx{smem};
+                    tpos pos{};
+                    kernel_context ctx{pos, smem};
                     this_thread::block_idx = dim{i, j, k};
                     this_thread::grid_dim = grid_dim;
                     K{}(ctx, args...);

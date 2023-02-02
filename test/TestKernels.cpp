@@ -16,8 +16,8 @@ int get_driver_type::operator()(xpu::driver_t *driver) {
     return 0;
 }
 
-XPU_D void do_vector_add(const float *x, const float *y, float *z, int N) {
-    int iThread = xpu::block_idx::x() * xpu::block_dim::x() + xpu::thread_idx::x();
+XPU_D void do_vector_add(xpu::tpos &pos, const float *x, const float *y, float *z, int N) {
+    int iThread = pos.block_idx_x() * pos.block_dim_x() + pos.thread_idx_x();
     if (iThread >= N) {
         return;
     }
@@ -29,103 +29,104 @@ XPU_EXPORT(empty_kernel);
 XPU_D void empty_kernel::operator()(context &) {}
 
 XPU_EXPORT(vector_add);
-XPU_D void vector_add::operator()(context &, const float *x, const float *y, float *z, int N) {
-    do_vector_add(x, y, z, N);
+XPU_D void vector_add::operator()(context &ctx, const float *x, const float *y, float *z, int N) {
+    do_vector_add(ctx.pos(), x, y, z, N);
 }
 
 XPU_EXPORT(vector_add_timing0);
-XPU_D void vector_add_timing0::operator()(context &, const float *x, const float *y, float *z, int N) {
-    do_vector_add(x, y, z, N);
+XPU_D void vector_add_timing0::operator()(context &ctx, const float *x, const float *y, float *z, int N) {
+    do_vector_add(ctx.pos(), x, y, z, N);
 }
 
 XPU_EXPORT(vector_add_timing1);
-XPU_D void vector_add_timing1::operator()(context &, const float *x, const float *y, float *z, int N) {
-    do_vector_add(x, y, z, N);
+XPU_D void vector_add_timing1::operator()(context &ctx, const float *x, const float *y, float *z, int N) {
+    do_vector_add(ctx.pos(), x, y, z, N);
 }
 
 XPU_EXPORT(sort_float);
 XPU_D void sort_float::operator()(context &ctx, float *items, int N, float *buf, float **dst) {
-    float *res = sort_t{ctx.smem()}.sort(items, N, buf, [](const float &x) { return x; });
+    float *res = sort_t{ctx.pos(), ctx.smem()}.sort(items, N, buf, [](const float &x) { return x; });
 
-    if (xpu::block_idx::x() == 0) {
+    if (ctx.pos().block_idx_x() == 0) {
         *dst = res;
     }
 }
 
 XPU_EXPORT(sort_struct);
 XPU_D void sort_struct::operator()(context &ctx, key_value_t *items, int N, key_value_t *buf, key_value_t **dst) {
-    key_value_t *res = sort_t{ctx.smem()}.sort(items, N, buf, [](const key_value_t &pair) { return pair.key; });
+    key_value_t *res = sort_t{ctx.pos(), ctx.smem()}.sort(items, N, buf, [](const key_value_t &pair) { return pair.key; });
 
-    if (xpu::block_idx::x() == 0) {
+    if (ctx.pos().block_idx_x() == 0) {
         *dst = res;
     }
 }
 
 XPU_EXPORT(merge);
 XPU_D void merge::operator()(context &ctx, const float *a, size_t size_a, const float *b, size_t size_b, float *dst) {
-    merge_t(ctx.smem()).merge(a, size_a, b, size_b, dst, [](float a, float b) { return a < b; });
+    merge_t(ctx.pos(), ctx.smem()).merge(a, size_a, b, size_b, dst, [](float a, float b) { return a < b; });
 }
 
 XPU_EXPORT(merge_single);
 XPU_D void merge_single::operator()(context &ctx, const float *a, size_t size_a, const float *b, size_t size_b, float *dst) {
-    merge_t(ctx.smem()).merge(a, size_a, b, size_b, dst, [](float a, float b) { return a < b; });
+    merge_t(ctx.pos(), ctx.smem()).merge(a, size_a, b, size_b, dst, [](float a, float b) { return a < b; });
 }
 
 XPU_EXPORT(block_scan);
 XPU_D void block_scan::operator()(context &ctx, int *incl, int *excl) {
     scan_t scan{ctx.smem()};
-    scan.inclusive_sum(1, incl[xpu::thread_idx::x()]);
-    scan.exclusive_sum(1, excl[xpu::thread_idx::x()]);
+    xpu::tpos &pos = ctx.pos();
+    scan.inclusive_sum(1, incl[pos.thread_idx_x()]);
+    scan.exclusive_sum(1, excl[pos.thread_idx_x()]);
 }
 
 XPU_EXPORT(access_cmem);
-XPU_D void access_cmem::operator()(context &, float3_ *out) {
-    if (xpu::thread_idx::x() > 0) {
+XPU_D void access_cmem::operator()(context &ctx, float3_ *out) {
+    if (ctx.pos().thread_idx_x() > 0) {
         return;
     }
     const float3_ &in = xpu::cmem<test_constants>();
     *out = in;
 }
 
-XPU_D void get_thread_idx(int *thread_idx, int *block_dim, int *block_idx, int *grid_dim) {
-    int threadsPerBlock = xpu::block_dim::x() * xpu::block_dim::y() * xpu::block_dim::z();
-    int threadIdxInBlock = xpu::block_dim::x() * xpu::block_dim::y() * xpu::thread_idx::z() + xpu::block_dim::x() * xpu::thread_idx::y() + xpu::thread_idx::x();
-    int blockNumInGrid = xpu::grid_dim::x() * xpu::grid_dim::y() * xpu::block_idx::z() + xpu::grid_dim::x() * xpu::block_idx::y() + xpu::block_idx::x();
+XPU_D void get_thread_idx(xpu::tpos &pos, int *thread_idx, int *block_dim, int *block_idx, int *grid_dim) {
+    int threadsPerBlock = pos.block_dim_x() * pos.block_dim_y() * pos.block_dim_z();
+    int threadIdxInBlock = pos.block_dim_x() * pos.block_dim_y() * pos.thread_idx_z() + pos.block_dim_x() * pos.thread_idx_y() + pos.thread_idx_x();
+    int blockNumInGrid = pos.grid_dim_x() * pos.grid_dim_y() * pos.block_idx_z() + pos.grid_dim_x() * pos.block_idx_y() + pos.block_idx_x();
 
     int iThread = blockNumInGrid * threadsPerBlock + threadIdxInBlock;
 
-    thread_idx[iThread * 3 + 0] = xpu::thread_idx::x();
-    thread_idx[iThread * 3 + 1] = xpu::thread_idx::y();
-    thread_idx[iThread * 3 + 2] = xpu::thread_idx::z();
-    block_dim[iThread * 3 + 0] = xpu::block_dim::x();
-    block_dim[iThread * 3 + 1] = xpu::block_dim::y();
-    block_dim[iThread * 3 + 2] = xpu::block_dim::z();
-    block_idx[iThread * 3 + 0] = xpu::block_idx::x();
-    block_idx[iThread * 3 + 1] = xpu::block_idx::y();
-    block_idx[iThread * 3 + 2] = xpu::block_idx::z();
-    grid_dim[iThread * 3 + 0] = xpu::grid_dim::x();
-    grid_dim[iThread * 3 + 1] = xpu::grid_dim::y();
-    grid_dim[iThread * 3 + 2] = xpu::grid_dim::z();
+    thread_idx[iThread * 3 + 0] = pos.thread_idx_x();
+    thread_idx[iThread * 3 + 1] = pos.thread_idx_y();
+    thread_idx[iThread * 3 + 2] = pos.thread_idx_z();
+    block_dim[iThread * 3 + 0] = pos.block_dim_x();
+    block_dim[iThread * 3 + 1] = pos.block_dim_y();
+    block_dim[iThread * 3 + 2] = pos.block_dim_z();
+    block_idx[iThread * 3 + 0] = pos.block_idx_x();
+    block_idx[iThread * 3 + 1] = pos.block_idx_y();
+    block_idx[iThread * 3 + 2] = pos.block_idx_z();
+    grid_dim[iThread * 3 + 0] = pos.grid_dim_x();
+    grid_dim[iThread * 3 + 1] = pos.grid_dim_y();
+    grid_dim[iThread * 3 + 2] = pos.grid_dim_z();
 }
 
 XPU_EXPORT(get_thread_idx_1d);
-XPU_D void get_thread_idx_1d::operator()(context &, int *thread_idx, int *block_dim, int *block_idx, int *grid_dim) {
-    get_thread_idx(thread_idx, block_dim, block_idx, grid_dim);
+XPU_D void get_thread_idx_1d::operator()(context &ctx, int *thread_idx, int *block_dim, int *block_idx, int *grid_dim) {
+    get_thread_idx(ctx.pos(), thread_idx, block_dim, block_idx, grid_dim);
 }
 
 XPU_EXPORT(get_thread_idx_2d);
-XPU_D void get_thread_idx_2d::operator()(context &, int *thread_idx, int *block_dim, int *block_idx, int *grid_dim) {
-    get_thread_idx(thread_idx, block_dim, block_idx, grid_dim);
+XPU_D void get_thread_idx_2d::operator()(context &ctx, int *thread_idx, int *block_dim, int *block_idx, int *grid_dim) {
+    get_thread_idx(ctx.pos(), thread_idx, block_dim, block_idx, grid_dim);
 }
 
 XPU_EXPORT(get_thread_idx_3d);
-XPU_D void get_thread_idx_3d::operator()(context &, int *thread_idx, int *block_dim, int *block_idx, int *grid_dim) {
-    get_thread_idx(thread_idx, block_dim, block_idx, grid_dim);
+XPU_D void get_thread_idx_3d::operator()(context &ctx, int *thread_idx, int *block_dim, int *block_idx, int *grid_dim) {
+    get_thread_idx(ctx.pos(), thread_idx, block_dim, block_idx, grid_dim);
 }
 
 XPU_EXPORT(test_device_funcs);
-XPU_D void test_device_funcs::operator()(context &, variant *out) {
-    if (xpu::thread_idx::x() > 0) {
+XPU_D void test_device_funcs::operator()(context &ctx, variant *out) {
+    if (ctx.pos().thread_idx_x() > 0) {
         return;
     }
 

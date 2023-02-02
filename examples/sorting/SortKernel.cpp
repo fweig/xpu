@@ -12,15 +12,17 @@ XPU_D void GpuSort::operator()(context &ctx,  KeyValuePair *data, KeyValuePair *
     // extracts the key from the struct has to be passed.
     // Returns the buffer that contains the sorted data (either data or buf).
 
-    size_t itemsPerBlock = numElems / xpu::grid_dim::x();
-    size_t offset = itemsPerBlock * xpu::block_idx::x();
+    xpu::tpos &pos = ctx.pos();
 
-    KeyValuePair *res = SortT(ctx.smem()).sort(
+    size_t itemsPerBlock = numElems / pos.grid_dim_x();
+    size_t offset = itemsPerBlock * pos.block_idx_x();
+
+    KeyValuePair *res = SortT(pos, ctx.smem()).sort(
         &data[offset], itemsPerBlock, &buf[offset],
         [](const KeyValuePair &dat) { return dat.key; }
     );
 
-    if (xpu::block_idx::x() == 0) {
+    if (pos.block_idx_x() == 0) {
         *out = res;
     }
 }

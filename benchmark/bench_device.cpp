@@ -13,8 +13,8 @@ XPU_EXPORT(merge<64>);
 template<int items_per_thread>
 XPU_D void merge<items_per_thread>::operator()(context &ctx, const float *a, const float *b, size_t N, float *c) {
     size_t items_per_block = N;
-    size_t offset = items_per_block * xpu::block_idx::x();
-    merge_t(ctx.smem()).merge(&a[offset], items_per_block, &b[offset], items_per_block, &c[offset * 2], [](float x, float y) { return x < y; });
+    size_t offset = items_per_block * ctx.pos().block_idx_x();
+    merge_t(ctx.pos(), ctx.smem()).merge(&a[offset], items_per_block, &b[offset], items_per_block, &c[offset * 2], [](float x, float y) { return x < y; });
 }
 
 XPU_EXPORT(sort<1>);
@@ -29,7 +29,8 @@ XPU_EXPORT(sort<64>);
 
 template<int items_per_thread>
 XPU_D void sort<items_per_thread>::operator()(context &ctx, float *a, size_t N, float *buf, float **dst) {
+    xpu::tpos &pos = ctx.pos();
     size_t items_per_block = N;
-    size_t offset = items_per_block * xpu::block_idx::x();
-    dst[xpu::block_idx::x()] = sort_t(ctx.smem()).sort(&a[offset], items_per_block, &buf[offset], [](float x) { return x; });
+    size_t offset = items_per_block * pos.block_idx_x();
+    dst[pos.block_idx_x()] = sort_t(pos, ctx.smem()).sort(&a[offset], items_per_block, &buf[offset], [](float x) { return x; });
 }

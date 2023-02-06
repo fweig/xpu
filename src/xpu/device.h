@@ -4,7 +4,6 @@
 #include "defines.h"
 #include "common.h"
 #include "detail/common.h"
-#include "detail/constant_memory.h"
 #include "detail/type_info.h"
 
 #include <type_traits>
@@ -25,23 +24,6 @@ struct block_size {
 };
 
 struct no_smem {};
-
-template<typename Image>
-struct kernel : detail::action<Image, detail::kernel_tag> {
-    // Defaults
-    using block_size = xpu::block_size<64>;
-    // using constants = xpu::cmem<>; // TODO: Implement later
-    using shared_memory = xpu::no_smem;
-};
-
-template<typename Image>
-struct function : detail::action<Image, detail::function_tag> {
-};
-
-template<typename Image, typename Data>
-struct constant : detail::action<Image, detail::constant_tag> {
-    using data_t = Data;
-};
 
 template<xpu::driver_t Impl=XPU_COMPILATION_TARGET>
 class tpos_impl {
@@ -66,17 +48,52 @@ public:
 
 using tpos = tpos_impl<>;
 
-template<typename SharedMemory>
+template<xpu::driver_t, typename... Constants>
+class cmem_impl {
+
+public:
+    template<typename Constant>
+    XPU_D const typename Constant::data_t &get() const;
+
+};
+
+template<typename... Constants>
+using cmem = cmem_impl<XPU_COMPILATION_TARGET, Constants...>;
+
+template<typename Image>
+struct kernel : detail::action<Image, detail::kernel_tag> {
+    // Defaults
+    using block_size = xpu::block_size<64>;
+    using constants = cmem<>;
+    using shared_memory = no_smem;
+};
+
+template<typename Image>
+struct function : detail::action<Image, detail::function_tag> {
+};
+
+template<typename Image, typename Data>
+struct constant : detail::action<Image, detail::constant_tag> {
+    using data_t = Data;
+};
+
+template<typename SharedMemory = xpu::no_smem, typename Constants = xpu::cmem<>>
 class kernel_context {
 
 public:
     using shared_memory = SharedMemory;
-    // using constants = Constants;
+    using constants = Constants;
 
-    XPU_D kernel_context(tpos &pos, shared_memory &smem) : m_pos(pos), m_smem(smem) {}
+    XPU_D kernel_context(tpos &pos, shared_memory &smem, constants &cmem)
+        : m_pos(pos)
+        , m_smem(smem)
+        , m_cmem(cmem) {}
 
     XPU_D       shared_memory &smem()       { return m_smem; }
     XPU_D const shared_memory &smem() const { return m_smem; }
+
+    XPU_D       constants &cmem()       { return m_cmem; }
+    XPU_D const constants &cmem() const { return m_cmem; }
 
     XPU_D       tpos &pos()       { return m_pos; }
     XPU_D const tpos &pos() const { return m_pos; }
@@ -84,12 +101,9 @@ public:
 private:
     tpos          &m_pos;
     shared_memory &m_smem;
-    // constants &m_cmem; TODO: implement later in preparation for SYCL backend
+    constants     &m_cmem;
 
 };
-
-template<typename C>
-XPU_D const typename C::data_t &cmem() { return detail::constant_memory<C>; }
 
 XPU_D constexpr float pi();
 XPU_D constexpr float pi_2();

@@ -6,6 +6,7 @@
 #error "This header should not be included directly. Include xpu/device.h instead."
 #endif
 
+#include "../../detail/constant_memory.h"
 #include "../../detail/macros.h"
 
 #if XPU_IS_CUDA
@@ -57,6 +58,32 @@ public:
     XPU_D int grid_dim_x() const { return XPU_CHOOSE(hipGridDim_x, gridDim.x); }
     XPU_D int grid_dim_y() const { return XPU_CHOOSE(hipGridDim_y, gridDim.y); }
     XPU_D int grid_dim_z() const { return XPU_CHOOSE(hipGridDim_z, gridDim.z); }
+};
+
+namespace detail {
+
+template<typename C>
+class cmem_impl_leaf {
+protected:
+    XPU_D const typename C::data_t &access() const { return detail::constant_memory<C>; }
+};
+
+template<typename...>
+class cmem_impl_base {};
+
+template<typename C, typename... ConstantsTail>
+class cmem_impl_base<C, ConstantsTail...> : public cmem_impl_leaf<C>, public cmem_impl_base<ConstantsTail...> {
+};
+
+} // namespace detail
+
+template<typename... Constants>
+class cmem_impl<XPU_COMPILATION_TARGET, Constants...> : public detail::cmem_impl_base<Constants...> {
+public:
+    template<typename Constant>
+    XPU_D std::enable_if_t<(std::is_same_v<Constant, Constants> || ...), const typename Constant::data_t &>  get() const {
+        return detail::cmem_impl_leaf<Constant>::access();
+    }
 };
 
 XPU_D XPU_FORCE_INLINE int abs(int a) { return ::abs(a); }
@@ -770,7 +797,8 @@ namespace xpu::detail {
 template<typename F, typename S, typename... Args>
 __global__ void kernel_entry(Args... args) {
     using shared_memory = typename F::shared_memory;
-    using context = kernel_context<shared_memory>;
+    using constants = typename F::constants;
+    using context = kernel_context<shared_memory, constants>;
     __shared__ shared_memory smem;
     tpos pos{};
     F{}(context{pos, smem}, args...);
@@ -779,10 +807,12 @@ __global__ void kernel_entry(Args... args) {
 template<typename F, int MaxThreadsPerBlock, typename... Args>
 __global__ void __launch_bounds__(MaxThreadsPerBlock) kernel_entry_bounded(Args... args) {
     using shared_memory = typename F::shared_memory;
-    using context = kernel_context<shared_memory>;
+    using constants = typename F::constants;
+    using context = kernel_context<shared_memory, constants>;
     __shared__ shared_memory smem;
     tpos pos{};
-    context ctx{pos, smem};
+    constants cmem{};
+    context ctx{pos, smem, cmem};
     F{}(ctx, args...);
 }
 
@@ -797,7 +827,7 @@ struct action_runner<constant_tag, F> {
 };
 
 template<typename K, typename... Args>
-struct action_runner<kernel_tag, K, void(K::*)(kernel_context<typename K::shared_memory> &, Args...)> {
+struct action_runner<kernel_tag, K, void(K::*)(kernel_context<typename K::shared_memory, typename K::constants> &, Args...)> {
 
     static int call(float *ms, grid g, Args... args) {
         dim block_dim = K::block_size::value;
@@ -858,9 +888,7 @@ struct action_runner<constant_tag, F> {
 };
 
 template<typename K, typename... Args>
-struct action_runner<kernel_tag, K, void(K::*)(kernel_context<typename K::shared_memory> &, Args...)> {
-
-    using shared_memory = typename K::shared_memory;
+struct action_runner<kernel_tag, K, void(K::*)(kernel_context<typename K::shared_memory, typename K::constants> &, Args...)> {
 
     static int call(float *ms, grid g, Args... args) {
         dim block_dim = K::block_size::value;

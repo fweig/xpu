@@ -6,6 +6,7 @@
 #endif
 
 #include "../../detail/macros.h"
+#include "../../detail/constant_memory.h"
 #include "this_thread.h"
 
 #include <algorithm>
@@ -36,6 +37,32 @@ public:
     inline int grid_dim_x() const { return detail::this_thread::grid_dim.x; }
     inline int grid_dim_y() const { return detail::this_thread::grid_dim.y; }
     inline int grid_dim_z() const { return detail::this_thread::grid_dim.z; }
+};
+
+namespace detail {
+
+template<typename C>
+class cmem_impl_leaf {
+protected:
+    XPU_D const typename C::data_t &access() const { return detail::constant_memory<C>; }
+};
+
+template<typename...>
+class cmem_impl_base {};
+
+template<typename C, typename... ConstantsTail>
+class cmem_impl_base<C, ConstantsTail...> : public cmem_impl_leaf<C>, public cmem_impl_base<ConstantsTail...> {
+};
+
+} // namespace detail
+
+template<typename... Constants>
+class cmem_impl<driver_t::cpu, Constants...> : public detail::cmem_impl_base<Constants...> {
+public:
+    template<typename Constant>
+    XPU_D std::enable_if_t<(std::is_same_v<Constant, Constants> || ...), const typename Constant::data_t &>  get() const {
+        return detail::cmem_impl_leaf<Constant>::access();
+    }
 };
 
 // math functions
@@ -420,9 +447,10 @@ struct action_runner<constant_tag, F> {
 };
 
 template<typename K, typename... Args>
-struct action_runner<kernel_tag, K, void(K::*)(kernel_context<typename K::shared_memory> &, Args...)> {
+struct action_runner<kernel_tag, K, void(K::*)(kernel_context<typename K::shared_memory, typename K::constants> &, Args...)> {
 
     using shared_memory = typename K::shared_memory;
+    using constants = typename K::constants;
     using context = kernel_context<shared_memory>;
 
     static int call(float *ms, grid g, Args... args) {
@@ -450,7 +478,8 @@ struct action_runner<kernel_tag, K, void(K::*)(kernel_context<typename K::shared
                 for (int k = 0; k < grid_dim.z; k++) {
                     shared_memory smem;
                     tpos pos{};
-                    kernel_context ctx{pos, smem};
+                    constants cmem{};
+                    kernel_context ctx{pos, smem, cmem};
                     this_thread::block_idx = dim{i, j, k};
                     this_thread::grid_dim = grid_dim;
                     K{}(ctx, args...);

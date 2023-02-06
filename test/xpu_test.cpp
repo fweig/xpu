@@ -270,21 +270,49 @@ TEST(XPUTest, CanSetAndReadCMem) {
     float3_ orig{1, 2, 3};
     xpu::hd_buffer<float3_> out{1};
 
-    xpu::set_constant<test_constants>(orig);
+    xpu::set_constant<test_constant0>(orig);
 
-    xpu::run_kernel<access_cmem>(xpu::grid::n_threads(1), out.d());
+    xpu::run_kernel<access_cmem_single>(xpu::grid::n_threads(1), out.d());
     xpu::copy(out, xpu::device_to_host);
 
     float3_ result = *out.h();
     EXPECT_EQ(orig.x, result.x);
     EXPECT_EQ(orig.y, result.y);
     EXPECT_EQ(orig.z, result.z);
+}
 
-    // xpu::get_cmem<xpu_test::test_kernels>(constants_copy);
+TEST(XPUTest, CanSetAndReadCMemMultiple) {
+    float3_ orig{1, 2, 3};
+    xpu::hd_buffer<float3_> out0{1};
 
-    // ASSERT_EQ(constants_orig.x, constants_copy.x);
-    // ASSERT_EQ(constants_orig.y, constants_copy.y);
-    // ASSERT_EQ(constants_orig.z, constants_copy.z);
+    double orig1 = 42;
+    xpu::hd_buffer<double> out1{1};
+
+    float orig2 = 1337;
+    xpu::hd_buffer<float> out2{1};
+
+    xpu::set_constant<test_constant0>(orig);
+    xpu::set_constant<test_constant1>(orig1);
+    xpu::set_constant<test_constant2>(orig2);
+    xpu::run_kernel<access_cmem_multiple>(xpu::grid::n_threads(1), out0.d(), out1.d(), out2.d());
+    xpu::copy(out0, xpu::device_to_host);
+    xpu::copy(out1, xpu::device_to_host);
+    xpu::copy(out2, xpu::device_to_host);
+
+    {
+        float3_ result = *out0.h();
+        EXPECT_EQ(orig.x, result.x);
+        EXPECT_EQ(orig.y, result.y);
+        EXPECT_EQ(orig.z, result.z);
+    }
+    {
+        double result = *out1.h();
+        EXPECT_EQ(orig1, result);
+    }
+    {
+        float result = *out2.h();
+        EXPECT_EQ(orig2, result);
+    }
 }
 
 void test_thread_position(xpu::dim gpu_block_size, xpu::dim gpu_grid_dim) {

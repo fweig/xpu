@@ -121,7 +121,9 @@ struct key_value_t {
     unsigned int value;
 };
 
-struct test_constants : xpu::constant<TestKernels, float3_> {};
+struct test_constant0 : xpu::constant<TestKernels, float3_> {};
+struct test_constant1 : xpu::constant<TestKernels, double> {};
+struct test_constant2 : xpu::constant<TestKernels, float> {};
 
 struct get_driver_type : xpu::function<TestKernels> {
     int operator()(xpu::driver_t *);
@@ -182,9 +184,20 @@ struct block_scan : xpu::kernel<TestKernels> {
     XPU_D void operator()(context &, int *, int *);
 };
 
-struct access_cmem : xpu::kernel<TestKernels> {
-    using context = xpu::kernel_context<xpu::no_smem>;
+struct access_cmem_single : xpu::kernel<TestKernels> {
+    using constants = xpu::cmem<test_constant0>;
+    using context = xpu::kernel_context<xpu::no_smem, constants>;
     XPU_D void operator()(context &, float3_ *);
+};
+
+struct access_cmem_multiple : xpu::kernel<TestKernels> {
+    using constants = xpu::cmem<
+        test_constant0,
+        test_constant1,
+        test_constant2
+    >;
+    using context = xpu::kernel_context<xpu::no_smem, constants>;
+    XPU_D void operator()(context &, float3_ *, double *, float *);
 };
 
 struct get_thread_idx_1d : xpu::kernel<TestKernels> {

@@ -2,7 +2,9 @@
 
 XPU_IMAGE(TestKernels);
 
-XPU_EXPORT(test_constants);
+XPU_EXPORT(test_constant0);
+XPU_EXPORT(test_constant1);
+XPU_EXPORT(test_constant2);
 
 XPU_EXPORT(get_driver_type);
 int get_driver_type::operator()(xpu::driver_t *driver) {
@@ -79,13 +81,26 @@ XPU_D void block_scan::operator()(context &ctx, int *incl, int *excl) {
     scan.exclusive_sum(1, excl[pos.thread_idx_x()]);
 }
 
-XPU_EXPORT(access_cmem);
-XPU_D void access_cmem::operator()(context &ctx, float3_ *out) {
+XPU_EXPORT(access_cmem_single);
+XPU_D void access_cmem_single::operator()(context &ctx, float3_ *out) {
     if (ctx.pos().thread_idx_x() > 0) {
         return;
     }
-    const float3_ &in = xpu::cmem<test_constants>();
+    const float3_ &in = ctx.cmem().get<test_constant0>();
     *out = in;
+}
+
+XPU_EXPORT(access_cmem_multiple);
+XPU_D void access_cmem_multiple::operator()(context &ctx, float3_ *out0, double *out1, float *out2) {
+    if (ctx.pos().thread_idx_x() > 0) {
+        return;
+    }
+    const float3_ &in0 = ctx.cmem().get<test_constant0>();
+    *out0 = in0;
+    const double &in1 = ctx.cmem().get<test_constant1>();
+    *out1 = in1;
+    const float &in2 = ctx.cmem().get<test_constant2>();
+    *out2 = in2;
 }
 
 XPU_D void get_thread_idx(xpu::tpos &pos, int *thread_idx, int *block_dim, int *block_idx, int *grid_dim) {

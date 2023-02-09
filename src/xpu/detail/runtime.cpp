@@ -109,6 +109,8 @@ void runtime::initialize() {
         for (int i = 0; i < ndevices; i++) {
             device_prop props;
             DRIVER_CALL_I(driver, get_properties(&props, i));
+            props.xpuid = detail::format("%s%d", driver_str(props.driver), i);
+            std::transform(props.xpuid.begin(), props.xpuid.end(), props.xpuid.begin(), ::tolower);
             if (props.driver != cpu) {
                 XPU_LOG("  %lu: %s (arch = %d%d)", m_devices.size(), props.name.c_str(), props.major, props.minor);
             } else {

@@ -34,6 +34,10 @@ void xpu::memset(void *dst, int ch, size_t bytes) {
     return detail::runtime::instance().memset(dst, ch, bytes);
 }
 
+std::vector<xpu::device_prop> xpu::get_devices() {
+    return detail::runtime::instance().get_devices();
+}
+
 xpu::device_prop xpu::device_properties() {
     return detail::runtime::instance().device_properties();
 }

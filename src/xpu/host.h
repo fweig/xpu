@@ -54,6 +54,7 @@ inline void free(void *);
 inline void memcpy(void *, const void *, size_t);
 inline void memset(void *, int, size_t);
 
+inline std::vector<device_prop> get_devices();
 inline device_prop device_properties();
 inline xpu::driver_t active_driver();
 inline device_prop pointer_get_device(const void *);

@@ -15,6 +15,7 @@ enum driver_t {
 
 struct device_prop {
     std::string name;
+    std::string xpuid;
     driver_t driver;
     int major;
     int minor;

@@ -57,6 +57,7 @@ public:
     void memcpy(void *, const void *, size_t);
     void memset(void *, int, size_t);
 
+    std::vector<device_prop> get_devices() { return m_devices; }
     device_prop device_properties();
 
     // FIXME this clashes / is ambigious with private function get_active_driver

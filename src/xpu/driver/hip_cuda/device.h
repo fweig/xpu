@@ -332,26 +332,10 @@ public:
         impl.ExclusiveSum(input, output, initial_value, scan_op);
     }
 
-    template<int ItemsPerThread>
-    XPU_D void exclusive_sum(T(&input)[ItemsPerThread], T(&output)[ItemsPerThread]) { impl.ExclusiveSum(input, output); }
-
-    template<int ItemsPerThread, typename ScanOp>
-    XPU_D void exclusive_sum(T(&input)[ItemsPerThread], T(&output)[ItemsPerThread], T initial_value, ScanOp scan_op) {
-        impl.ExclusiveSum(input, output, initial_value, scan_op);
-    }
-
     XPU_D void inclusive_sum(T input, T &output) { impl.InclusiveSum(input, output); }
 
     template<typename ScanOp>
     XPU_D void inclusive_sum(T input, T &output, T initial_value, ScanOp scan_op) {
-        impl.InclusiveSum(input, output, initial_value, scan_op);
-    }
-
-    template<int ItemsPerThread>
-    XPU_D void inclusive_sum(T(&input)[ItemsPerThread], T(&output)[ItemsPerThread]) { impl.InclusiveSum(input, output); }
-
-    template<int ItemsPerThread, typename ScanOp>
-    XPU_D void inclusive_sum(T(&input)[ItemsPerThread], T(&output)[ItemsPerThread], T initial_value, ScanOp scan_op) {
         impl.InclusiveSum(input, output, initial_value, scan_op);
     }
 

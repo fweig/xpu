@@ -44,6 +44,7 @@ void runtime::initialize() {
             {"cpu", cpu},
             {"cuda", cuda},
             {"hip", hip},
+            {"sycl", sycl},
         };
 
         XPU_LOG("Parsing XPU_DEVICE environment variable: '%s'", device_env.c_str());
@@ -99,13 +100,25 @@ void runtime::initialize() {
         XPU_LOG("Couldn't find 'libxpu_Hip.so'. Hip driver not active.");
     }
 
+    XPU_LOG("Loading sycl driver.");
+    m_sycl_driver.reset(new lib_obj<driver_interface>{"libxpu_Sycl.so"});
+    if (m_sycl_driver->ok()) {
+        DRIVER_CALL_I(sycl, setup());
+        XPU_LOG("Finished loading sycl driver.");
+    } else {
+        XPU_LOG("Couldn't find 'libxpu_Sycl.so'. Sycl driver not active.");
+    }
+
     XPU_LOG("Found devices:");
-    for (driver_t driver : {cpu, cuda, hip}) {
+    for (driver_t driver : {cpu, cuda, hip, sycl}) {
+
         if (not has_driver(driver)) {
+            XPU_LOG("  No %s devices found.", driver_str(driver));
             continue;
         }
-        int ndevices;
+        int ndevices = 0;
         DRIVER_CALL_I(driver, num_devices(&ndevices));
+        XPU_LOG(" %s (%d)", driver_str(driver), ndevices);
         for (int i = 0; i < ndevices; i++) {
             device_prop props;
             DRIVER_CALL_I(driver, get_properties(&props, i));
@@ -116,8 +129,8 @@ void runtime::initialize() {
             } else {
                 XPU_LOG("  %lu: %s", m_devices.size(), props.name.c_str());
             }
-            m_devices.push_back(props);
-            m_devices_by_driver[props.driver].push_back(props);
+            m_devices.emplace_back(props);
+            m_devices_by_driver.at(props.driver).emplace_back(props);
         }
     }
 
@@ -179,6 +192,7 @@ void runtime::memset(void *dst, int ch, size_t bytes) {
 xpu::device_prop runtime::device_properties() {
     int device;
     DRIVER_CALL(get_device(&device));
+    raise_error_if(device < 0, "Invalid device.");
     device_prop props;
     DRIVER_CALL(get_properties(&props, device));
     return props;
@@ -190,7 +204,7 @@ bool runtime::has_driver(driver_t d) const {
 
 xpu::device_prop runtime::pointer_get_device(const void *ptr) {
 
-    for (driver_t driver_type : {cuda, hip, cpu}) {
+    for (driver_t driver_type : {cuda, hip, sycl, cpu}) {
         auto *driver = get_driver(driver_type);
         if (driver == nullptr) {
             continue;
@@ -202,7 +216,7 @@ xpu::device_prop runtime::pointer_get_device(const void *ptr) {
             continue;
         }
 
-        return m_devices_by_driver[driver_type].at(platform_device);
+        return m_devices_by_driver.at(driver_type).at(platform_device);
     }
 
     // UNREACHABLE
@@ -215,6 +229,7 @@ driver_interface *runtime::get_driver(driver_t d) const {
         case cpu: return m_cpu_driver.get();
         case cuda: return m_cuda_driver->obj;
         case hip: return m_hip_driver->obj;
+        case sycl: return m_sycl_driver->obj;
     }
 
     RAISE_INTERNAL_ERROR();
@@ -230,6 +245,7 @@ std::string runtime::complete_file_name(const char *fname, driver_t d) const {
     switch (d) {
     case cuda: suffix = "_Cuda.so"; break;
     case hip:  suffix = "_Hip.so"; break;
+    case sycl: suffix = "_Sycl.so"; break;
     case cpu:  suffix = ".so"; break;
     }
     return prefix + std::string{fname} + suffix;
@@ -240,6 +256,7 @@ const char *runtime::driver_str(driver_t d) const {
     case cpu: return "CPU";
     case cuda: return "CUDA";
     case hip: return "HIP";
+    case sycl: return "SYCL";
     }
     RAISE_INTERNAL_ERROR();
 }

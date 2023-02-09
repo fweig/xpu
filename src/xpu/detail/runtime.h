@@ -114,6 +114,7 @@ private:
     std::unique_ptr<cpu_driver> m_cpu_driver;
     std::unique_ptr<lib_obj<driver_interface>> m_cuda_driver;
     std::unique_ptr<lib_obj<driver_interface>> m_hip_driver;
+    std::unique_ptr<lib_obj<driver_interface>> m_sycl_driver;
 
     driver_t m_active_driver = cpu;
 
@@ -123,7 +124,7 @@ private:
     std::vector<std::vector<float>> m_profiling;
 
     std::vector<device_prop> m_devices;
-    std::array<std::vector<device_prop>, 3> m_devices_by_driver;
+    std::array<std::vector<device_prop>, num_drivers> m_devices_by_driver;
 
     static bool getenv_bool(std::string name, bool fallback);
     static std::string getenv_str(std::string name, std::string_view fallback);
@@ -149,6 +150,7 @@ private:
             break;
         case cuda:
         case hip:
+        case sycl:
             i = new image<I>(complete_file_name(image_file_name<I>{}(), d).c_str());
             break;
         }

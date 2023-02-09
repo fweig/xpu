@@ -64,6 +64,8 @@ public:
     template<typename... Args>
     XPU_D tpos(detail::internal_ctor_t, Args &&... args)
         : m_impl(std::forward<Args>(args)...) {}
+
+    XPU_D detail::tpos_impl &impl(detail::internal_fn_t) { return m_impl; }
 };
 
 template<typename... Constants>
@@ -111,7 +113,7 @@ public:
     XPU_D       shared_memory &smem()       { return m_smem; }
     XPU_D const shared_memory &smem() const { return m_smem; }
 
-    XPU_D       constants &cmem()       { return m_cmem; }
+    // XPU_D       constants &cmem()       { return m_cmem; }
     XPU_D const constants &cmem() const { return m_cmem; }
 
     XPU_D       tpos &pos()       { return m_pos; }
@@ -120,10 +122,10 @@ public:
 private:
     tpos          &m_pos;
     shared_memory &m_smem;
-    constants     &m_cmem;
+    const constants     &m_cmem;
 
 public:
-    XPU_D kernel_context(detail::internal_ctor_t, tpos &pos, shared_memory &smem, constants &cmem)
+    XPU_D kernel_context(detail::internal_ctor_t, tpos &pos, shared_memory &smem, const constants &cmem)
         : m_pos(pos)
         , m_smem(smem)
         , m_cmem(cmem) {}
@@ -306,6 +308,8 @@ XPU_D float tan(float x);
 XPU_D float tanh(float x);
 XPU_D float tanpi(float x);
 
+XPU_D float tanpi(float x);
+
 XPU_D float tgamma(float x);
 
 XPU_D float trunc(float x);
@@ -364,22 +368,10 @@ public:
     template<typename ScanOp>
     XPU_D void exclusive_sum(T input, T &output, T initial_value, ScanOp scan_op);
 
-    template<int ItemsPerThread>
-    XPU_D void exclusive_sum(T(&input)[ItemsPerThread], T(&output)[ItemsPerThread]);
-
-    template<int ItemsPerThread, typename ScanOp>
-    XPU_D void exclusive_sum(T(&input)[ItemsPerThread], T(&output)[ItemsPerThread], ScanOp scan_op);
-
     XPU_D void inclusive_sum(T input, T &output);
 
     template<typename ScanOp>
     XPU_D void inclusive_sum(T input, T &output, T initial_value, ScanOp scan_op);
-
-    template<int ItemsPerThread>
-    XPU_D void inclusive_sum(T(&input)[ItemsPerThread], T(&output)[ItemsPerThread]);
-
-    template<int ItemsPerThread, typename ScanOp>
-    XPU_D void inclusive_sum(T(&input)[ItemsPerThread], T(&output)[ItemsPerThread], T initial_value, ScanOp scan_op);
 };
 
 template<typename Key, typename KeyValueType, int BlockSize, int ItemsPerThread=8, xpu::driver_t Impl=XPU_COMPILATION_TARGET>

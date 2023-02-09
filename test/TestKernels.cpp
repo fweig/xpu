@@ -14,6 +14,10 @@ int get_driver_type::operator()(xpu::driver_t *driver) {
         *driver = xpu::hip;
     #elif XPU_IS_CUDA
         *driver = xpu::cuda;
+    #elif XPU_IS_SYCL
+        *driver = xpu::sycl;
+    #else
+        #error "Unknown driver"
     #endif
     return 0;
 }
@@ -47,38 +51,48 @@ XPU_D void vector_add_timing1::operator()(context &ctx, const float *x, const fl
 
 XPU_EXPORT(sort_float);
 XPU_D void sort_float::operator()(context &ctx, float *items, int N, float *buf, float **dst) {
+#ifndef DONT_TEST_BLOCK_SORT
     float *res = sort_t{ctx.pos(), ctx.smem()}.sort(items, N, buf, [](const float &x) { return x; });
 
     if (ctx.pos().block_idx_x() == 0) {
         *dst = res;
     }
+#endif
 }
 
 XPU_EXPORT(sort_struct);
 XPU_D void sort_struct::operator()(context &ctx, key_value_t *items, int N, key_value_t *buf, key_value_t **dst) {
+#ifndef DONT_TEST_BLOCK_SORT
     key_value_t *res = sort_t{ctx.pos(), ctx.smem()}.sort(items, N, buf, [](const key_value_t &pair) { return pair.key; });
 
     if (ctx.pos().block_idx_x() == 0) {
         *dst = res;
     }
+#endif
 }
 
 XPU_EXPORT(merge);
 XPU_D void merge::operator()(context &ctx, const float *a, size_t size_a, const float *b, size_t size_b, float *dst) {
+#ifndef DONT_TEST_BLOCK_SORT
     merge_t(ctx.pos(), ctx.smem()).merge(a, size_a, b, size_b, dst, [](float a, float b) { return a < b; });
+#endif
 }
 
 XPU_EXPORT(merge_single);
 XPU_D void merge_single::operator()(context &ctx, const float *a, size_t size_a, const float *b, size_t size_b, float *dst) {
+#ifndef DONT_TEST_BLOCK_SORT
     merge_t(ctx.pos(), ctx.smem()).merge(a, size_a, b, size_b, dst, [](float a, float b) { return a < b; });
+#endif
 }
 
 XPU_EXPORT(block_scan);
 XPU_D void block_scan::operator()(context &ctx, int *incl, int *excl) {
+#ifndef DONT_TEST_BLOCK_FUNCS
     scan_t scan{ctx.pos(), ctx.smem()};
     xpu::tpos &pos = ctx.pos();
     scan.inclusive_sum(1, incl[pos.thread_idx_x()]);
     scan.exclusive_sum(1, excl[pos.thread_idx_x()]);
+#endif
 }
 
 XPU_EXPORT(access_cmem_single);

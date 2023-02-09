@@ -86,6 +86,9 @@ struct is_kernel {
 struct internal_ctor_t {};
 constexpr inline internal_ctor_t internal_ctor{};
 
+struct internal_fn_t {};
+constexpr inline internal_fn_t internal_fn{};
+
 } // namespace xpu::detail
 
 #endif

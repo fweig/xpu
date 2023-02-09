@@ -9,6 +9,8 @@ set(XPU_CUDA_ARCH 75 CACHE STRING "Target cuda architectures.")
 set(XPU_ENABLE_HIP OFF CACHE STRING "Enable xpu hip backend.")
 set(XPU_HIP_ARCH "gfx906;gfx908" CACHE STRING "Target hip architectures.")
 set(XPU_ROCM_ROOT /opt/rocm CACHE PATH "Path to rocm installation.")
+set(XPU_ENABLE_SYCL OFF CACHE BOOL "Enable xpu sycl backend.")
+set(XPU_SYCL_CXX "icpx" CACHE STRING "Path to sycl compiler.")
 set(XPU_DEBUG OFF CACHE BOOL "Enable debug options for GPU code.")
 set(XPU_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
 
@@ -48,6 +50,11 @@ if (XPU_ENABLE_HIP)
 else()
     message(STATUS "  XPU_ENABLE_HIP:     OFF")
 endif()
+if (XPU_ENABLE_SYCL)
+    message(STATUS "  XPU_ENABLE_SYCL:    ON (cc: ${XPU_SYCL_CXX})")
+else()
+    message(STATUS "  XPU_ENABLE_SYCL:    OFF")
+endif()
 message(STATUS "  XPU_DEBUG:          ${XPU_DEBUG}")
 
 if (XPU_STANDALONE)
@@ -57,7 +64,7 @@ if (XPU_STANDALONE)
     endif()
     set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
     # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g3 -Wall -Wextra -Werror -Wfatal-errors")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 
     check_cxx_compiler_flag("-fmax-errors=5" CXX_HAS_MAX_ERRORS_FLAG)
     if (CXX_HAS_MAX_ERRORS_FLAG)
@@ -79,20 +86,27 @@ function(xpu_create_subproject Library DriverType UnitySrcAbsolute)
     set(SubLibraryName ${Library}_${DriverType})
     set(SubLibraryFullPath ${OutputDir}/${CMAKE_SHARED_LIBRARY_PREFIX}${SubLibraryName}${CMAKE_SHARED_LIBRARY_SUFFIX})
     set(SrcDir "${CMAKE_CURRENT_BINARY_DIR}/${SubLibraryName}")
+    set(HostCxx ${CMAKE_CXX_COMPILER})
 
     if (DriverType STREQUAL "Hip")
         set(HipClang "${XPU_ROCM_ROOT}/llvm/bin/clang")
         set(SubprojectCxx ${HipClang}++)
         set(SubprojectC ${HipClang})
-    else()
+    elseif(DriverType STREQUAL "Sycl")
+        set(SubprojectCxx ${XPU_SYCL_CXX})
+        set(SubprojectC ${CMAKE_C_COMPILER})
+    elseif (DriverType STREQUAL "Cuda")
         set(SubprojectCxx ${CMAKE_CXX_COMPILER})
         set(SubprojectC ${CMAKE_C_COMPILER})
+    else()
+        message(FATAL_ERROR "Unknown driver type ${DriverType}.")
     endif()
 
     file(MAKE_DIRECTORY ${SrcDir})
     configure_file(
         "${XPU_ROOT_DIR}/templates/CMakeLists.txt.in"
         "${SrcDir}/CMakeLists.txt"
+        @ONLY
     )
 
     message(STATUS "Generating library ${SubLibraryName}.")
@@ -156,6 +170,10 @@ function(xpu_attach Library)
     if (XPU_ENABLE_HIP)
         xpu_create_subproject(${Library} Hip ${UnitySrcAbsolute})
     endif()
+
+    if (XPU_ENABLE_SYCL)
+        xpu_create_subproject(${Library} Sycl ${UnitySrcAbsolute})
+    endif()
 endfunction()
 
 add_library(xpu SHARED
@@ -187,6 +205,13 @@ if (XPU_ENABLE_HIP)
     xpu_create_subproject(
         xpu Hip
         "${CMAKE_CURRENT_SOURCE_DIR}/src/xpu/driver/hip_cuda/cuhip_driver.cpp"
+    )
+endif()
+
+if (XPU_ENABLE_SYCL)
+    xpu_create_subproject(
+        xpu Sycl
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/xpu/driver/sycl/sycl_driver.cpp"
     )
 endif()
 

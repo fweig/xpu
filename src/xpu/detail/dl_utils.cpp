@@ -7,7 +7,7 @@
 using namespace xpu::detail;
 
 library_loader::library_loader(const std::string &libname) {
-    handle = dlopen(libname.c_str(), RTLD_LAZY);
+    handle = dlopen(libname.c_str(), RTLD_LAZY | RTLD_GLOBAL);
     if (handle == nullptr) {
         XPU_LOG("Cannot open library '%s': %s", libname.c_str(), dlerror());
     }

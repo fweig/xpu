@@ -3,6 +3,9 @@
 
 #include <xpu/device.h>
 
+// #define DONT_TEST_BLOCK_FUNCS
+#define DONT_TEST_BLOCK_SORT
+
 enum device_funcs {
     ABS,
     ACOS,

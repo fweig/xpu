@@ -44,7 +44,12 @@ public:
     }
 
     error num_devices(int *devices) override {
-        return CUHIP(GetDeviceCount)(devices);
+
+        CUHIP(GetDeviceCount)(devices);
+        #if XPU_IS_HIP
+        XPU_LOG("HIP FOUND DEVICES: %d", *devices);
+        #endif
+        return 0;
     }
 
     error set_device(int device) override {

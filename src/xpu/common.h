@@ -11,7 +11,10 @@ enum driver_t {
     cpu,
     cuda,
     hip,
+    sycl,
 };
+
+constexpr inline size_t num_drivers = 4;
 
 struct device_prop {
     std::string name;

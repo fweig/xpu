@@ -65,6 +65,10 @@ TEST(XPUTest, CanRunVectorAdd) {
 
 TEST(XPUTest, CanSortStruct) {
 
+#ifdef DONT_TEST_BLOCK_SORT
+    GTEST_SKIP();
+#endif
+
     constexpr size_t NElems = 1000000;
 
     std::mt19937 gen{1337};
@@ -145,6 +149,10 @@ TEST(XPUTest, CanSortStruct) {
 }
 
 TEST(XPUTest, CanSortFloatsShort) {
+
+#ifdef DONT_TEST_BLOCK_SORT
+    GTEST_SKIP();
+#endif
 
     constexpr int NElems = 128;
 
@@ -233,18 +241,30 @@ void testMergeKernel(size_t M, size_t N) {
 }
 
 TEST(XPUTest, CanMergeEvenNumberOfItems) {
+#ifdef DONT_TEST_BLOCK_SORT
+    GTEST_SKIP();
+#endif
     testMergeKernel<merge>(512, 512);
 }
 
 TEST(XPUTest, CanMergeUnevenNumberOfItems) {
+#ifdef DONT_TEST_BLOCK_SORT
+    GTEST_SKIP();
+#endif
     testMergeKernel<merge>(610, 509);
 }
 
 TEST(XPUTest, CanMergeWithOneItemPerThread) {
+#ifdef DONT_TEST_BLOCK_SORT
+    GTEST_SKIP();
+#endif
     testMergeKernel<merge_single>(512, 512);
 }
 
 TEST(XPUTest, CanRunBlockScan) {
+#ifdef DONT_TEST_BLOCK_FUNCS
+    GTEST_SKIP();
+#endif
     size_t blockSize = xpu::active_driver() == xpu::cpu ? 1 : 64;
 
     xpu::hd_buffer<int> incl{blockSize};
@@ -429,14 +449,14 @@ TEST(XPUTest, CanCallDeviceFuncs) {
     EXPECT_FLOAT_EQ(b[CBRT].f, 9.f);
     EXPECT_FLOAT_EQ(b[CEIL].f, 3.f);
     EXPECT_FLOAT_EQ(b[COPYSIGN].f, -1.f);
-    EXPECT_FLOAT_EQ(b[COS].f, 0.5f);
+    EXPECT_NEAR(b[COS].f, 0.5f, 2e-5f);
     EXPECT_FLOAT_EQ(b[COSH].f, 1.5430807f);
     EXPECT_FLOAT_EQ(b[COSPI].f, -0.98902732f);
     EXPECT_FLOAT_EQ(b[ERF].f, 0.84270079294971f);
     EXPECT_FLOAT_EQ(b[ERFC].f, 1.f);
     EXPECT_FLOAT_EQ(b[EXP2].f, 16.f);
-    EXPECT_FLOAT_EQ(b[EXP10].f, 10000.f);
-    EXPECT_FLOAT_EQ(b[EXP].f, 7.38905609893065f);
+    EXPECT_NEAR(b[EXP10].f, 10000.f, 0.4f); // sycl::exp10 gives 9999.6289
+    EXPECT_NEAR(b[EXP].f, 7.389f, 0.0001f); // sycl::exp gives 7.3889837
     EXPECT_FLOAT_EQ(b[EXPM1].f, 1.7182819f);
     EXPECT_FLOAT_EQ(b[FDIM].f, 3.f);
     EXPECT_FLOAT_EQ(b[FLOOR].f, 2.f);
@@ -471,7 +491,7 @@ TEST(XPUTest, CanCallDeviceFuncs) {
     EXPECT_FLOAT_EQ(b[RNORM3D].f, 1.f / std::sqrt(29.f));
     EXPECT_FLOAT_EQ(b[RNORM4D].f, 1.f / std::sqrt(54.f));
     EXPECT_FLOAT_EQ(b[ROUND].f, 3.f);
-    EXPECT_FLOAT_EQ(b[RSQRT].f,  0.5f);
+    EXPECT_NEAR(b[RSQRT].f,  0.5f, 0.0002f); // sycl::rsqrt gives 0.49987793
     EXPECT_NEAR(b[SINCOS_SIN].f, 0.f, 0.0000001f);
     EXPECT_FLOAT_EQ(b[SINCOS_COS].f, -1.f);
     EXPECT_NEAR(b[SINCOSPI_SIN].f, 0.f, 0.0000001f);

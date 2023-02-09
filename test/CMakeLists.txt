@@ -33,3 +33,8 @@ if (XPU_ENABLE_HIP)
   add_test(NAME xpu_test_hip COMMAND xpu_test)
   set_tests_properties(xpu_test_hip PROPERTIES ENVIRONMENT "XPU_DEVICE=hip0;LD_LIBRARY_PATH=${libDir}")
 endif()
+
+if (XPU_ENABLE_SYCL)
+  add_test(NAME xpu_test_sycl COMMAND xpu_test)
+  set_tests_properties(xpu_test_sycl PROPERTIES ENVIRONMENT "XPU_DEVICE=sycl1;LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${libDir}")
+endif()

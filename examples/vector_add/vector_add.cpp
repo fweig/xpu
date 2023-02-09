@@ -27,7 +27,7 @@ int main() {
 
     for (int i = 0; i < NElems; i++) {
         if (z.h()[i] != 16) {
-            std::cout << "ERROR" << std::endl;
+            std::cout << "ERROR " << i << " " << z.h()[i] << " " << z.d()[i] << std::endl;
             abort();
         }
     }

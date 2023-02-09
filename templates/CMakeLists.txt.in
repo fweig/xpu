@@ -1,7 +1,6 @@
 project(@Library@_@DriverType@)
 cmake_minimum_required(VERSION 3.18)
 
-
 if (@DriverType@ STREQUAL "Cuda")
     enable_language(CUDA)
     set(CMAKE_CUDA_STANDARD ${CMAKE_CXX_STANDARD})
@@ -33,6 +32,20 @@ if ("@DriverType@" STREQUAL "Hip")
 
     # "/opt/rocm" - default install prefix
     find_package(hipcub REQUIRED CONFIG PATHS "@XPU_ROCM_ROOT@/hipcub")
+endif()
+
+if ("@DriverType@" STREQUAL "Sycl")
+    message(STATUS "SYCL HOST CXX: @HostCxx@")
+    set(SYCL_FLAGS -fsycl -fsycl-targets=x86_64)
+    message(STATUS "SYCL FLAGS: ${SYCL_FLAGS}")
+    add_compile_options(
+        ${SYCL_FLAGS}
+        -O2
+        -g3
+        # -fsycl-host-compiler=@HostCxx@
+        # -fsycl-host-compiler-options="-fPIC"
+    )
+    add_link_options(${SYCL_FLAGS})
 endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

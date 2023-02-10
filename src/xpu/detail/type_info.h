@@ -83,6 +83,9 @@ struct is_kernel {
         && std::is_same<typename F::tag, kernel_tag>::value;
 };
 
+struct internal_ctor_t {};
+constexpr inline internal_ctor_t internal_ctor{};
+
 } // namespace xpu::detail
 
 #endif

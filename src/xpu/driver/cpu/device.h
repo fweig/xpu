@@ -18,53 +18,6 @@
 
 namespace xpu {
 
-template<>
-class tpos_impl<driver_t::cpu> {
-
-public:
-    inline int thread_idx_x() const { return 0; }
-    inline int thread_idx_y() const { return 0; }
-    inline int thread_idx_z() const { return 0; }
-
-    inline int block_dim_x() const { return 1; }
-    inline int block_dim_y() const { return 1; }
-    inline int block_dim_z() const { return 1; }
-
-    inline int block_idx_x() const { return detail::this_thread::block_idx.x; }
-    inline int block_idx_y() const { return detail::this_thread::block_idx.y; }
-    inline int block_idx_z() const { return detail::this_thread::block_idx.z; }
-
-    inline int grid_dim_x() const { return detail::this_thread::grid_dim.x; }
-    inline int grid_dim_y() const { return detail::this_thread::grid_dim.y; }
-    inline int grid_dim_z() const { return detail::this_thread::grid_dim.z; }
-};
-
-namespace detail {
-
-template<typename C>
-class cmem_impl_leaf {
-protected:
-    XPU_D const typename C::data_t &access() const { return detail::constant_memory<C>; }
-};
-
-template<typename...>
-class cmem_impl_base {};
-
-template<typename C, typename... ConstantsTail>
-class cmem_impl_base<C, ConstantsTail...> : public cmem_impl_leaf<C>, public cmem_impl_base<ConstantsTail...> {
-};
-
-} // namespace detail
-
-template<typename... Constants>
-class cmem_impl<driver_t::cpu, Constants...> : public detail::cmem_impl_base<Constants...> {
-public:
-    template<typename Constant>
-    XPU_D std::enable_if_t<(std::is_same_v<Constant, Constants> || ...), const typename Constant::data_t &>  get() const {
-        return detail::cmem_impl_leaf<Constant>::access();
-    }
-};
-
 // math functions
 XPU_FORCE_INLINE float abs(float x) { return std::fabs(x); }
 XPU_FORCE_INLINE int   abs(int a) { return std::abs(a); }
@@ -477,9 +430,9 @@ struct action_runner<kernel_tag, K, void(K::*)(kernel_context<typename K::shared
             for (int j = 0; j < grid_dim.y; j++) {
                 for (int k = 0; k < grid_dim.z; k++) {
                     shared_memory smem;
-                    tpos pos{};
-                    constants cmem{};
-                    kernel_context ctx{pos, smem, cmem};
+                    tpos pos{internal_ctor};
+                    constants cmem{internal_ctor};
+                    kernel_context ctx{internal_ctor, pos, smem, cmem};
                     this_thread::block_idx = dim{i, j, k};
                     this_thread::grid_dim = grid_dim;
                     K{}(ctx, args...);

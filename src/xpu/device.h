@@ -3,8 +3,19 @@
 
 #include "defines.h"
 #include "common.h"
+
 #include "detail/common.h"
 #include "detail/type_info.h"
+
+#if XPU_IS_CPU
+#include "driver/cpu/cmem_impl.h"
+#include "driver/cpu/tpos_impl.h"
+#elif XPU_IS_HIP_CUDA
+#include "driver/hip_cuda/cmem_impl.h"
+#include "driver/hip_cuda/tpos_impl.h"
+#else
+#error "Unsupported XPU target"
+#endif
 
 #include <type_traits>
 
@@ -18,6 +29,8 @@
 
 namespace xpu {
 
+constexpr inline driver_t compilation_target = XPU_DETAIL_COMPILATION_TARGET;
+
 template<int X, int Y = -1, int Z = -1>
 struct block_size {
     static inline constexpr xpu::dim value{X, Y, Z};
@@ -25,40 +38,51 @@ struct block_size {
 
 struct no_smem {};
 
-template<xpu::driver_t Impl=XPU_COMPILATION_TARGET>
-class tpos_impl {
+class tpos {
 
 public:
-    XPU_D int thread_idx_x() const;
-    XPU_D int thread_idx_y() const;
-    XPU_D int thread_idx_z() const;
+    XPU_D int thread_idx_x() const { return m_impl.thread_idx_x(); }
+    XPU_D int thread_idx_y() const { return m_impl.thread_idx_y(); }
+    XPU_D int thread_idx_z() const { return m_impl.thread_idx_z(); }
 
-    XPU_D int block_dim_x() const;
-    XPU_D int block_dim_y() const;
-    XPU_D int block_dim_z() const;
+    XPU_D int block_dim_x() const { return m_impl.block_dim_x(); }
+    XPU_D int block_dim_y() const { return m_impl.block_dim_y(); }
+    XPU_D int block_dim_z() const { return m_impl.block_dim_z(); }
 
-    XPU_D int block_idx_x() const;
-    XPU_D int block_idx_y() const;
-    XPU_D int block_idx_z() const;
+    XPU_D int block_idx_x() const { return m_impl.block_idx_x(); }
+    XPU_D int block_idx_y() const { return m_impl.block_idx_y(); }
+    XPU_D int block_idx_z() const { return m_impl.block_idx_z(); }
 
-    XPU_D int grid_dim_x() const;
-    XPU_D int grid_dim_y() const;
-    XPU_D int grid_dim_z() const;
-};
+    XPU_D int grid_dim_x() const { return m_impl.grid_dim_x(); }
+    XPU_D int grid_dim_y() const { return m_impl.grid_dim_y(); }
+    XPU_D int grid_dim_z() const { return m_impl.grid_dim_z(); }
 
-using tpos = tpos_impl<>;
-
-template<xpu::driver_t, typename... Constants>
-class cmem_impl {
+private:
+    detail::tpos_impl m_impl;
 
 public:
-    template<typename Constant>
-    XPU_D const typename Constant::data_t &get() const;
-
+    template<typename... Args>
+    XPU_D tpos(detail::internal_ctor_t, Args &&... args)
+        : m_impl(std::forward<Args>(args)...) {}
 };
 
 template<typename... Constants>
-using cmem = cmem_impl<XPU_COMPILATION_TARGET, Constants...>;
+class cmem {
+
+public:
+    template<typename Constant>
+    XPU_D const typename Constant::data_t &get() const { return m_impl.template get<Constant>(); }
+
+private:
+    detail::cmem_impl<Constants...> m_impl;
+
+public:
+    template<typename... Args>
+    XPU_D cmem(detail::internal_ctor_t, Args &&... args)
+        : m_impl(std::forward<Args>(args)...) {}
+
+};
+
 
 template<typename Image>
 struct kernel : detail::action<Image, detail::kernel_tag> {
@@ -84,11 +108,6 @@ public:
     using shared_memory = SharedMemory;
     using constants = Constants;
 
-    XPU_D kernel_context(tpos &pos, shared_memory &smem, constants &cmem)
-        : m_pos(pos)
-        , m_smem(smem)
-        , m_cmem(cmem) {}
-
     XPU_D       shared_memory &smem()       { return m_smem; }
     XPU_D const shared_memory &smem() const { return m_smem; }
 
@@ -102,6 +121,12 @@ private:
     tpos          &m_pos;
     shared_memory &m_smem;
     constants     &m_cmem;
+
+public:
+    XPU_D kernel_context(detail::internal_ctor_t, tpos &pos, shared_memory &smem, constants &cmem)
+        : m_pos(pos)
+        , m_smem(smem)
+        , m_cmem(cmem) {}
 
 };
 

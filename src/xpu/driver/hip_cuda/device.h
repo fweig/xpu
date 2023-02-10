@@ -29,62 +29,9 @@
 #define PRINT_T(...) ((void)0)
 #endif
 
-#if XPU_IS_CUDA
-#define XPU_CHOOSE(hip, cuda) cuda
-#else
-#define XPU_CHOOSE(hip, cuda) hip
-#endif
-
 #define XPU_DETAIL_ASSERT(x) static_cast<void>(0)
 
 namespace xpu {
-
-template<>
-class tpos_impl<XPU_COMPILATION_TARGET> {
-
-public:
-    XPU_D int thread_idx_x() const { return XPU_CHOOSE(hipThreadIdx_x, threadIdx.x); }
-    XPU_D int thread_idx_y() const { return XPU_CHOOSE(hipThreadIdx_y, threadIdx.y); }
-    XPU_D int thread_idx_z() const { return XPU_CHOOSE(hipThreadIdx_z, threadIdx.z); }
-
-    XPU_D int block_dim_x() const { return XPU_CHOOSE(hipBlockDim_x, blockDim.x); }
-    XPU_D int block_dim_y() const { return XPU_CHOOSE(hipBlockDim_y, blockDim.y); }
-    XPU_D int block_dim_z() const { return XPU_CHOOSE(hipBlockDim_z, blockDim.z); }
-
-    XPU_D int block_idx_x() const { return XPU_CHOOSE(hipBlockIdx_x, blockIdx.x); }
-    XPU_D int block_idx_y() const { return XPU_CHOOSE(hipBlockIdx_y, blockIdx.y); }
-    XPU_D int block_idx_z() const { return XPU_CHOOSE(hipBlockIdx_z, blockIdx.z); }
-
-    XPU_D int grid_dim_x() const { return XPU_CHOOSE(hipGridDim_x, gridDim.x); }
-    XPU_D int grid_dim_y() const { return XPU_CHOOSE(hipGridDim_y, gridDim.y); }
-    XPU_D int grid_dim_z() const { return XPU_CHOOSE(hipGridDim_z, gridDim.z); }
-};
-
-namespace detail {
-
-template<typename C>
-class cmem_impl_leaf {
-protected:
-    XPU_D const typename C::data_t &access() const { return detail::constant_memory<C>; }
-};
-
-template<typename...>
-class cmem_impl_base {};
-
-template<typename C, typename... ConstantsTail>
-class cmem_impl_base<C, ConstantsTail...> : public cmem_impl_leaf<C>, public cmem_impl_base<ConstantsTail...> {
-};
-
-} // namespace detail
-
-template<typename... Constants>
-class cmem_impl<XPU_COMPILATION_TARGET, Constants...> : public detail::cmem_impl_base<Constants...> {
-public:
-    template<typename Constant>
-    XPU_D std::enable_if_t<(std::is_same_v<Constant, Constants> || ...), const typename Constant::data_t &>  get() const {
-        return detail::cmem_impl_leaf<Constant>::access();
-    }
-};
 
 XPU_D XPU_FORCE_INLINE int abs(int a) { return ::abs(a); }
 XPU_D XPU_FORCE_INLINE float abs(float x) { return ::fabsf(x); }
@@ -800,7 +747,7 @@ __global__ void kernel_entry(Args... args) {
     using constants = typename F::constants;
     using context = kernel_context<shared_memory, constants>;
     __shared__ shared_memory smem;
-    tpos pos{};
+    tpos pos{internal_ctor};
     F{}(context{pos, smem}, args...);
 }
 
@@ -810,9 +757,9 @@ __global__ void __launch_bounds__(MaxThreadsPerBlock) kernel_entry_bounded(Args.
     using constants = typename F::constants;
     using context = kernel_context<shared_memory, constants>;
     __shared__ shared_memory smem;
-    tpos pos{};
-    constants cmem{};
-    context ctx{pos, smem, cmem};
+    tpos pos{internal_ctor};
+    constants cmem{internal_ctor};
+    context ctx{internal_ctor, pos, smem, cmem};
     F{}(ctx, args...);
 }
 

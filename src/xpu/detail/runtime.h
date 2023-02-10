@@ -70,7 +70,7 @@ public:
         static_assert(std::is_same_v<typename Kernel::tag, kernel_tag>);
 
         float ms;
-        error err = get_image<Kernel>()->template run_kernel<Kernel>((m_measure_time ? &ms : nullptr), g, std::forward<Args>(args)...);
+        error err = get_image<Kernel>()->template run_kernel<Kernel>((m_measure_time ? &ms : nullptr), get_active_driver(), g, std::forward<Args>(args)...);
         throw_on_driver_error(active_driver(), err);
 
         if (m_measure_time) {

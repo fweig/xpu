@@ -21,11 +21,8 @@
 
 #define XPU_IMAGE(image) XPU_DETAIL_IMAGE(image)
 #define XPU_EXPORT(obj) XPU_DETAIL_EXPORT(obj)
-#define XPU_CONSTANT(name) XPU_DETAIL_CONSTANT(name)
 
 #define XPU_ASSERT(x) XPU_DETAIL_ASSERT(x)
-
-#define XPU_T(...) __VA_ARGS__
 
 namespace xpu {
 

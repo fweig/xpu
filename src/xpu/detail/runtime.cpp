@@ -37,22 +37,34 @@ void runtime::initialize() {
 
     m_measure_time = getenv_bool("XPU_PROFILE", false);
 
-    int target_device = 0;
+    int target_device = -1;
     driver_t target_driver = cpu;
-    if (auto device_env = getenv_str("XPU_DEVICE", "cpu"); device_env != "cpu") {
+    if (auto device_env = getenv_str("XPU_DEVICE", "cpu"); true) {
         std::vector<std::pair<std::string, xpu::driver_t>> str_to_driver {
             {"cpu", cpu},
             {"cuda", cuda},
             {"hip", hip},
         };
 
+        XPU_LOG("Parsing XPU_DEVICE environment variable: '%s'", device_env.c_str());
         bool valid_driver = false;
         for (auto &driver_str : str_to_driver) {
             const std::string &name = driver_str.first;
             if (strncmp(device_env.c_str(), name.c_str(), name.size()) == 0) {
                 valid_driver = true;
-                device_env += name.size();
                 target_driver = driver_str.second;
+
+                if (device_env == name) {
+                    target_device = 0;
+                } else {
+                    std::string device_id = device_env.substr(name.size());
+                    try {
+                        target_device = std::stoi(device_id);
+                    } catch (std::exception &e) {
+                        raise_error(format("Invalid device ID '%s' in environment variable XPU_DEVICE='%s'", device_id.c_str(), device_env.c_str()));
+                    }
+                }
+
                 break;
             }
         }
@@ -60,12 +72,14 @@ void runtime::initialize() {
         if (not valid_driver) {
             raise_error(format("Requested unknown driver with environment variable XPU_DEVICE='%s'", device_env.c_str()));
         }
-
-        sscanf(device_env.c_str(), "%d", &target_device);
     }
 
+    raise_error_if(target_device < 0, "Invalid device ID. This should never happen! Please file a bug.");
+
+    XPU_LOG("Loading cpu driver.");
     m_cpu_driver.reset(new cpu_driver{});
     CPU_DRIVER_CALL(setup());
+    XPU_LOG("Finished loading cuda driver.");
 
     XPU_LOG("Loading cuda driver.");
     m_cuda_driver.reset(new lib_obj<driver_interface>{"libxpu_Cuda.so"});
@@ -115,7 +129,7 @@ void runtime::initialize() {
     DRIVER_CALL(device_synchronize());
 
     if (m_active_driver != cpu) {
-        XPU_LOG("Selected %s(arch = %d%d) as active device.", props.name.c_str(), props.major, props.minor);
+        XPU_LOG("Selected %s(arch = %d%d) as active device. (id = %d)", props.name.c_str(), props.major, props.minor, target_device);
     } else {
         XPU_LOG("Selected %s as active device.", props.name.c_str());
     }
@@ -234,6 +248,12 @@ void runtime::throw_on_driver_error(driver_t d, error err) const {
     }
 
     raise_error(format("xpu: Driver '%s' raised error: %s", driver_str(d), get_driver(d)->error_to_string(err)));
+}
+
+void runtime::raise_error_if(bool condition, std::string_view error_msg) const {
+    if (condition) {
+        raise_error(error_msg);
+    }
 }
 
 [[noreturn]] void runtime::raise_error(std::string_view error_msg) const {

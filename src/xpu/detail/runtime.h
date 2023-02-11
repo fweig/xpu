@@ -165,6 +165,8 @@ private:
 
     void throw_on_driver_error(driver_t, error) const;
 
+    void raise_error_if(bool, std::string_view) const;
+
     // Exception are raised from a seperate function, to avoid circular dependency with host.h header/
     [[noreturn]] void raise_error(std::string_view) const;
 

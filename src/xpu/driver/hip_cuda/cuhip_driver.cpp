@@ -16,10 +16,10 @@ using cuhip_pointer_attributes = hipPointerAttribute_t;
 
 namespace xpu::detail {
 
-class cuhip_driver : public driver_interface {
+class CUHIP(driver) : public driver_interface {
 
 public:
-    virtual ~cuhip_driver() {}
+    virtual ~CUHIP(driver)() {}
 
     error setup() override {
         return 0;
@@ -137,7 +137,7 @@ public:
 } // namespace xpu::detail
 
 extern "C" xpu::detail::driver_interface *create() {
-    return new xpu::detail::cuhip_driver{};
+    return new xpu::detail::CUHIP(driver){};
 }
 
 extern "C" void destroy(xpu::detail::driver_interface *b) {

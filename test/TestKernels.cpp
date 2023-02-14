@@ -148,11 +148,15 @@ XPU_D void test_device_funcs::operator()(context &ctx, variant *out) {
     out[ABS].f = xpu::abs(-1.f);
     out[ACOS].f = xpu::acos(-1.f);
     out[ACOSH].f = xpu::acosh(1.f);
+    out[ACOSPI].f = xpu::acospi(-1.f);
     out[ASIN].f = xpu::asin(1.f);
     out[ASINH].f = xpu::asinh(1.f);
+    out[ASINPI].f = xpu::asinpi(1.f);
     out[ATAN2].f = xpu::atan2(1.f, 1.f);
     out[ATAN].f = xpu::atan(1.f);
     out[ATANH].f = xpu::atanh(0.9f);
+    out[ATANPI].f = xpu::atanpi(1.f);
+    out[ATAN2PI].f = xpu::atan2pi(1.f, 1.f);
     out[CBRT].f = xpu::cbrt(729.f);
     out[CEIL].f = xpu::ceil(2.4f);
     out[COPYSIGN].f = xpu::copysign(1.f, -2.f);
@@ -162,6 +166,7 @@ XPU_D void test_device_funcs::operator()(context &ctx, variant *out) {
     out[ERF].f = xpu::erf(1.f);
     out[ERFC].f = xpu::erfc(0.f);
     out[EXP2].f = xpu::exp2(4.f);
+    out[EXP10].f = xpu::exp10(4.f);
     out[EXP].f = xpu::exp(2.f);
     out[EXPM1].f = xpu::expm1(1.f);
     out[FDIM].f = xpu::fdim(4, 1);
@@ -173,9 +178,6 @@ XPU_D void test_device_funcs::operator()(context &ctx, variant *out) {
     out[ISFINITE].b = xpu::isfinite(xpu::pi());
     out[ISINF].b = xpu::isinf(INFINITY);
     out[ISNAN].b = xpu::isnan(xpu::nan(""));
-    out[J0].f = xpu::j0(1.f);
-    out[J1].f = xpu::j1(1.f);
-    out[JN].f = xpu::jn(2, 1.f);
     out[LDEXP].f = xpu::ldexp(7.f, -4);
     out[LLRINT].ll = xpu::llrint(2.5f);
     out[LLROUND].ll = xpu::llround(2.4f);
@@ -188,9 +190,6 @@ XPU_D void test_device_funcs::operator()(context &ctx, variant *out) {
     out[LROUND].ll = xpu::lround(2.4f);
     out[MAX].f = xpu::max(-1.f, 1.f);
     out[MIN].f = xpu::min(-1.f, 1.f);
-    out[NEARBYINT].f = xpu::nearbyint(2.3f);
-    float a[5] = {1.f, 1.f, 1.f, 1.f, 1.f};
-    out[NORM].f = xpu::norm(5, a);
     out[NORM3D].f = xpu::norm3d(2.f, 3.f, 4.f);
     out[NORM4D].f = xpu::norm4d(2.f, 3.f, 4.f, 5.f);
     out[POW].f = xpu::pow(3.f, 3.f);
@@ -199,13 +198,10 @@ XPU_D void test_device_funcs::operator()(context &ctx, variant *out) {
     out[REMQUO_REM].f = xpu::remquo(10.3f, 4.5f, &out[REMQUO_QUO].i);
     out[RHYPOT].f = xpu::rhypot(2.f, 3.f);
     out[RINT].f = xpu::rint(2.4f);
-    out[RNORM].f = xpu::rnorm(5, a);
     out[RNORM3D].f = xpu::rnorm3d(2.f, 3.f, 4.f);
     out[RNORM4D].f = xpu::rnorm4d(2.f, 3.f, 4.f, 5.f);
     out[ROUND].f = xpu::round(2.6f);
     out[RSQRT].f = xpu::rsqrt(4.f);
-    out[SCALBLN].f = xpu::scalbln(7.f, -4);
-    out[SCALBN].f = xpu::scalbn(7.f, -4);
     out[SIGNBIT].b = xpu::signbit(-3.f);
     xpu::sincos(xpu::pi(), &out[SINCOS_SIN].f , &out[SINCOS_COS].f);
     xpu::sincospi(1.f, &out[SINCOSPI_SIN].f , &out[SINCOSPI_COS].f);
@@ -217,9 +213,6 @@ XPU_D void test_device_funcs::operator()(context &ctx, variant *out) {
     out[TANH].f = xpu::tanh(1.f);
     out[TGAMMA].f = xpu::tgamma(10);
     out[TRUNC].f = xpu::trunc(2.7f);
-    out[Y0].f = xpu::y0(1.f);
-    out[Y1].f = xpu::y1(1.f);
-    out[YN].f = xpu::yn(2, 1.f);
 }
 
 XPU_EXPORT(templated_kernel<0>);

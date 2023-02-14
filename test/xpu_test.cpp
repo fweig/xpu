@@ -417,11 +417,15 @@ TEST(XPUTest, CanCallDeviceFuncs) {
     EXPECT_FLOAT_EQ(b[ABS].f, 1.f);
     EXPECT_FLOAT_EQ(b[ACOS].f, xpu::pi());
     EXPECT_FLOAT_EQ(b[ACOSH].f, 0.f);
+    EXPECT_FLOAT_EQ(b[ACOSPI].f, 1.f);
     EXPECT_FLOAT_EQ(b[ASIN].f, xpu::pi_2());
     EXPECT_FLOAT_EQ(b[ASINH].f, 0.88137358f);
+    EXPECT_FLOAT_EQ(b[ASINPI].f, 0.5f);
     EXPECT_FLOAT_EQ(b[ATAN2].f, xpu::pi_4());
     EXPECT_FLOAT_EQ(b[ATAN].f, xpu::pi_4());
     EXPECT_FLOAT_EQ(b[ATANH].f, 1.4722193f);
+    EXPECT_FLOAT_EQ(b[ATANPI].f, 0.25f);
+    EXPECT_FLOAT_EQ(b[ATAN2PI].f, 0.25f);
     EXPECT_FLOAT_EQ(b[CBRT].f, 9.f);
     EXPECT_FLOAT_EQ(b[CEIL].f, 3.f);
     EXPECT_FLOAT_EQ(b[COPYSIGN].f, -1.f);
@@ -431,6 +435,7 @@ TEST(XPUTest, CanCallDeviceFuncs) {
     EXPECT_FLOAT_EQ(b[ERF].f, 0.84270079294971f);
     EXPECT_FLOAT_EQ(b[ERFC].f, 1.f);
     EXPECT_FLOAT_EQ(b[EXP2].f, 16.f);
+    EXPECT_FLOAT_EQ(b[EXP10].f, 10000.f);
     EXPECT_FLOAT_EQ(b[EXP].f, 7.38905609893065f);
     EXPECT_FLOAT_EQ(b[EXPM1].f, 1.7182819f);
     EXPECT_FLOAT_EQ(b[FDIM].f, 3.f);
@@ -442,9 +447,6 @@ TEST(XPUTest, CanCallDeviceFuncs) {
     EXPECT_TRUE(b[ISFINITE].b);
     EXPECT_TRUE(b[ISINF].b);
     EXPECT_TRUE(b[ISNAN].b);
-    EXPECT_FLOAT_EQ(b[J0].f, 0.76519775f);
-    EXPECT_FLOAT_EQ(b[J1].f, 0.4400506f);
-    EXPECT_NEAR(b[JN].f, 0.11490349f, 0.0000001f);
     EXPECT_FLOAT_EQ(b[LDEXP].f, 0.4375f);
     EXPECT_EQ(b[LLRINT].ll, 2);
     EXPECT_EQ(b[LLROUND].ll, 2);
@@ -457,8 +459,6 @@ TEST(XPUTest, CanCallDeviceFuncs) {
     EXPECT_EQ(b[LROUND].ll, 2);
     EXPECT_FLOAT_EQ(b[MAX].f, 1.f);
     EXPECT_FLOAT_EQ(b[MIN].f, -1.f);
-    EXPECT_EQ(b[NEARBYINT].f, 2.f);
-    EXPECT_FLOAT_EQ(b[NORM].f, std::sqrt(5.f));
     EXPECT_FLOAT_EQ(b[NORM3D].f, std::sqrt(29.f));
     EXPECT_FLOAT_EQ(b[NORM4D].f, std::sqrt(54.f));
     EXPECT_FLOAT_EQ(b[POW].f, 27.f);
@@ -468,7 +468,6 @@ TEST(XPUTest, CanCallDeviceFuncs) {
     EXPECT_EQ(b[REMQUO_QUO].i, 2);
     EXPECT_FLOAT_EQ(b[RHYPOT].f, 1.f / std::hypotf(2.f, 3.f));
     EXPECT_FLOAT_EQ(b[RINT].f, 2.f);
-    EXPECT_FLOAT_EQ(b[RNORM].f, 1.f / std::sqrt(5.f));
     EXPECT_FLOAT_EQ(b[RNORM3D].f, 1.f / std::sqrt(29.f));
     EXPECT_FLOAT_EQ(b[RNORM4D].f, 1.f / std::sqrt(54.f));
     EXPECT_FLOAT_EQ(b[ROUND].f, 3.f);
@@ -485,9 +484,6 @@ TEST(XPUTest, CanCallDeviceFuncs) {
     EXPECT_FLOAT_EQ(b[TANH].f, 0.76159418f);
     EXPECT_FLOAT_EQ(b[TGAMMA].f, 362880);
     EXPECT_FLOAT_EQ(b[TRUNC].f, 2.f);
-    EXPECT_FLOAT_EQ(b[Y0].f, 0.088256963f);
-    EXPECT_FLOAT_EQ(b[Y1].f, -0.78121281f);
-    EXPECT_FLOAT_EQ(b[YN].f, -1.6506826f);
 }
 
 TEST(XPUTest, CanRunTemplatedKernels) {

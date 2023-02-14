@@ -13,6 +13,9 @@
 #elif XPU_IS_HIP_CUDA
 #include "driver/hip_cuda/cmem_impl.h"
 #include "driver/hip_cuda/tpos_impl.h"
+#elif XPU_IS_SYCL
+#include "driver/sycl/cmem_impl.h"
+#include "driver/sycl/tpos_impl.h"
 #else
 #error "Unsupported XPU target"
 #endif
@@ -137,18 +140,18 @@ XPU_D   int abs(int x);
 XPU_D float abs(float x);
 
 XPU_D float acos(float x);
-
 XPU_D float acosh(float x);
+XPU_D float acospi(float x);
 
 XPU_D float asin(float x);
-
 XPU_D float asinh(float x);
-
-XPU_D float atan2(float y, float x);
+XPU_D float asinpi(float x);
 
 XPU_D float atan(float x);
-
+XPU_D float atan2(float y, float x);
 XPU_D float atanh(float x);
+XPU_D float atanpi(float x);
+XPU_D float atan2pi(float y, float x);
 
 XPU_D float cbrt(float x);
 
@@ -157,12 +160,10 @@ XPU_D float ceil(float x);
 XPU_D float copysign(float x, float y);
 
 XPU_D float cos(float x);
-
 XPU_D float cosh(float x);
-
 XPU_D float cospi(float x);
 
-// Not supported by HIP or c++11
+// Not supported by HIP or c++11 or sycl
 // XPU_D float cyl_bessel_i0f(float x);
 // XPU_D float cyl_bessel_i1f(float x);
 
@@ -173,16 +174,15 @@ XPU_D float erf(float x);
 
 XPU_D float erfc(float x);
 
-// Not supported by c++ stdlib
+// Not supported by c++ stdlib or sycl
 // XPU_D float erfcinv(float y);
 
-// Not supported by c++ stdlib
+// Not supported by c++ stdlib or sycl
 // XPU_D float erfcx(float x);
 
-XPU_D float exp2(float x);
-
 XPU_D float exp(float x);
-
+XPU_D float exp2(float x);
+XPU_D float exp10(float x);
 XPU_D float expm1(float x);
 
 XPU_D float fdim(float x, float y);
@@ -206,11 +206,10 @@ XPU_D bool isinf(float a);
 
 XPU_D bool isnan(float a);
 
-XPU_D float j0(float x);
-
-XPU_D float j1(float x);
-
-XPU_D float jn(int n, float x);
+// Not supported by SYCL
+// XPU_D float j0(float x);
+// XPU_D float j1(float x);
+// XPU_D float jn(int n, float x);
 
 XPU_D float ldexp(float x, int exp);
 
@@ -222,13 +221,9 @@ XPU_D long long int llrint(float x);
 XPU_D long long int llround(float x);
 
 XPU_D float log(float x);
-
 XPU_D float log10(float x);
-
 XPU_D float log1p(float x);
-
 XPU_D float log2(float x);
-
 XPU_D float logb(float x);
 
 XPU_D long int lrint(float x);
@@ -252,20 +247,26 @@ XPU_D                  float min(float a, float b);
 
 XPU_D float nan(const char *tagp);
 
-XPU_D float nearbyint(float x);
+// No supported by sycl
+// XPU_D float nearbyint(float x);
 
 // Not supported by HIP (as of 4.5)
 // XPU_D float nextafter(float x, float y);
 
-XPU_D float norm(int dim, const float *a);
+// Not supported by SYCL
+// XPU_D float norm(int dim, const float *a);
 XPU_D float norm3d(float a, float b, float c);
 XPU_D float norm4d(float a, float b, float c, float d);
 
-// Not supported by c++ stdlib (TODO: provide own implementation)
+// Not supported by c++ stdlib (TODO: provide own implementation?)
 // XPU_D float normcdf(float y);
 // XPU_D float normcdfinv(float y);
 
 XPU_D float pow(float x, float y);
+
+// Not supported by CUDA
+// XPU_D float pown(float x, int n);
+// XPU_D float powr(float x, float y);
 
 XPU_D float rcbrt(float x);
 
@@ -273,11 +274,12 @@ XPU_D float remainder(float x, float y);
 
 XPU_D float remquo(float x, float y, int *quo);
 
-XPU_D float rhypot(float x, float y);
-
 XPU_D float rint(float x);
 
-XPU_D float rnorm(int dim, const float *a);
+XPU_D float rhypot(float x, float y);
+
+// Not supported by SYCL
+// XPU_D float rnorm(int dim, const float *a);
 XPU_D float rnorm3d(float a, float b, float c);
 XPU_D float rnorm4d(float a, float b, float c, float d);
 
@@ -285,34 +287,33 @@ XPU_D float round(float x);
 
 XPU_D float rsqrt(float x);
 
-XPU_D float scalbln(float x, long int n);
-XPU_D float scalbn(float x, int n);
+// Not supported by SYCL
+// XPU_D float scalbln(float x, long int n);
+// XPU_D float scalbn(float x, int n);
 
 XPU_D bool signbit(float a);
 
 XPU_D void sincos(float x, float *sptr, float *cptr);
-
 XPU_D void sincospi(float x, float *sptr, float *cptr);
 
 XPU_D float sin(float x);
-
 XPU_D float sinh(float x);
-
 XPU_D float sinpi(float x);
 
 XPU_D float sqrt(float x);
 
 XPU_D float tan(float x);
-
 XPU_D float tanh(float x);
+XPU_D float tanpi(float x);
 
 XPU_D float tgamma(float x);
 
 XPU_D float trunc(float x);
 
-XPU_D float y0(float x);
-XPU_D float y1(float x);
-XPU_D float yn(int n, float x);
+// Not supported by SYCL
+// XPU_D float y0(float x);
+// XPU_D float y1(float x);
+// XPU_D float yn(int n, float x);
 
 XPU_D          int atomic_cas(int *addr, int compare, int val);
 XPU_D unsigned int atomic_cas(unsigned int *addr, unsigned int compare, unsigned int val);
@@ -344,10 +345,10 @@ XPU_D unsigned int atomic_xor(unsigned int *addr, unsigned int val);
 XPU_D          int atomic_xor_block(int *addr, int val);
 XPU_D unsigned int atomic_xor_block(unsigned int *addr, unsigned int val);
 
-XPU_D void barrier();
-
 XPU_D int float_as_int(float val);
 XPU_D float int_as_float(int val);
+
+XPU_D void barrier();
 
 
 template<typename T, int BlockSize, xpu::driver_t Impl=XPU_COMPILATION_TARGET>
@@ -413,8 +414,12 @@ public:
 
 #if XPU_IS_HIP_CUDA
 #include "driver/hip_cuda/device.h"
-#else // CPU
+#elif XPU_IS_SYCL
+#include "driver/sycl/device.h"
+#elif XPU_IS_CPU
 #include "driver/cpu/device.h"
+#else
+#error "Unknown XPU driver."
 #endif
 
 #endif

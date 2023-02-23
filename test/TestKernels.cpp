@@ -75,7 +75,7 @@ XPU_D void merge_single::operator()(context &ctx, const float *a, size_t size_a,
 
 XPU_EXPORT(block_scan);
 XPU_D void block_scan::operator()(context &ctx, int *incl, int *excl) {
-    scan_t scan{ctx.smem()};
+    scan_t scan{ctx.pos(), ctx.smem()};
     xpu::tpos &pos = ctx.pos();
     scan.inclusive_sum(1, incl[pos.thread_idx_x()]);
     scan.exclusive_sum(1, excl[pos.thread_idx_x()]);

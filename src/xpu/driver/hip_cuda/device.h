@@ -323,7 +323,7 @@ public:
         typename block_scan_impl::TempStorage scanTemp;
     };
 
-    XPU_D block_scan(storage_t &st) : impl(st.scanTemp) {}
+    XPU_D block_scan(tpos &, storage_t &st) : impl(st.scanTemp) {}
 
     XPU_D void exclusive_sum(T input, T &output) { impl.ExclusiveSum(input, output); }
 

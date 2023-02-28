@@ -4,7 +4,9 @@
 #include <xpu/device.h>
 
 // #define DONT_TEST_BLOCK_FUNCS
+#if XPU_IS_SYCL
 #define DONT_TEST_BLOCK_SORT
+#endif
 
 enum device_funcs {
     ABS,

@@ -352,7 +352,7 @@ XPU_D unsigned int atomic_xor_block(unsigned int *addr, unsigned int val);
 XPU_D int float_as_int(float val);
 XPU_D float int_as_float(int val);
 
-XPU_D void barrier();
+XPU_D void barrier(tpos &);
 
 
 template<typename T, int BlockSize, xpu::driver_t Impl=XPU_COMPILATION_TARGET>

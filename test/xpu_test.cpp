@@ -65,14 +65,12 @@ TEST(XPUTest, CanRunVectorAdd) {
 
 TEST(XPUTest, CanSortStruct) {
 
-#ifdef DONT_TEST_BLOCK_SORT
-    GTEST_SKIP();
-#endif
+    // GTEST_SKIP();
 
     constexpr size_t NElems = 1000000;
 
     std::mt19937 gen{1337};
-    std::uniform_int_distribution<unsigned int> dist{0, 1000000};
+    std::uniform_int_distribution<unsigned int> dist{0, 100000000};
 
     key_value_t *ditems = xpu::device_malloc<key_value_t>(NElems);
     key_value_t *buf = xpu::device_malloc<key_value_t>(NElems);
@@ -108,33 +106,15 @@ TEST(XPUTest, CanSortStruct) {
     xpu::copy(&hdst, dst, 1);
     xpu::copy(items.data(), hdst, NElems);
 
-    // for (size_t i = 1; i < 220; i++) {
-    //     printf("gt %lu: %u, %u\n", i, itemsSorted[items.size()-i].key, itemsSorted[items.size()-i].value);
-    //     printf("gpu %lu: %u, %u\n", i, items[items.size()-i].key, items[items.size()-i].value);
+    // for (auto &x : items) {
+    //     std::cout << x.key << " ";
     // }
-
-    // int start = -1, startZero = -1;
-    // for (size_t i = 0; i < items.size(); i++) {
-    //     // if (i == 209) {
-    //     //     printf("i = 209, cpu key = %u, gpu key = %u\n", itemsSorted[i].key, items[i].key );
-    //     // }
-    //     if (items[i].key == 0 && startZero == -1) {
-    //         startZero = i;
-    //     }
-    //     if (items[i].key != 0 && startZero != -1) {
-    //         printf("Found Zero Seq fromt %u to %lu\n", startZero, i);
-    //         startZero = -1;
-    //     }
-    //     if (items[i].key != itemsSorted[i].key && start == -1) {
-    //         start = i;
-    //     }
-    //     if (items[i].key == itemsSorted[i].key && start != -1) {
-    //         printf("%lu: gt %u, gpu %u\n", i-2, itemsSorted[i-2].key, items[i-2].key);
-    //         printf("%lu: gt %u, gpu %u\n", i-1, itemsSorted[i-1].key, items[i-1].key);
-    //         printf("Seq from %d to %lu is different\n", start, i);
-    //         start = -1;
-    //     }
+    // std::cout << std::endl;
+    // std::cout << "----------------" << std::endl;
+    // for (auto &x : itemsSorted) {
+    //     std::cout << x.key << " ";
     // }
+    // std::cout << std::endl;
 
 
     for (size_t i = 0; i < NElems; i++) {
@@ -142,17 +122,11 @@ TEST(XPUTest, CanSortStruct) {
         ASSERT_EQ(items[i].value, itemsSorted[i].value);
     }
 
-    // for (auto &x : items) {
-    //     std::cout << x << " ";
-    // }
-    // std::cout << std::endl;
 }
 
 TEST(XPUTest, CanSortFloatsShort) {
 
-#ifdef DONT_TEST_BLOCK_SORT
-    GTEST_SKIP();
-#endif
+    // GTEST_SKIP();
 
     constexpr int NElems = 128;
 
@@ -185,6 +159,12 @@ TEST(XPUTest, CanSortFloatsShort) {
     xpu::copy(items.data(), hdst, NElems);
 
     // for (auto &x : items) {
+    //     std::cout << x << " ";
+    // }
+    // std::cout << std::endl;
+
+    // std::cout << "Sorted" << std::endl;
+    // for (auto &x : itemsSorted) {
     //     std::cout << x << " ";
     // }
     // std::cout << std::endl;

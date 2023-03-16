@@ -5,7 +5,7 @@
 
 // #define DONT_TEST_BLOCK_FUNCS
 #if XPU_IS_SYCL
-#define DONT_TEST_BLOCK_SORT
+// #define DONT_TEST_BLOCK_SORT
 #endif
 
 enum device_funcs {
@@ -156,7 +156,7 @@ struct sort_float : xpu::kernel<TestKernels> {
 };
 
 struct sort_struct : xpu::kernel<TestKernels> {
-    using sort_t = xpu::block_sort<unsigned int, key_value_t, 64, 8>;
+    using sort_t = xpu::block_sort<unsigned int, key_value_t, 64, 2>;
     using shared_memory = sort_t::storage_t;
     using context = xpu::kernel_context<shared_memory>;
     XPU_D void operator()(context &, key_value_t *, int, key_value_t *, key_value_t **);

@@ -2,6 +2,7 @@
 #define XPU_DRIVER_SYCL_DEVICE_H
 
 #include "../../detail/constant_memory.h"
+#include "../../detail/parallel_merge.h"
 #include "cmem_impl.h"
 #include "sycl_driver.h"
 
@@ -128,8 +129,13 @@ unsigned int xpu::atomic_xor(unsigned int *addr, unsigned int val) { return deta
 int xpu::atomic_xor_block(int *addr, int val) { return atomic_xor(addr, val); }
 unsigned int xpu::atomic_xor_block(unsigned int *addr, unsigned int val) { return atomic_xor(addr, val); }
 
-int float_as_int(float x) { return sycl::bit_cast<int>(x); }
-float int_as_float(int x) { return sycl::bit_cast<float>(x); }
+int xpu::float_as_int(float x) { return sycl::bit_cast<int>(x); }
+float xpu::int_as_float(int x) { return sycl::bit_cast<float>(x); }
+
+void xpu::barrier(tpos &pos) {
+    detail::tpos_impl &impl = pos.impl(detail::internal_fn);
+    sycl::group_barrier(impl.group());
+}
 
 template<typename T, int BlockSize>
 class xpu::block_scan<T, BlockSize, xpu::sycl> {
@@ -166,6 +172,134 @@ private:
 
 };
 
+template<typename Key, typename T, int BlockSize, int ItemsPerThread>
+class xpu::block_sort<Key, T, BlockSize, ItemsPerThread, xpu::sycl> {
+
+public:
+    using key_t = Key;
+    using data_t = T;
+    using block_merge_t = block_merge<data_t, BlockSize, ItemsPerThread>;
+
+    static_assert(std::is_trivially_constructible_v<data_t>, "Sorted type needs trivial constructor.");
+
+    using storage_t = typename block_merge_t::storage_t;
+
+    block_sort(tpos &pos, storage_t &storage) : m_pos(pos), m_storage(storage) {}
+
+    template<typename KeyGetter>
+    data_t *sort(data_t *data, size_t N, data_t *buf, KeyGetter &&getKey) {
+        constexpr int ItemsPerBlock = BlockSize * ItemsPerThread;
+
+        size_t nItemBlocks = (N + ItemsPerBlock - 1) / ItemsPerBlock;
+        data_t local_data[ItemsPerThread];
+
+        for (size_t i = 0; i < nItemBlocks; i++) {
+            size_t start = i * ItemsPerBlock;
+            int n_items = 0;
+
+            xpu::barrier(m_pos);
+            for (size_t b = 0; b < ItemsPerThread; b++) {
+                // TODO: poor accesses pattern, try warp shuffle
+                size_t thread_idx = m_pos.thread_idx_x() * ItemsPerThread + b;
+                size_t from = start + thread_idx;
+                if (from < N) {
+                    local_data[b] = data[from];
+                    n_items++;
+                }
+                xpu::barrier(m_pos);
+            }
+
+            xpu::barrier(m_pos);
+
+            selection_sort_thread(local_data, n_items, getKey);
+
+            xpu::barrier(m_pos);
+
+            for (size_t b = 0; b < ItemsPerThread; b++) {
+                size_t to = start + m_pos.thread_idx_x() * ItemsPerThread + b;
+                if (to < N) {
+                    data[to] = local_data[b];
+                }
+            }
+
+            xpu::barrier(m_pos);
+        }
+
+        xpu::barrier(m_pos);
+
+        data_t *src = data;
+        data_t *dst = buf;
+        block_merge_t block_merge{m_pos, m_storage};
+
+        for (size_t blockSize = ItemsPerThread; blockSize < N; blockSize *= 2) {
+        // for (size_t blockSize = ItemsPerThread; blockSize < ItemsPerThread+1; blockSize *= 2) {
+
+            size_t carryStart = 0;
+            for (size_t st = 0; st + blockSize < N; st += 2 * blockSize) {
+                size_t st2 = st + blockSize;
+                size_t blockSize2 = min((unsigned long long int)(N - st2), (unsigned long long int)blockSize);
+                carryStart = st2 + blockSize2;
+
+                auto comp = [&](const data_t &a, const data_t &b) { return getKey(a) < getKey(b); };
+                block_merge.merge(&src[st], blockSize, &src[st2], blockSize2, &dst[st], comp);
+
+                xpu::barrier(m_pos);
+            }
+
+            for (size_t i = carryStart + m_pos.thread_idx_x(); i < N; i += m_pos.block_dim_x()) {
+                dst[i] = src[i];
+            }
+
+            xpu::barrier(m_pos);
+
+            std::swap(src, dst);
+        }
+
+        return src;
+    }
+
+private:
+    tpos &m_pos;
+    storage_t &m_storage;
+
+    template<typename KeyGetter>
+    void selection_sort_thread(data_t *local_data, int N, KeyGetter &&get_key) {
+        for (int i = 0; i < N; ++i) {
+            int min_idx = i;
+            for (int j = i + 1; j < N; ++j) {
+                if (get_key(local_data[j]) < get_key(local_data[min_idx])) {
+                    min_idx = j;
+                }
+            }
+            std::swap(local_data[i], local_data[min_idx]);
+        }
+    }
+
+};
+
+template<typename Key, int BlockSize, int ItemsPerThread>
+class xpu::block_merge<Key, BlockSize, ItemsPerThread, xpu::sycl> {
+
+public:
+    using data_t = Key;
+    using impl_t = detail::parallel_merge<Key, BlockSize, ItemsPerThread>;
+
+    static_assert(std::is_trivially_constructible_v<data_t>, "Merged type needs trivial constructor.");
+
+    using storage_t = typename impl_t::storage_t;
+
+    XPU_D block_merge(tpos& pos, storage_t &storage) : impl(pos, storage) {}
+
+    template<typename Compare>
+    XPU_D void merge(const data_t *a, size_t size_a, const data_t *b, size_t size_b, data_t *dst, Compare &&comp) {
+        impl.merge(a, size_a, b, size_b, dst, comp);
+    }
+
+private:
+    impl_t impl;
+
+};
+
 template<typename F>
 struct xpu::detail::action_runner<xpu::detail::constant_tag, F> {
     using data_t = typename F::data_t;
@@ -198,6 +332,8 @@ struct xpu::detail::action_runner<xpu::detail::kernel_tag, K, void(K::*)(xpu::ke
 
         sycl::range<3> global_range{size_t(grid_dim.x), size_t(grid_dim.y), size_t(grid_dim.z)};
         sycl::range<3> local_range{size_t(block_dim.x), size_t(block_dim.y), size_t(block_dim.z)};
+        // sycl::range<3> global_range{size_t(grid_dim.x * block_dim.x), size_t(grid_dim.y * block_dim.y), size_t(grid_dim.z * block_dim.z)};
+        // sycl::range<3> local_range{1, 1, 1};
 
         cmem_traits<constants> cmem_traits{};
         auto cmem_buffers = cmem_traits.make_buffers();

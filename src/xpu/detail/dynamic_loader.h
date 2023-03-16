@@ -202,7 +202,7 @@ struct register_action {
     using tag = typename A::tag;
 
     register_action() {
-        printf("Registering action '%s'...\n", type_name<A>());
+        // printf("Registering action '%s'...\n", type_name<A>());
         if constexpr (std::is_same_v<tag, kernel_tag> || std::is_same_v<tag, function_tag>) {
             image_context<image>::instance()->template add_symbol<A>((void *)&action_runner<tag, A, decltype(&A::operator())>::call);
         } else if constexpr (std::is_same_v<tag, constant_tag>) {

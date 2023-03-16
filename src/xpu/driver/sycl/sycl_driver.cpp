@@ -11,7 +11,7 @@ sycl::queue &sycl_driver::default_queue() {
 error sycl_driver::setup() {
     // TODO: check if profiling was enabled by user
     m_prop_list = sycl::property_list{sycl::property::queue::enable_profiling()};
-    m_default_queue = sycl::queue(sycl::default_selector{}, m_prop_list);
+    m_default_queue = sycl::queue(sycl::default_selector_v, m_prop_list);
     return 0;
 }
 

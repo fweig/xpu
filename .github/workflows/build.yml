@@ -90,10 +90,14 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DXPU_ENABLE_CUDA=ON -DXPU_ENABLE_HIP=ON -DXPU_BUILD_TESTS=ON -DXPU_BUILD_EXAMPLES=ON
+      run: |
+        . /opt/intel/oneapi/setvars.sh
+        cmake -B ${{github.workspace}}/build -DXPU_ENABLE_SYCL=ON -DXPU_ENABLE_CUDA=ON -DXPU_ENABLE_HIP=ON -DXPU_BUILD_TESTS=ON -DXPU_BUILD_EXAMPLES=ON
     - name: Build
       # Build your program with the given configuration
-      run: cmake --build ${{github.workspace}}/build -j4
+      run: |
+        . /opt/intel/oneapi/setvars.sh
+        cmake --build ${{github.workspace}}/build -j4
     - name: Test
       working-directory: ${{github.workspace}}/build
       # Execute tests defined by the CMake configuration.

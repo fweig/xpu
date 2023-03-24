@@ -113,8 +113,8 @@ jobs:
     strategy:
       matrix:
         compiler:
-          - pkg: g++,
-            cc: g++,
+          - pkg: g++
+            cc: g++
           - pkg: clang libomp-dev
             cc: clang++
         cxx_std: [20]
@@ -149,22 +149,11 @@ jobs:
   macos-11:
     runs-on: macOS-latest
 
-    strategy:
-      matrix:
-        use_omp: [true, false]
-
     steps:
     - uses: actions/checkout@v3
 
-    - name: Setup with OpenMP
-      run: |
-        brew install libomp
-        cmake -B ${{github.workspace}}/build -DXPU_BUILD_TESTS=ON -DXPU_BUILD_EXAMPLES=ON
-      if: ${{ matrix.use_omp }}
-
     - name: Setup without OpenMP
-      run: cmake -B ${{github.workspace}}/build -DXPU_ENABLE_OPENMP=OFF -DXPU_BUILD_TESTS=ON -DXPU_BUILD_EXAMPLES=ON
-      if: ${{ !matrix.use_omp }}
+      run: cmake -B ${{github.workspace}}/build -DXPU_BUILD_TESTS=ON -DXPU_BUILD_EXAMPLES=ON
 
     - name: Build
       # Build your program with the given configuration
@@ -181,22 +170,11 @@ jobs:
   macos-12:
     runs-on: macOS-12
 
-    strategy:
-      matrix:
-        use_omp: [true, false]
-
     steps:
     - uses: actions/checkout@v3
 
-    - name: Setup with OpenMP
-      run: |
-        brew install libomp
-        cmake -B ${{github.workspace}}/build -DXPU_BUILD_TESTS=ON -DXPU_BUILD_EXAMPLES=ON
-      if: ${{ matrix.use_omp }}
-
-    - name: Setup without OpenMP
-      run: cmake -B ${{github.workspace}}/build -DXPU_ENABLE_OPENMP=OFF -DXPU_BUILD_TESTS=ON -DXPU_BUILD_EXAMPLES=ON
-      if: ${{ !matrix.use_omp }}
+    - name: Setup
+      run: cmake -B ${{github.workspace}}/build -DXPU_BUILD_TESTS=ON -DXPU_BUILD_EXAMPLES=ON
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build -j4

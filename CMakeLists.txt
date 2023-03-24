@@ -153,7 +153,10 @@ function(xpu_attach Library)
     set_property(TARGET ${Library} APPEND PROPERTY LINK_LIBRARIES xpu)
 
     if (XPU_ENABLE_OPENMP)
-        find_package(OpenMP REQUIRED)
+        find_package(OpenMP)
+        if (NOT OpenMP_CXX_FOUND)
+            message(FATAL_ERROR "OpenMP not found. Try to disable OpenMP in xpu via '-DXPU_ENABLE_OPENMP=OFF'.")
+        endif()
         set_property(TARGET ${Library} APPEND PROPERTY LINK_LIBRARIES OpenMP::OpenMP_CXX)
     endif()
 

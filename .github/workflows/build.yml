@@ -12,11 +12,11 @@ jobs:
             exe: g++-7
           - pkg: g++-8
             exe: g++-8
-          - pkg: clang-8
+          - pkg: clang-8 libomp-dev
             exe: clang++-8
-          - pkg: clang-9
+          - pkg: clang-9 libomp-dev
             exe: clang++-9
-          - pkg: clang-10
+          - pkg: clang-10 libomp-dev
             exe: clang++-10
     steps:
     - uses: actions/checkout@v3
@@ -54,13 +54,13 @@ jobs:
             exe: g++-11
           - pkg: g++-12
             exe: g++-12
-          - pkg: clang-11
+          - pkg: clang-11 libomp-11-dev
             exe: clang++-11
-          - pkg: clang-12
+          - pkg: clang-12 libomp-12-dev
             exe: clang++-12
-          - pkg: clang-13
+          - pkg: clang-13 libomp-13-dev
             exe: clang++-13
-          - pkg: clang-14
+          - pkg: clang-14 libomp-14-dev
             exe: clang++-14
     steps:
     - uses: actions/checkout@v3
@@ -112,15 +112,24 @@ jobs:
 
     strategy:
       matrix:
-        compiler: [g++, clang++]
+        compiler:
+          - pkg: g++,
+            cc: g++,
+          - pkg: clang libomp-dev
+            cc: clang++
         cxx_std: [20]
 
     steps:
     - uses: actions/checkout@v3
 
+    - name: Install compiler
+      run: |
+        sudo apt update
+        sudo apt install -y ${{ matrix.compiler.pkg }}
+
     - name: Configure CMake
       env:
-        CXX: ${{ matrix.compiler }}
+        CXX: ${{ matrix.compiler.cc }}
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{ matrix.cxx_std }} -DXPU_BUILD_TESTS=ON -DXPU_BUILD_EXAMPLES=ON
@@ -147,14 +156,15 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Install OpenMP
-      run: brew install libomp
+    - name: Setup with OpenMP
+      run: |
+        brew install libomp
+        cmake -B ${{github.workspace}}/build -DXPU_BUILD_TESTS=ON -DXPU_BUILD_EXAMPLES=ON
       if: ${{ matrix.use_omp }}
 
-    - name: Configure CMake
-      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: cmake -B ${{github.workspace}}/build -DXPU_BUILD_TESTS=ON -DXPU_BUILD_EXAMPLES=ON
+    - name: Setup without OpenMP
+      run: cmake -B ${{github.workspace}}/build -DXPU_ENABLE_OPENMP=OFF -DXPU_BUILD_TESTS=ON -DXPU_BUILD_EXAMPLES=ON
+      if: ${{ !matrix.use_omp }}
 
     - name: Build
       # Build your program with the given configuration
@@ -178,12 +188,15 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Install OpenMP
-      run: brew install libomp
+    - name: Setup with OpenMP
+      run: |
+        brew install libomp
+        cmake -B ${{github.workspace}}/build -DXPU_BUILD_TESTS=ON -DXPU_BUILD_EXAMPLES=ON
       if: ${{ matrix.use_omp }}
 
-    - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DXPU_BUILD_TESTS=ON -DXPU_BUILD_EXAMPLES=ON
+    - name: Setup without OpenMP
+      run: cmake -B ${{github.workspace}}/build -DXPU_ENABLE_OPENMP=OFF -DXPU_BUILD_TESTS=ON -DXPU_BUILD_EXAMPLES=ON
+      if: ${{ !matrix.use_omp }}
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build -j4

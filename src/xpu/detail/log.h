@@ -5,6 +5,7 @@
 
 #include <functional>
 #include <string>
+#include <string_view>
 
 namespace xpu::detail {
 
@@ -13,12 +14,12 @@ class logger {
 public:
     static logger &instance();
 
-    void initialize(std::function<void(const char *)>);
+    void initialize(std::function<void(std::string_view)>);
     bool active() const;
     void write(const char *, ...) XPU_ATTR_FORMAT_PRINTF(2, 3);
 
 private:
-    std::function<void(const char *)> m_write_out;
+    std::function<void(std::string_view)> m_write_out;
 
 };
 

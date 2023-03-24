@@ -3,7 +3,6 @@
 #include <cstdarg>
 #include <cstdio>
 #include <memory>
-#include <string>
 
 using namespace xpu::detail;
 
@@ -12,7 +11,7 @@ logger &logger::instance() {
     return the_logger;
 }
 
-void logger::initialize(std::function<void(const char *)> write_out) {
+void logger::initialize(std::function<void(std::string_view)> write_out) {
     this->m_write_out = std::move(write_out);
 }
 
@@ -36,7 +35,7 @@ void logger::write(const char *formatstr, ...) {
     std::vsnprintf(formatted.data(), buf_size + 1, formatstr, args);
     va_end(args);
 
-    m_write_out(formatted.c_str());
+    m_write_out(formatted);
 }
 
 std::string xpu::detail::format(const char *format, ...) {

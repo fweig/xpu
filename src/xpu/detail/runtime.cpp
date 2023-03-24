@@ -30,7 +30,7 @@ void runtime::initialize() {
 
     bool verbose = getenv_bool("XPU_VERBOSE", false);
     if (verbose) {
-        logger::instance().initialize([](const char *msg) {
+        logger::instance().initialize([](std::string_view msg) {
             std::cerr << msg << std::endl;
         });
     }

@@ -25,11 +25,15 @@ The public headers in `src/xpu` expose the entire API (With the exception of def
 
 CMake Options:
 
+- `XPU_ENABLE_OPENMP`: Enable / Disable compilation for OpenMP. (default=`ON` on Linux, `OFF` on MacOS)
 - `XPU_ENABLE_CUDA`: Enable / Disable compilation for cuda. (default=`OFF`)
 - `XPU_CUDA_ARCH`: List of target cuda architectures. (default=`75`)
 - `XPU_ENABLE_HIP`: Enable / Disable compilation for hip. (default=`OFF`)
 - `XPU_HIP_ARCH`: List of target hip architectures. (default=`gfx906;gfx908`)
 - `XPU_ROCM_ROOT`: Path to rocm installation. (default=`/opt/rocm`)
+- `XPU_ENABLE_SYCL`: Enable / Disable compilation for sycl. (default=`OFF`)
+- `XPU_SYCL_CXX`: Path to sycl compiler. (default=`icpx`)
+- `XPU_SYCL_TARGETS`: List of target sycl architectures. (default=`spir64`)
 - `XPU_DEBUG`: Build gpu code with debug symbols and disable optimizations. (default=`OFF`)
 - `XPU_BUILD_TESTS`: Build unittests and benchmarks. (default=`OFF`)
 - `XPU_BUILD_EXAMPLES`: Build examples. (default=`OFF`)

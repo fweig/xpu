@@ -6,9 +6,9 @@
 #include "detail/common.h"
 
 #include <cstddef>
+#include <cstdio>
 #include <cstring>
 #include <functional>
-#include <iostream>
 #include <utility>
 #include <string>
 #include <string_view>
@@ -65,7 +65,9 @@ struct settings {
      * By default messages are written to stderr. Has no effect if 'verbose' is false.
      */
     std::function<void(std::string_view)> logging_sink = [](std::string_view msg) {
-        std::cerr << msg << std::endl;
+        // Use c functions for output to avoid including iostream...
+        std::fwrite(msg.data(), 1, msg.size(), stderr);
+        std::fputc('\n', stderr);
     };
 
     /**

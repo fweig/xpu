@@ -7,6 +7,7 @@
 
 #include <cstddef>
 #include <cstring>
+#include <functional>
 #include <iostream>
 #include <utility>
 #include <string>
@@ -36,7 +37,53 @@ private:
 
 };
 
-inline void initialize();
+
+/**
+ * @brief Settings used to initialize xpu.
+ */
+struct settings {
+    /**
+     * @brief Select the default device to use.
+     * Values must have the form "`<driver><devicenr>`".
+     * If `devicenr` is missing, defaults to device 0 of selected driver.
+     * Possible values are for example: `cpu`, `cuda0`, `cuda1`, `hip0`, `sycl1`.
+     * Value may be overwritten by setting environment variable XPU_DEVICE.
+     */
+    std::string device = "cpu";
+
+    /**
+     * @brief Enable internal logging.
+     * Display information about device operations like memory allocation,
+     * kernel launches, memory transfers. This is useful for debugging.
+     * Value may be overwritten by setting environment variable XPU_VERBOSE.
+     * See also 'logging_sink' field for customizing the output.
+     */
+    bool verbose = false;
+
+    /**
+     * @brief Set a custom logging sink.
+     * By default messages are written to stderr. Has no effect if 'verbose' is false.
+     */
+    std::function<void(std::string_view)> logging_sink = [](std::string_view msg) {
+        std::cerr << msg << std::endl;
+    };
+
+    /**
+     * @brief Enable profiling of kernels.
+     * Use get_timing<KernelName>() to retrieve the timing information.
+     * Value may be overwritten by setting environment variable XPU_PROFILE.
+     */
+    bool profile = false;
+};
+
+/**
+ * @brief Initialize xpu.
+ * @param settings Settings to use.
+ * Initializes xpu runtime with the given settings.
+ * Should be called once at the beginning of the program.
+ * Before any other xpu functions are called.
+ */
+inline void initialize(settings = {});
 
 inline void *host_malloc(size_t);
 template<typename T>

@@ -13,6 +13,10 @@
 #include <string_view>
 #include <vector>
 
+namespace xpu {
+struct settings;
+}
+
 namespace xpu::detail {
 
 class image_pool {
@@ -48,7 +52,7 @@ class runtime {
 public:
     static runtime &instance();
 
-    void initialize();
+    void initialize(const settings &);
 
     void *host_malloc(size_t);
     void *device_malloc(size_t);

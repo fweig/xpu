@@ -26,20 +26,18 @@ runtime &runtime::instance() {
     return the_runtime;
 }
 
-void runtime::initialize() {
+void runtime::initialize(const settings &settings) {
 
-    bool verbose = getenv_bool("XPU_VERBOSE", false);
+    bool verbose = getenv_bool("XPU_VERBOSE", settings.verbose);
     if (verbose) {
-        logger::instance().initialize([](std::string_view msg) {
-            std::cerr << msg << std::endl;
-        });
+        logger::instance().initialize(settings.logging_sink);
     }
 
-    m_measure_time = getenv_bool("XPU_PROFILE", false);
+    m_measure_time = getenv_bool("XPU_PROFILE", settings.profile);
 
     int target_device = -1;
     driver_t target_driver = cpu;
-    if (auto device_env = getenv_str("XPU_DEVICE", "cpu"); true) {
+    if (auto device_env = getenv_str("XPU_DEVICE", settings.device); true) {
         std::vector<std::pair<std::string, xpu::driver_t>> str_to_driver {
             {"cpu", cpu},
             {"cuda", cuda},

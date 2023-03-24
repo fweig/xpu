@@ -10,8 +10,8 @@
 #include "detail/runtime.h"
 #include "detail/type_info.h"
 
-void xpu::initialize() {
-    detail::runtime::instance().initialize();
+void xpu::initialize(settings settings) {
+    detail::runtime::instance().initialize(settings);
 }
 
 void *xpu::host_malloc(size_t bytes) {

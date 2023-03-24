@@ -551,7 +551,8 @@ TEST(XPUTest, CanCallImageFunction) {
 
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
-    setenv("XPU_PROFILE", "1", 1); // always enable profiling in unittests
-    xpu::initialize();
+    xpu::settings settings{};
+    settings.profile = true; // Always enable profiling for tests
+    xpu::initialize(settings);
     return RUN_ALL_TESTS();
 }

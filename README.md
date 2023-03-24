@@ -158,3 +158,13 @@ These calls can either happen inside the host-code of your device library. Or an
 ## Using constant memory
 
 TODO
+
+---
+
+## Related projects
+
+- Open SYCL: https://github.com/OpenSYCL/OpenSYCL
+- alpaka: https://github.com/alpaka-group/alpaka
+- YAKL: https://github.com/mrnorman/YAKL
+- HIP-CPU: https://github.com/ROCm-Developer-Tools/HIP-CPU
+- kokkos: https://github.com/kokkos/kokkos

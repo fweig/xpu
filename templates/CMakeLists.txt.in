@@ -36,7 +36,7 @@ endif()
 
 if ("@DriverType@" STREQUAL "Sycl")
     message(STATUS "SYCL HOST CXX: @HostCxx@")
-    set(SYCL_FLAGS -fsycl -fsycl-targets=x86_64)
+    set(SYCL_FLAGS -fsycl -fsycl-targets=@XPU_SYCL_TARGETS@)
     message(STATUS "SYCL FLAGS: ${SYCL_FLAGS}")
     add_compile_options(
         ${SYCL_FLAGS}

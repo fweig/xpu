@@ -11,6 +11,7 @@ set(XPU_HIP_ARCH "gfx906;gfx908" CACHE STRING "Target hip architectures.")
 set(XPU_ROCM_ROOT /opt/rocm CACHE PATH "Path to rocm installation.")
 set(XPU_ENABLE_SYCL OFF CACHE BOOL "Enable xpu sycl backend.")
 set(XPU_SYCL_CXX "icpx" CACHE STRING "Path to sycl compiler.")
+set(XPU_SYCL_TARGETS "spir64" CACHE STRING "Target sycl architectures. (Use 'x86-64' for better debugging.)")
 set(XPU_DEBUG OFF CACHE BOOL "Enable debug options for GPU code.")
 set(XPU_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
 

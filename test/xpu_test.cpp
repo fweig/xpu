@@ -49,7 +49,7 @@ TEST(XPUTest, CanRunVectorAdd) {
     xpu::copy(dx, hx.data(), NElems);
     xpu::copy(dy, hy.data(), NElems);
 
-    xpu::run_kernel<vector_add>(xpu::grid::n_threads(NElems), dx, dy, dz, NElems);
+    xpu::run_kernel<vector_add>(xpu::n_threads(NElems), dx, dy, dz, NElems);
 
     std::vector<float> hz(NElems);
     xpu::copy(hz.data(), dz, NElems);
@@ -100,7 +100,7 @@ TEST(XPUTest, CanSortStruct) {
 
     xpu::copy(ditems, items.data(), NElems);
 
-    xpu::run_kernel<sort_struct>(xpu::grid::n_blocks(1), ditems, NElems, buf, dst);
+    xpu::run_kernel<sort_struct>(xpu::n_blocks(1), ditems, NElems, buf, dst);
 
     key_value_t *hdst = nullptr;
     xpu::copy(&hdst, dst, 1);
@@ -152,7 +152,7 @@ TEST(XPUTest, CanSortFloatsShort) {
 
     xpu::copy(ditems, items.data(), NElems);
 
-    xpu::run_kernel<sort_float>(xpu::grid::n_blocks(1), ditems, NElems, buf, dst);
+    xpu::run_kernel<sort_float>(xpu::n_blocks(1), ditems, NElems, buf, dst);
 
     float *hdst = nullptr;
     xpu::copy(&hdst, dst, 1);
@@ -197,7 +197,7 @@ void testMergeKernel(size_t M, size_t N) {
     xpu::copy(a, xpu::host_to_device);
     xpu::copy(b, xpu::host_to_device);
 
-    xpu::run_kernel<K>(xpu::grid::n_blocks(1), a.d(), a.size(), b.d(), b.size(), dst.d());
+    xpu::run_kernel<K>(xpu::n_blocks(1), a.d(), a.size(), b.d(), b.size(), dst.d());
 
     xpu::copy(dst, xpu::device_to_host);
 
@@ -250,7 +250,7 @@ TEST(XPUTest, CanRunBlockScan) {
     xpu::hd_buffer<int> incl{blockSize};
     xpu::hd_buffer<int> excl{blockSize};
 
-    xpu::run_kernel<block_scan>(xpu::grid::n_blocks(1), incl.d(), excl.d());
+    xpu::run_kernel<block_scan>(xpu::n_blocks(1), incl.d(), excl.d());
 
     xpu::copy(incl, xpu::device_to_host);
     xpu::copy(excl, xpu::device_to_host);
@@ -272,7 +272,7 @@ TEST(XPUTest, CanSetAndReadCMem) {
 
     xpu::set_constant<test_constant0>(orig);
 
-    xpu::run_kernel<access_cmem_single>(xpu::grid::n_threads(1), out.d());
+    xpu::run_kernel<access_cmem_single>(xpu::n_threads(1), out.d());
     xpu::copy(out, xpu::device_to_host);
 
     float3_ result = *out.h();
@@ -294,7 +294,7 @@ TEST(XPUTest, CanSetAndReadCMemMultiple) {
     xpu::set_constant<test_constant0>(orig);
     xpu::set_constant<test_constant1>(orig1);
     xpu::set_constant<test_constant2>(orig2);
-    xpu::run_kernel<access_cmem_multiple>(xpu::grid::n_threads(1), out0.d(), out1.d(), out2.d());
+    xpu::run_kernel<access_cmem_multiple>(xpu::n_threads(1), out0.d(), out1.d(), out2.d());
     xpu::copy(out0, xpu::device_to_host);
     xpu::copy(out1, xpu::device_to_host);
     xpu::copy(out2, xpu::device_to_host);
@@ -329,7 +329,7 @@ void test_thread_position(xpu::dim gpu_block_size, xpu::dim gpu_grid_dim) {
     xpu::hd_buffer<int> block_idx{nthreads_total * 3};
     xpu::hd_buffer<int> grid_dim{nthreads_total * 3};
 
-    xpu::grid exec_grid = xpu::grid::n_threads(nthreads);
+    xpu::grid exec_grid = xpu::n_threads(nthreads);
     switch (gpu_block_size.ndims()) {
     case 1:
         xpu::run_kernel<get_thread_idx_1d>(exec_grid, thread_idx.d(), block_dim.d(), block_idx.d(), grid_dim.d());
@@ -409,7 +409,7 @@ TEST(XPUTest, CanCallDeviceFuncs) {
     xpu::hd_buffer<variant> buf{NUM_DEVICE_FUNCS};
     xpu::memset(buf, 0);
 
-    xpu::run_kernel<test_device_funcs>(xpu::grid::n_blocks(1), buf.d());
+    xpu::run_kernel<test_device_funcs>(xpu::n_blocks(1), buf.d());
     xpu::copy(buf, xpu::device_to_host);
 
     variant *b = buf.h();
@@ -489,15 +489,15 @@ TEST(XPUTest, CanCallDeviceFuncs) {
 TEST(XPUTest, CanRunTemplatedKernels) {
     xpu::hd_buffer<int> a{1};
 
-    xpu::run_kernel<templated_kernel<0>>(xpu::grid::n_threads(1), a.d());
+    xpu::run_kernel<templated_kernel<0>>(xpu::n_threads(1), a.d());
     xpu::copy(a, xpu::device_to_host);
     ASSERT_EQ(a[0], 0);
 
-    xpu::run_kernel<templated_kernel<1>>(xpu::grid::n_threads(1), a.d());
+    xpu::run_kernel<templated_kernel<1>>(xpu::n_threads(1), a.d());
     xpu::copy(a, xpu::device_to_host);
     ASSERT_EQ(a[0], 1);
 
-    xpu::run_kernel<templated_kernel<42>>(xpu::grid::n_threads(1), a.d());
+    xpu::run_kernel<templated_kernel<42>>(xpu::n_threads(1), a.d());
     xpu::copy(a, xpu::device_to_host);
     ASSERT_EQ(a[0], 42);
 }
@@ -517,8 +517,8 @@ TEST(XPUTest, CollectsTimingData) {
     xpu::copy(b, xpu::host_to_device);
 
     for (int i = 0; i < NRuns; i++) {
-        xpu::run_kernel<vector_add_timing0>(xpu::grid::n_threads(NElems), a.d(), b.d(), c.d(), NElems);
-        xpu::run_kernel<vector_add_timing1>(xpu::grid::n_threads(NElems), a.d(), b.d(), c.d(), NElems);
+        xpu::run_kernel<vector_add_timing0>(xpu::n_threads(NElems), a.d(), b.d(), c.d(), NElems);
+        xpu::run_kernel<vector_add_timing1>(xpu::n_threads(NElems), a.d(), b.d(), c.d(), NElems);
     }
 
     auto timings0 = xpu::get_timing<vector_add_timing0>();

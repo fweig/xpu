@@ -3,9 +3,9 @@
 
 #include "common.h"
 
-inline xpu::grid xpu::grid::n_blocks(dim blocks) { return grid{blocks, dim{-1}}; }
+inline xpu::grid xpu::n_blocks(dim blocks) { return grid{blocks, dim{-1}}; }
 
-inline xpu::grid xpu::grid::n_threads(dim threads) { return grid{dim{-1}, threads}; }
+inline xpu::grid xpu::n_threads(dim threads) { return grid{dim{-1}, threads}; }
 
 inline xpu::grid::grid(dim b, dim t) : nblocks(b), nthreads(t) {}
 

@@ -150,7 +150,7 @@ public:
         xpu::copy(a, xpu::host_to_device);
         xpu::copy(b, xpu::host_to_device);
 
-        xpu::run_kernel<Kernel>(xpu::grid::n_blocks(n_blocks), a.d(), b.d(), elems_per_block, c.d());
+        xpu::run_kernel<Kernel>(xpu::n_blocks(n_blocks), a.d(), b.d(), elems_per_block, c.d());
 
         xpu::copy(c, xpu::device_to_host);
     }
@@ -200,7 +200,7 @@ public:
 
     void run() {
         xpu::copy(a, xpu::host_to_device);
-        xpu::run_kernel<Kernel>(xpu::grid::n_blocks(n_blocks), a.d(), elems_per_block, b.d(), dst.d());
+        xpu::run_kernel<Kernel>(xpu::n_blocks(n_blocks), a.d(), elems_per_block, b.d(), dst.d());
         xpu::copy(dst, xpu::device_to_host);
     }
 

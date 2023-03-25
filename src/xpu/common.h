@@ -45,10 +45,11 @@ struct dim {
     #endif
 };
 
+/**
+ * @brief 3d execution grid describing the number of blocks and threads of a kernel
+ * Use 'n_blocks' or 'n_threads' to construct a grid.
+ */
 struct grid {
-
-    static inline grid n_blocks(dim nblocks);
-    static inline grid n_threads(dim nthreads);
 
     dim nblocks;
     dim nthreads;
@@ -56,9 +57,23 @@ struct grid {
     inline void get_compute_grid(dim &block_dim, dim &grid_dim) const;
 
 private:
+    friend inline grid n_blocks(dim);
+    friend inline grid n_threads(dim);
     grid(dim b, dim t);
 
 };
+
+/**
+ * @brief Construct a grid with the given number of blocks in each dimension
+ */
+inline grid n_blocks(dim nblocks);
+
+/**
+ * @brief Construct a grid with the given number of threads in each dimension
+ * If the number of threads is not a multiple of the block size, the grid size
+ * will be rounded up to the next multiple of the block size.
+ */
+inline grid n_threads(dim nthreads);
 
 enum class side {
     host,

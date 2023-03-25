@@ -20,7 +20,7 @@ int main() {
     xpu::copy(a, xpu::host_to_device);
     xpu::copy(b, xpu::host_to_device);
 
-    xpu::run_kernel<GpuMerge>(xpu::grid::n_blocks(1), a.d(), a.size(), b.d(), b.size(), dst.d());
+    xpu::run_kernel<GpuMerge>(xpu::n_blocks(1), a.d(), a.size(), b.d(), b.size(), dst.d());
 
     xpu::copy(dst, xpu::device_to_host);
 

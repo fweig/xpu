@@ -8,7 +8,15 @@
 
 #define XPU_IS_HIP_CUDA (XPU_IS_CUDA || XPU_IS_HIP)
 
+/**
+ * @brief Function specifier for device functions. (Replaces __device__)
+ */
 #define XPU_D XPU_DETAIL_DEVICE_SPEC
+
+/**
+ * @brief Is true if the current compilation target is a device.
+ */
+#define XPU_IS_DEVICE_CODE XPU_DETAIL_IS_DEVICE_CODE
 
 #define XPU_FORCE_INLINE XPU_DETAIL_FORCE_INLINE
 

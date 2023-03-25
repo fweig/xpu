@@ -42,6 +42,28 @@
 #endif
 
 #if XPU_IS_CUDA
+    #ifdef __CUDA_ARCH__
+        #define XPU_DETAIL_IS_DEVICE_CODE 1
+    #else
+        #define XPU_DETAIL_IS_DEVICE_CODE 0
+    #endif
+#elif XPU_IS_HIP
+    #ifdef __HIP_DEVICE_COMPILE__
+        #define XPU_DETAIL_IS_DEVICE_CODE 1
+    #else
+        #define XPU_DETAIL_IS_DEVICE_CODE 0
+    #endif
+#elif XPU_IS_SYCL
+    #ifdef __SYCL_DEVICE_ONLY__
+        #define XPU_DETAIL_IS_DEVICE_CODE 1
+    #else
+        #define XPU_DETAIL_IS_DEVICE_CODE 0
+    #endif
+#else // XPU_IS_CPU
+    #define XPU_DETAIL_IS_DEVICE_CODE 0
+#endif
+
+#if XPU_IS_CUDA
 #if __CUDA_ARCH__ >= 600
 #define XPU_DETAIL_CUDA_HAS_BLOCK_ATOMICS 1
 #else

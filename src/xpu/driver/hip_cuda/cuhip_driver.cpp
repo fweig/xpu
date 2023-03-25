@@ -126,6 +126,11 @@ public:
                 return err;
             }
 
+            if (ptrattrs.memoryType == hipMemoryTypeHost) {
+                *device = -1;
+                return 0;
+            }
+
             *device = ptrattrs.device;
 
         #endif

@@ -79,6 +79,12 @@ error sycl_driver::get_properties(device_prop *props, int device) {
 
 error sycl_driver::pointer_get_device(const void *ptr, int *device) {
     try {
+        sycl::usm::alloc alloc = sycl::get_pointer_type(ptr, m_default_queue.get_context());
+        if (alloc == sycl::usm::alloc::host) {
+            *device = -1;
+            return 0;
+        }
+
         sycl::device dev = sycl::get_pointer_device(ptr, m_default_queue.get_context());
         // XPU_LOG("sycl_driver::pointer_get_device: %s", dev.get_info<sycl::info::device::name>().c_str());
         *device = get_device_id(dev);

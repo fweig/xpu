@@ -25,8 +25,16 @@ public:
         return 0;
     }
 
-    error device_malloc(void **ptr, size_t bytes) override {
+    error malloc_device(void **ptr, size_t bytes) override {
         return CUHIP(Malloc)(ptr, bytes);
+    }
+
+    error malloc_host(void **ptr, size_t bytes) override {
+        return CUHIP(MallocHost)(ptr, bytes);
+    }
+
+    error malloc_shared(void **ptr, size_t bytes) override {
+        return CUHIP(MallocManaged)(ptr, bytes, CUHIP(MemAttachGlobal));
     }
 
     error free(void *ptr) override {

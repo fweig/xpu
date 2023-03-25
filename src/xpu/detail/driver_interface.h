@@ -14,7 +14,9 @@ public:
     virtual ~driver_interface() {}
 
     virtual error setup() = 0;
-    virtual error device_malloc(void **, size_t) = 0;
+    virtual error malloc_device(void **, size_t) = 0;
+    virtual error malloc_host(void **, size_t) = 0;
+    virtual error malloc_shared(void **, size_t) = 0;
     virtual error free(void *) = 0;
     virtual error memcpy(void *, const void *, size_t) = 0;
     virtual error memset(void *, int, size_t) = 0;

@@ -11,7 +11,9 @@ public:
     virtual ~cpu_driver() {}
 
     error setup() override;
-    error device_malloc(void **, size_t) override;
+    error malloc_device(void **, size_t) override;
+    error malloc_host(void **, size_t) override;
+    error malloc_shared(void **, size_t) override;
     error free(void *) override;
     error memcpy(void *, const void *, size_t) override;
     error memset(void *, int, size_t) override;

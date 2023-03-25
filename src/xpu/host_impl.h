@@ -14,12 +14,31 @@ void xpu::initialize(settings settings) {
     detail::runtime::instance().initialize(settings);
 }
 
-void *xpu::host_malloc(size_t bytes) {
-    return detail::runtime::instance().host_malloc(bytes);
+inline void *xpu::malloc_host(size_t bytes) {
+    return detail::runtime::instance().malloc_host(bytes);
 }
 
-void *xpu::device_malloc(size_t bytes) {
-    return detail::runtime::instance().device_malloc(bytes);
+template<typename T>
+T *xpu::malloc_host(size_t count) {
+    return static_cast<T *>(malloc_host(count * sizeof(T)));
+}
+
+inline void *xpu::malloc_device(size_t bytes) {
+    return detail::runtime::instance().malloc_device(bytes);
+}
+
+template<typename T>
+T *xpu::malloc_device(size_t count) {
+    return static_cast<T *>(malloc_device(count * sizeof(T)));
+}
+
+inline void *xpu::malloc_shared(size_t bytes) {
+    return detail::runtime::instance().malloc_shared(bytes);
+}
+
+template<typename T>
+T *xpu::malloc_shared(size_t count) {
+    return static_cast<T *>(malloc_shared(count * sizeof(T)));
 }
 
 void xpu::free(void *ptr) {
@@ -83,7 +102,7 @@ xpu::hd_buffer<T>::hd_buffer(size_t N) {
     if (active_driver() == cpu) {
         m_d = m_h;
     } else {
-        m_d = device_malloc<T>(N);
+        m_d = malloc_device<T>(N);
     }
 }
 
@@ -121,7 +140,7 @@ void xpu::hd_buffer<T>::reset() {
 template<typename T>
 xpu::d_buffer<T>::d_buffer(size_t N) {
     m_size = N;
-    m_d = device_malloc<T>(N);
+    m_d = malloc_device<T>(N);
 }
 
 template<typename T>

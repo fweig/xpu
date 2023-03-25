@@ -148,13 +148,13 @@ void runtime::initialize(const settings &settings) {
     }
 }
 
-void *runtime::host_malloc(size_t bytes) {
+void *runtime::malloc_host(size_t bytes) {
     void *ptr = nullptr;
-    CPU_DRIVER_CALL(device_malloc(&ptr, bytes));
+    DRIVER_CALL(malloc_host(&ptr, bytes));
     return ptr;
 }
 
-void *runtime::device_malloc(size_t bytes) {
+void *runtime::malloc_device(size_t bytes) {
     if (logger::instance().active()) {
         size_t free, total;
         DRIVER_CALL(meminfo(&free, &total));
@@ -162,7 +162,19 @@ void *runtime::device_malloc(size_t bytes) {
         XPU_LOG("Allocating %lu bytes on device %s. [%lu / %lu available]", bytes, props.name.c_str(), free, total);
     }
     void *ptr = nullptr;
-    DRIVER_CALL(device_malloc(&ptr, bytes));
+    DRIVER_CALL(malloc_device(&ptr, bytes));
+    return ptr;
+}
+
+void *runtime::malloc_shared(size_t bytes) {
+    if (logger::instance().active()) {
+        size_t free, total;
+        DRIVER_CALL(meminfo(&free, &total));
+        device_prop props = device_properties();
+        XPU_LOG("Allocating %lu bytes of managed memory on device %s. [%lu / %lu available]", bytes, props.name.c_str(), free, total);
+    }
+    void *ptr = nullptr;
+    DRIVER_CALL(malloc_shared(&ptr, bytes));
     return ptr;
 }
 

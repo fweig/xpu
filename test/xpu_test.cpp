@@ -42,9 +42,9 @@ TEST(XPUTest, CanRunVectorAdd) {
     std::vector<float> hx(NElems, 8);
     std::vector<float> hy(NElems, 8);
 
-    float *dx = xpu::device_malloc<float>(NElems);
-    float *dy = xpu::device_malloc<float>(NElems);
-    float *dz = xpu::device_malloc<float>(NElems);
+    float *dx = xpu::malloc_device<float>(NElems);
+    float *dy = xpu::malloc_device<float>(NElems);
+    float *dz = xpu::malloc_device<float>(NElems);
 
     xpu::copy(dx, hx.data(), NElems);
     xpu::copy(dy, hy.data(), NElems);
@@ -72,9 +72,9 @@ TEST(XPUTest, CanSortStruct) {
     std::mt19937 gen{1337};
     std::uniform_int_distribution<unsigned int> dist{0, 100000000};
 
-    key_value_t *ditems = xpu::device_malloc<key_value_t>(NElems);
-    key_value_t *buf = xpu::device_malloc<key_value_t>(NElems);
-    key_value_t **dst = xpu::device_malloc<key_value_t *>(1);
+    key_value_t *ditems = xpu::malloc_device<key_value_t>(NElems);
+    key_value_t *buf = xpu::malloc_device<key_value_t>(NElems);
+    key_value_t **dst = xpu::malloc_device<key_value_t *>(1);
 
 
     std::unordered_set<unsigned int> keys{};
@@ -146,9 +146,9 @@ TEST(XPUTest, CanSortFloatsShort) {
     // }
     // std::cout << std::endl;
 
-    float *ditems = xpu::device_malloc<float>(NElems);
-    float *buf = xpu::device_malloc<float>(NElems);
-    float **dst = xpu::device_malloc<float *>(1);
+    float *ditems = xpu::malloc_device<float>(NElems);
+    float *buf = xpu::malloc_device<float>(NElems);
+    float **dst = xpu::malloc_device<float *>(1);
 
     xpu::copy(ditems, items.data(), NElems);
 

@@ -15,8 +15,18 @@ error sycl_driver::setup() {
     return 0;
 }
 
-error sycl_driver::device_malloc(void **ptr, size_t bytes) {
+error sycl_driver::malloc_device(void **ptr, size_t bytes) {
     *ptr = sycl::malloc_device(bytes, m_default_queue);
+    return 0;
+}
+
+error sycl_driver::malloc_host(void **ptr, size_t bytes) {
+    *ptr = sycl::malloc_host(bytes, m_default_queue);
+    return 0;
+}
+
+error sycl_driver::malloc_shared(void **ptr, size_t bytes) {
+    *ptr = sycl::malloc_shared(bytes, m_default_queue);
     return 0;
 }
 

@@ -87,19 +87,57 @@ struct settings {
  */
 inline void initialize(settings = {});
 
-inline void *host_malloc(size_t);
-template<typename T>
-T *host_malloc(size_t N) {
-    return static_cast<T *>(host_malloc(sizeof(T) * N));
-}
+/**
+ * @brief Allocate memory on the device.
+ * @param size Size of the memory to allocate in bytes.
+ */
+void *malloc_device(size_t size);
 
-inline void *device_malloc(size_t);
+/**
+ * @brief Allocate memory on the device.
+ * @param elems Number of elements to allocate.
+ * @tparam T Type of the memory to allocate.
+ * @note The memory is not initialized.
+ */
 template<typename T>
-T *device_malloc(size_t N) {
-    return static_cast<T *>(device_malloc(sizeof(T) * N));
-}
+T *malloc_device(size_t elems);
 
+/**
+ * @brief Allocate pinned memory on the host that can be accessed by the device.
+ * @param size Size of the memory to allocate in bytes.
+ */
+void *malloc_host(size_t size);
+
+/**
+ * @brief Allocate pinned memory on the host that can be accessed by the device.
+ * @param elems Number of elements to allocate.
+ * @tparam T Type of the memory to allocate.
+ * @note The memory is not initialized.
+ */
+template<typename T>
+T *malloc_host(size_t elems);
+
+/**
+ * @brief Allocate memory that can be accessed by the device and the host.
+ * @param size Size of the memory to allocate in bytes.
+ */
+void *malloc_shared(size_t);
+
+/**
+ * @brief Allocate memory that can be accessed by the device and the host.
+ * @param elems Number of elements to allocate.
+ * @tparam T Type of the memory to allocate.
+ * @note The memory is not initialized.
+ */
+template<typename T>
+T *malloc_shared(size_t);
+
+/**
+ * @brief Free memory allocated with malloc_device, malloc_host or malloc_shared.
+ * @param ptr Pointer to the memory to free.
+ */
 inline void free(void *);
+
 inline void memcpy(void *, const void *, size_t);
 inline void memset(void *, int, size_t);
 

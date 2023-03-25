@@ -39,9 +39,9 @@ int main() {
     //           must have the same size as inputD.
     // - outD: buffer that contains a single pointer which points to the sorted data.
     //         (This will be either inputD or bufD.)
-    KeyValuePair *inputD = xpu::device_malloc<KeyValuePair>(NumElems);
-    KeyValuePair *bufD   = xpu::device_malloc<KeyValuePair>(NumElems);
-    KeyValuePair **outD  = xpu::device_malloc<KeyValuePair *>(1);
+    KeyValuePair *inputD = xpu::malloc_device<KeyValuePair>(NumElems);
+    KeyValuePair *bufD   = xpu::malloc_device<KeyValuePair>(NumElems);
+    KeyValuePair **outD  = xpu::malloc_device<KeyValuePair *>(1);
 
     // Copy data from host to GPU.
     xpu::copy(inputD, itemsH.data(), NumElems);

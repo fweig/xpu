@@ -54,8 +54,9 @@ public:
 
     void initialize(const settings &);
 
-    void *host_malloc(size_t);
-    void *device_malloc(size_t);
+    void *malloc_host(size_t);
+    void *malloc_device(size_t);
+    void *malloc_shared(size_t);
 
     void free(void *);
     void memcpy(void *, const void *, size_t);

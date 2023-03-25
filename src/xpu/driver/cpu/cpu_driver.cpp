@@ -15,7 +15,23 @@ error cpu_driver::setup() {
     return SUCCESS;
 }
 
-error cpu_driver::device_malloc(void ** ptr, size_t bytes) {
+error cpu_driver::malloc_device(void **ptr, size_t bytes) {
+    *ptr = std::malloc(bytes);
+    if (*ptr == nullptr) {
+        return OUT_OF_MEMORY;
+    }
+    return SUCCESS;
+}
+
+error cpu_driver::malloc_host(void **ptr, size_t bytes) {
+    *ptr = std::malloc(bytes);
+    if (*ptr == nullptr) {
+        return OUT_OF_MEMORY;
+    }
+    return SUCCESS;
+}
+
+error cpu_driver::malloc_shared(void **ptr, size_t bytes) {
     *ptr = std::malloc(bytes);
     if (*ptr == nullptr) {
         return OUT_OF_MEMORY;

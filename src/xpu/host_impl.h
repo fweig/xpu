@@ -95,6 +95,15 @@ void xpu::set_constant(const typename C::data_t &symbol) {
 }
 
 template<typename T>
+xpu::buffer_prop<T>::buffer_prop(const buffer<T> &buf) {
+    detail::buffer_data entry = detail::buffer_registry::instance().get(buf.get());
+    m_size_bytes = entry.size;
+    m_device = static_cast<T *>(entry.ptr);
+    m_host = static_cast<T *>(entry.host_ptr);
+    m_type = static_cast<xpu::buffer_type>(entry.type);
+}
+
+template<typename T>
 xpu::hd_buffer<T>::hd_buffer(size_t N) {
     m_size = N;
     m_h = static_cast<T *>(std::malloc(sizeof(T) * N));
@@ -186,6 +195,35 @@ void xpu::copy(hd_buffer<T> &buf, direction dir) {
             copy<T>(buf.h(), buf.d(), buf.size());
             break;
     }
+}
+
+template<typename T>
+void xpu::copy(buffer<T> &buf, direction dir) {
+    detail::buffer_data entry = detail::buffer_registry::instance().get(buf.get());
+
+    if (entry.type != detail::io_buffer) {
+        throw std::runtime_error("Buffer is not an IO buffer.");
+    }
+
+    if (entry.ptr == entry.host_ptr) {
+        return;
+    }
+
+    void *dst = nullptr;
+    void *src = nullptr;
+
+    switch (dir) {
+        case host_to_device:
+            dst = entry.ptr;
+            src = entry.host_ptr;
+            break;
+        case device_to_host:
+            dst = entry.host_ptr;
+            src = entry.ptr;
+            break;
+    }
+
+    xpu::memcpy(dst, src, entry.size);
 }
 
 template<typename T>

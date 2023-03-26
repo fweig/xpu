@@ -2,6 +2,9 @@
 #define XPU_COMMON_IMPL_H
 
 #include "common.h"
+#include "detail/buffer_registry.h"
+
+#include <utility>
 
 inline xpu::grid xpu::n_blocks(dim blocks) { return grid{blocks, dim{-1}}; }
 
@@ -22,6 +25,64 @@ inline void xpu::grid::get_compute_grid(dim &block_dim, dim &grid_dim) const {
 
     block_dim.y = (grid_dim.y == 1 ? 1 : block_dim.y);
     block_dim.z = (grid_dim.z == 1 ? 1 : block_dim.z);
+}
+
+template<typename T>
+xpu::buffer<T>::buffer(size_t N, xpu::buffer_type type, T *data) {
+    auto &registry = detail::buffer_registry::instance();
+    m_data = static_cast<T *>(registry.create(N * sizeof(T), static_cast<detail::buffer_type>(type), data));
+}
+
+template<typename T>
+XPU_H XPU_D xpu::buffer<T>::~buffer() {
+    remove_ref();
+}
+
+template<typename T>
+XPU_H XPU_D xpu::buffer<T>::buffer(const xpu::buffer<T> &other) {
+    m_data = other.get();
+    add_ref();
+}
+
+template<typename T>
+XPU_H XPU_D xpu::buffer<T>::buffer(xpu::buffer<T> &&other) {
+    m_data = std::exchange(other.m_data, nullptr);
+}
+
+template<typename T>
+XPU_H XPU_D xpu::buffer<T> &xpu::buffer<T>::operator=(const xpu::buffer<T> &other) {
+    if (this != &other) {
+        remove_ref();
+        m_data = other.m_data;
+        add_ref();
+    }
+    return *this;
+}
+
+template<typename T>
+XPU_H XPU_D xpu::buffer<T> &xpu::buffer<T>::operator=(xpu::buffer<T> &&other) {
+    if (this != &other) {
+        m_data = std::exchange(other.m_data, nullptr);
+    }
+    return *this;
+}
+
+template<typename T>
+XPU_H XPU_D void xpu::buffer<T>::add_ref() {
+#if !XPU_IS_DEVICE_CODE
+    if (m_data != nullptr) {
+        detail::buffer_registry::instance().add_ref(m_data);
+    }
+#endif
+}
+
+template<typename T>
+XPU_H XPU_D void xpu::buffer<T>::remove_ref() {
+#if !XPU_IS_DEVICE_CODE
+    if (m_data != nullptr) {
+        detail::buffer_registry::instance().remove_ref(m_data);
+    }
+#endif
 }
 
 // Always provide the device side for constant memory classes

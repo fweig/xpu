@@ -9,8 +9,9 @@
 TEST(XPUTest, CanCreatePointerBuffer) {
     // Test for regression with ambigious free
     // This only has to compile
-    xpu::d_buffer<key_value_t *> buf1{100};
-    xpu::hd_buffer<key_value_t *> buf2{100};
+    xpu::buffer<int *> buf{};
+    xpu::buffer<key_value_t *> buf1{100, xpu::host_buffer};
+    xpu::buffer<key_value_t *> buf2{100, xpu::device_buffer};
 }
 
 TEST(XPUTest, CanGetDeviceFromPointer) {
@@ -20,20 +21,58 @@ TEST(XPUTest, CanGetDeviceFromPointer) {
     xpu::device_prop prop = xpu::pointer_get_device(&h);
     ASSERT_EQ(prop.driver, xpu::cpu);
 
-    xpu::hd_buffer<int> hdbuf{1};
-    prop = xpu::pointer_get_device(hdbuf.h());
-    ASSERT_EQ(prop.driver, xpu::cpu);
-    prop = xpu::pointer_get_device(hdbuf.d());
-    ASSERT_EQ(prop.name, active_device.name);
+    {
+        xpu::buffer<int> hdbuf{1, xpu::io_buffer};
+        xpu::buffer_prop<int> bprop{hdbuf};
+        prop = xpu::pointer_get_device(bprop.host_ptr());
+        ASSERT_EQ(prop.driver, xpu::cpu);
+        prop = xpu::pointer_get_device(bprop.device_ptr());
+        ASSERT_EQ(prop.name, active_device.name);
+    }
 
-    xpu::d_buffer<int> dbuf{1};
-    prop = xpu::pointer_get_device(dbuf.d());
-    ASSERT_EQ(prop.name, active_device.name);
+    {
+        xpu::buffer<int> dbuf{1, xpu::device_buffer};
+        xpu::buffer_prop<int> bprop{dbuf};
+        prop = xpu::pointer_get_device(bprop.device_ptr());
+        ASSERT_EQ(prop.name, active_device.name);
+    }
+
+    {
+        xpu::buffer<int> hbuf{1, xpu::host_buffer};
+        xpu::buffer_prop<int> bprop{hbuf};
+        prop = xpu::pointer_get_device(bprop.host_ptr());
+        ASSERT_EQ(prop.driver, xpu::cpu);
+    }
 }
 
 TEST(XPUTest, CanConvertTypenamesToString) {
     ASSERT_STREQ(xpu::detail::type_name<int>(), "int");
     ASSERT_STREQ(xpu::detail::type_name<xpu::device_prop>(), "xpu::device_prop");
+}
+
+TEST(XPUTest, HostBufferIsAccessibleFromDevice) {
+    xpu::buffer<int> buf{1, xpu::host_buffer};
+    *buf = 69;
+    xpu::run_kernel<buffer_access>(xpu::n_threads(1), buf);
+    ASSERT_EQ(*buf, 42);
+}
+
+TEST(XPUTest, IoBufferIsAccessibleFromDevice) {
+    xpu::buffer<int> buf{1, xpu::io_buffer};
+    xpu::run_kernel<buffer_access>(xpu::n_threads(1), buf);
+
+    xpu::copy(buf, xpu::device_to_host);
+    xpu::buffer_prop<int> bprop{buf};
+    ASSERT_EQ(bprop.host_ptr()[0], 42);
+}
+
+TEST(XPUTest, IoBufferCanCopyToHost) {
+    int val = 69;
+    xpu::buffer<int> buf{1, xpu::io_buffer, &val};
+    xpu::run_kernel<buffer_access>(xpu::n_threads(1), buf);
+
+    xpu::copy(buf, xpu::device_to_host);
+    ASSERT_EQ(val, 42);
 }
 
 TEST(XPUTest, CanRunVectorAdd) {

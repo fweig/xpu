@@ -8,6 +8,9 @@
 
 #include <sycl/sycl.hpp>
 
+template<typename T>
+struct sycl::is_device_copyable<xpu::buffer<T>> : std::true_type {};
+
 int xpu::abs(int x) { return sycl::abs(x); }
 float xpu::abs(float x) { return sycl::fabs(x); }
 float xpu::acos(float x) { return sycl::acos(x); }
@@ -323,29 +326,28 @@ struct xpu::detail::action_runner<xpu::detail::kernel_tag, K, void(K::*)(xpu::ke
 
         XPU_LOG("Calling kernel '%s' [block_dim = (%d, %d, %d), grid_dim = (%d, %d, %d)] with SYCL driver.", type_name<K>(), block_dim.x, block_dim.y, block_dim.z, grid_dim.x, grid_dim.y, grid_dim.z);
 
-        if (ms != nullptr) {
-            *ms = -1.f; // TODO: implement time measurement
-        }
-
         sycl_driver *driver = static_cast<sycl_driver*>(i_driver);
         sycl::queue &queue = driver->default_queue();
 
         sycl::range<3> global_range{size_t(grid_dim.x), size_t(grid_dim.y), size_t(grid_dim.z)};
         sycl::range<3> local_range{size_t(block_dim.x), size_t(block_dim.y), size_t(block_dim.z)};
-        // sycl::range<3> global_range{size_t(grid_dim.x * block_dim.x), size_t(grid_dim.y * block_dim.y), size_t(grid_dim.z * block_dim.z)};
-        // sycl::range<3> local_range{1, 1, 1};
-
         cmem_traits<constants> cmem_traits{};
         auto cmem_buffers = cmem_traits.make_buffers();
+
+        global_range = global_range * local_range;
 
         sycl::event ev = queue.submit([&](sycl::handler &cgh) {
             sycl::local_accessor<shared_memory, 0> shared_memory_acc{cgh};
             auto cmem_accessors = cmem_traits.make_accessors(cmem_buffers, cgh);
             constants cmem{internal_ctor, cmem_accessors};
 
-            // sycl::stream out(1024, 256, cgh);
-            cgh.parallel_for(sycl::nd_range<3>{global_range * local_range, local_range}, [=](sycl::nd_item<3> item) {
-                // out << "Hello world from " << item.get_global_id() << sycl::endl;
+            sycl::stream out{0, 0, cgh};
+            cgh.parallel_for<K>(sycl::nd_range<3>{global_range, local_range}, [=](sycl::nd_item<3> item) {
+                // WTF: icpx sometimes optimizes out the kernel call (when using O2)
+                // if we dont add the print statement
+                if (item.get_global_id(0) == -1) {
+                    out << "";
+                }
                 shared_memory &smem = shared_memory_acc;
                 tpos pos{internal_ctor, item};
                 context ctx{internal_ctor, pos, smem, cmem};

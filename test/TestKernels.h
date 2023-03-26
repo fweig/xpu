@@ -133,6 +133,11 @@ struct empty_kernel : xpu::kernel<TestKernels> {
     XPU_D void operator()(context &);
 };
 
+struct buffer_access : xpu::kernel<TestKernels> {
+    using context = xpu::kernel_context<xpu::no_smem>;
+    XPU_D void operator()(context &, xpu::buffer<int>);
+};
+
 struct vector_add : xpu::kernel<TestKernels> {
     using context = xpu::kernel_context<xpu::no_smem>;
     XPU_D void operator()(context &, const float *, const float *, float *, int);

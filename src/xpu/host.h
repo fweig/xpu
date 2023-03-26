@@ -162,6 +162,26 @@ template<typename C>
 void set_constant(const typename C::data_t &symbol);
 
 template<typename T>
+class buffer_prop {
+
+public:
+    explicit buffer_prop(const buffer<T> &);
+
+    size_t size() const { return m_size_bytes / sizeof(T); }
+    size_t size_bytes() const { return m_size_bytes; }
+    buffer_type type() const { return m_type; }
+    T *host_ptr() const { return m_host; }
+    T *device_ptr() const { return m_device; }
+
+private:
+    size_t m_size_bytes;
+    T *m_host;
+    T *m_device;
+    buffer_type m_type;
+};
+
+// DEPRECATED - use buffer instead
+template<typename T>
 class hd_buffer {
 
 public:
@@ -194,6 +214,7 @@ private:
 
 };
 
+// DEPRECATED - use buffer instead
 template<typename T>
 class d_buffer {
 
@@ -223,6 +244,9 @@ void copy(T *dst, const T *src, size_t entries);
 
 template<typename T>
 void copy(hd_buffer<T> &buf, direction dir);
+
+template<typename T>
+void copy(buffer<T> &buf, direction dir);
 
 template<typename T>
 void memset(hd_buffer<T> &buf, int ch);

@@ -34,10 +34,12 @@
 #if XPU_IS_CUDA || XPU_IS_HIP
 #define XPU_DETAIL_FORCE_INLINE __forceinline__
 #define XPU_DETAIL_DEVICE_SPEC __device__
+#define XPU_DETAIL_HOST_SPEC __host__
 #define XPU_DETAIL_CONSTANT_SPEC __constant__
 #else
 #define XPU_DETAIL_FORCE_INLINE inline __attribute__((always_inline))
 #define XPU_DETAIL_DEVICE_SPEC
+#define XPU_DETAIL_HOST_SPEC
 #define XPU_DETAIL_CONSTANT_SPEC
 #endif
 

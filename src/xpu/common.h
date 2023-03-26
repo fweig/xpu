@@ -2,6 +2,7 @@
 #define XPU_COMMON_H
 
 #include "defines.h"
+#include "detail/buffer_registry.h"
 
 #include <string>
 
@@ -74,6 +75,72 @@ inline grid n_blocks(dim nblocks);
  * will be rounded up to the next multiple of the block size.
  */
 inline grid n_threads(dim nthreads);
+
+enum buffer_type {
+    host_buffer = detail::host_buffer,
+    device_buffer = detail::device_buffer,
+    shared_buffer = detail::shared_buffer,
+    io_buffer   = detail::io_buffer,
+};
+
+template<typename T>
+class buffer {
+
+public:
+    /**
+     * @brief Create an emtpy buffer.
+     */
+    buffer() = default;
+
+    /**
+     * @brief Create a buffer with the given size.
+     * @param N Size of the buffer.
+     * @param type Type of the buffer.
+     * @param data Pointer to the data to use for the buffer.
+     *
+     * Allocates a buffer of the given size and type.
+     * Behavior depends on the type of the buffer:
+     * - host_buffer:
+     *     Allocates a buffer in host memory. The buffer is accessible from the device.
+     *     If data is not null, the buffer is initialized with the data.
+     * - device_buffer:
+     *     Allocates a buffer in device memory that is not accessible from the host.
+     *     Memory is not initialized and 'data' pointer has no effect
+     * - shared_buffer:
+     *     Allocates a shared (managed) buffer that is accessible from the host and the device.
+     *     If data is not null, the buffer is initialized with the data.
+     * - io_buffer:
+     *     Allocates a buffer in device memory. Excepts that data points to a memory region with at least N elements.
+     *     Buffer may be copied to / from the device using xpu::copy from / to 'data'.
+     *     Note: If the device is a CPU, the underlying pointer simply points to 'data' and no additional allocation takes place.
+     *     xpu::copy calls become no-ops in this case.
+     */
+    buffer(size_t N, buffer_type type, T *data = nullptr);
+
+    /**
+     * @brief Free the buffer.
+     */
+    XPU_H XPU_D ~buffer();
+
+    XPU_H XPU_D buffer(const buffer &other);
+    XPU_H XPU_D buffer(buffer &&other);
+
+    XPU_H XPU_D buffer &operator=(const buffer &other);
+    XPU_H XPU_D buffer &operator=(buffer &&other);
+
+    XPU_H XPU_D       T *get() const { return m_data; }
+
+    XPU_H XPU_D T &operator*() const { return *m_data; }
+    XPU_H XPU_D T *operator->() const { return m_data; }
+
+private:
+    T *m_data = nullptr;
+
+    XPU_H XPU_D void add_ref();
+    XPU_H XPU_D void remove_ref();
+};
+
+// DEPRECATED - use buffer instead
 
 enum class side {
     host,

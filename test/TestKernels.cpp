@@ -34,6 +34,15 @@ XPU_D void do_vector_add(xpu::tpos &pos, const float *x, const float *y, float *
 XPU_EXPORT(empty_kernel);
 XPU_D void empty_kernel::operator()(context &) {}
 
+XPU_EXPORT(buffer_access);
+XPU_D void buffer_access::operator()(context &ctx, xpu::buffer<int> buf) {
+    int iThread = ctx.pos().block_idx_x() * ctx.pos().block_dim_x() + ctx.pos().thread_idx_x();
+    if (iThread > 0) {
+        return;
+    }
+    *buf = 42;
+}
+
 XPU_EXPORT(vector_add);
 XPU_D void vector_add::operator()(context &ctx, const float *x, const float *y, float *z, int N) {
     do_vector_add(ctx.pos(), x, y, z, N);

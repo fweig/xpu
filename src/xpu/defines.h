@@ -14,6 +14,18 @@
 #define XPU_D XPU_DETAIL_DEVICE_SPEC
 
 /**
+ * @brief Function specifier for host functions. (Replaces __host__)
+ * @note This is usually not required, as all device functions are also
+ *   compiled for the host by xpu. You only need XPU_H if the function
+ *   is called from host code _inside_ the device image. This happens
+ *   typically if:
+ *     - The funcions is called within a xpu::function object.
+ *     - For copy constructors and assignment operators of types that are
+ *       passed by value to kernels.
+ */
+#define XPU_H XPU_DETAIL_HOST_SPEC
+
+/**
  * @brief Is true if the current compilation target is a device.
  */
 #define XPU_IS_DEVICE_CODE XPU_DETAIL_IS_DEVICE_CODE

@@ -42,6 +42,7 @@ if ("@DriverType@" STREQUAL "Sycl")
         ${SYCL_FLAGS}
         -O2
         -g3
+        # -Wall -Wextra
         # -fsycl-host-compiler=@HostCxx@
         # -fsycl-host-compiler-options="-fPIC"
     )

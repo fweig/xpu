@@ -151,6 +151,7 @@ void runtime::initialize(const settings &settings) {
 void *runtime::malloc_host(size_t bytes) {
     void *ptr = nullptr;
     DRIVER_CALL(malloc_host(&ptr, bytes));
+    XPU_LOG("Allocating %lu bytes @ address %p on host memory with driver %s.", bytes, ptr, driver_str(m_active_driver));
     return ptr;
 }
 

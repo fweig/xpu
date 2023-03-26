@@ -38,7 +38,11 @@ public:
     }
 
     error free(void *ptr) override {
-        return CUHIP(Free)(ptr);
+        if (resides_on_host(ptr)) {
+            return CUHIP(FreeHost)(ptr);
+        } else {
+            return CUHIP(Free)(ptr);
+        }
     }
 
     error memcpy(void *dst, const void *src, size_t bytes) override {
@@ -52,11 +56,7 @@ public:
     }
 
     error num_devices(int *devices) override {
-
         CUHIP(GetDeviceCount)(devices);
-        #if XPU_IS_HIP
-        XPU_LOG("HIP FOUND DEVICES: %d", *devices);
-        #endif
         return 0;
     }
 
@@ -104,7 +104,6 @@ public:
         error err = CUHIP(PointerGetAttributes)(&ptrattrs, ptr);
 
         #if XPU_IS_CUDA
-
             if (err != 0) {
                 return err;
             }
@@ -116,7 +115,6 @@ public:
             }
 
         #else // HIP
-
             if (err == hipErrorInvalidValue) {
                 *device = -1;
                 return 0;
@@ -148,6 +146,20 @@ public:
 
     driver_t get_type() override {
         return (XPU_IS_CUDA ? cuda : hip);
+    }
+
+    bool resides_on_host(const void *ptr) {
+        cuhip_pointer_attributes ptrattrs;
+        error err = CUHIP(PointerGetAttributes)(&ptrattrs, ptr);
+        if (err != 0) {
+            return false;
+        }
+
+        #if XPU_IS_CUDA
+            return (ptrattrs.type == cudaMemoryTypeHost);
+        #else
+            return (ptrattrs.memoryType == hipMemoryTypeHost);
+        #endif
     }
 
 };

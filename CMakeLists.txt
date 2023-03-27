@@ -156,6 +156,9 @@ function(xpu_attach Library)
     set_property(TARGET ${Library} PROPERTY POSITION_INDEPENDENT_CODE TRUE)
     set_property(TARGET ${Library} APPEND PROPERTY LINK_LIBRARIES xpu)
 
+    get_target_property(DeviceLibDir ${Library} LIBRARY_OUTPUT_DIRECTORY)
+    set_property(TARGET ${Library} APPEND PROPERTY BUILD_RPATH ${DeviceLibDir})
+
     if (XPU_ENABLE_OPENMP)
         find_package(OpenMP)
         if (NOT OpenMP_CXX_FOUND)
@@ -223,6 +226,9 @@ if (XPU_ENABLE_SYCL)
         "${CMAKE_CURRENT_SOURCE_DIR}/src/xpu/driver/sycl/sycl_driver.cpp"
     )
 endif()
+
+get_target_property(DeviceLibDir xpu LIBRARY_OUTPUT_DIRECTORY)
+set_property(TARGET xpu APPEND PROPERTY BUILD_RPATH ${DeviceLibDir})
 
 if (XPU_BUILD_TESTS)
     enable_testing()

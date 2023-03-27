@@ -7,6 +7,7 @@
 
 #include "host.h"
 
+#include "detail/exceptions.h"
 #include "detail/runtime.h"
 #include "detail/type_info.h"
 
@@ -118,33 +119,25 @@ xpu::h_view<T>::h_view(const buffer_prop<T> &buf) {
 
 template<typename T>
 T &xpu::h_view<T>::operator[](size_t i) {
-    if (i >= m_size) {
-        throw std::out_of_range("h_view::operator[]: index out of range: i = " + std::to_string(i) + ", size = " + std::to_string(m_size));
-    }
+    XPU_CHECK_RANGE("h_view::operator[]", i, m_size);
     return m_data[i];
 }
 
 template<typename T>
 const T &xpu::h_view<T>::operator[](size_t i) const {
-    if (i >= m_size) {
-        throw std::out_of_range("h_view::operator[]: index out of range: i = " + std::to_string(i) + ", size = " + std::to_string(m_size));
-    }
+    XPU_CHECK_RANGE("h_view::operator[]", i, m_size);
     return m_data[i];
 }
 
 template<typename T>
 T &xpu::h_view<T>::at(size_t i) {
-    if (i >= m_size) {
-        throw std::out_of_range("h_view::at: index out of range: i = " + std::to_string(i) + ", size = " + std::to_string(m_size));
-    }
+    XPU_CHECK_RANGE("h_view::at", i, m_size);
     return m_data[i];
 }
 
 template<typename T>
 const T &xpu::h_view<T>::at(size_t i) const {
-    if (i >= m_size) {
-        throw std::out_of_range("h_view::at: index out of range: i = " + std::to_string(i) + ", size = " + std::to_string(m_size));
-    }
+    XPU_CHECK_RANGE("h_view::at", i, m_size);
     return m_data[i];
 }
 

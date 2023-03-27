@@ -289,5 +289,3 @@ void runtime::raise_error_if(bool condition, std::string_view error_msg) const {
 [[noreturn]] void runtime::raise_error(std::string_view error_msg) const {
     throw xpu::exception(error_msg);
 }
-
-

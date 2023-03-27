@@ -191,6 +191,7 @@ endfunction()
 add_library(xpu SHARED
     src/xpu/detail/buffer_registry.cpp
     src/xpu/detail/dl_utils.cpp
+    src/xpu/detail/exceptions.cpp
     src/xpu/detail/log.cpp
     src/xpu/detail/runtime.cpp
     src/xpu/driver/cpu/cpu_driver.cpp

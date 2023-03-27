@@ -17,15 +17,18 @@ void *buffer_registry::create(size_t size, buffer_type type, void *host_ptr) {
         if (host_ptr != nullptr) {
             std::memcpy(ptr, host_ptr, size);
         }
+        host_ptr = ptr;
         break;
     case device_buffer:
         ptr = xpu::malloc_device(size);
+        host_ptr = nullptr;
         break;
     case shared_buffer:
         ptr = xpu::malloc_shared(size);
         if (host_ptr != nullptr) {
             std::memcpy(ptr, host_ptr, size);
         }
+        host_ptr = ptr;
         break;
     case io_buffer:
         if (host_ptr == nullptr) {
@@ -42,7 +45,7 @@ void *buffer_registry::create(size_t size, buffer_type type, void *host_ptr) {
 
     buffer_data data {
         ptr,
-        (type == io_buffer ? host_ptr : nullptr),
+        host_ptr,
         owns_host_ptr,
         type,
         size

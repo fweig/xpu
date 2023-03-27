@@ -4,6 +4,7 @@
 #include "defines.h"
 #include "common.h"
 #include "detail/common.h"
+#include "detail/mem_type.h"
 
 #include <cstddef>
 #include <cstdio>
@@ -19,6 +20,7 @@ namespace xpu {
 
 // Forward declarations
 template<typename T> class buffer_prop;
+namespace detail { class runtime; }
 
 enum direction {
     host_to_device,
@@ -87,6 +89,8 @@ struct settings {
  * Initializes xpu runtime with the given settings.
  * Should be called once at the beginning of the program.
  * Before any other xpu functions are called.
+ *
+ * @see xpu::settings
  */
 inline void initialize(settings = {});
 
@@ -146,8 +150,8 @@ inline void memset(void *, int, size_t);
 
 inline std::vector<device_prop> get_devices();
 inline device_prop device_properties();
+inline device_prop device_properties(driver_t backend, int device);
 inline xpu::driver_t active_driver();
-inline device_prop pointer_get_device(const void *);
 
 template<typename Kernel>
 const char *get_name();
@@ -233,10 +237,86 @@ private:
     size_t m_size = 0;
 };
 
+/**
+ * Different types of allocated memory.
+ */
+enum class mem_type {
+    /**
+     * Memory allocated on the host by the GPU driver.
+     * Can be accessed by the device. (also known as pinned memory)
+     */
+    host = detail::host,
+
+    /**
+     * Memory allocated on the device by the GPU driver.
+     */
+    device = detail::device,
+
+    /**
+     * Memory allocated on the host and device by the GPU driver.
+     * GPU driver will synchronise data to the device when needed.
+     * (also known as unified or managed memory)
+     */
+    shared = detail::shared,
+
+    /**
+     * Uknown memory type.
+     * Usually memory allocated on the host by libc.
+     * Can't be accessed on the device.
+     */
+    unknown = detail::unknown,
+};
+
+/**
+ * @brief Properties of a pointer.
+ * Properties of a pointer allocated with malloc_device, malloc_host or malloc_shared.
+ */
+class ptr_prop {
+
+public:
+    ptr_prop() = delete;
+
+    /**
+     * @brief Create a pointer property object from a pointer.
+     * @param ptr Pointer to the memory.
+     */
+    explicit ptr_prop(const void *);
+
+    /**
+     * @returns The pointer.
+     */
+    void *ptr() const { return m_ptr; }
+
+    /**
+     * @returns The type of the memory.
+     * @see mem_type
+     */
+    mem_type type() const { return m_type; }
+
+    /**
+     * @returns The device the memory is allocated on.
+     */
+    int device() const { return m_device; }
+
+    /**
+     * @returns The backend used to allocate the memory.
+     * @see driver_t
+     */
+    driver_t backend() const { return m_backend; }
+
+private:
+    friend class detail::runtime;
+    void *m_ptr;
+    int m_device;
+    xpu::driver_t m_backend;
+    mem_type m_type;
+};
+
 template<typename T>
 class buffer_prop {
 
 public:
+    buffer_prop() = delete;
     explicit buffer_prop(const buffer<T> &);
 
     size_t size() const { return m_size_bytes / sizeof(T); }

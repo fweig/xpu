@@ -16,32 +16,45 @@ TEST(XPUTest, CanCreatePointerBuffer) {
 
 TEST(XPUTest, CanGetDeviceFromPointer) {
     xpu::device_prop active_device = xpu::device_properties();
+    bool is_cpu = active_device.driver == xpu::driver_t::cpu;
 
     int h = 0;
-    xpu::device_prop prop = xpu::pointer_get_device(&h);
-    ASSERT_EQ(prop.driver, xpu::cpu);
+    xpu::ptr_prop prop{&h};
+    ASSERT_EQ(prop.ptr(), &h);
+    ASSERT_EQ(prop.backend(), xpu::cpu);
+    ASSERT_EQ(prop.device(), 0);
+    ASSERT_EQ(prop.type(), xpu::mem_type::unknown);
 
     {
         xpu::buffer<int> hdbuf{1, xpu::io_buffer};
         xpu::buffer_prop<int> bprop{hdbuf};
-        prop = xpu::pointer_get_device(bprop.h_ptr());
-        ASSERT_EQ(prop.driver, xpu::cpu);
-        prop = xpu::pointer_get_device(bprop.d_ptr());
-        ASSERT_EQ(prop.name, active_device.name);
+        prop = xpu::ptr_prop{bprop.h_ptr()};
+        ASSERT_NE(prop.ptr(), nullptr);
+        ASSERT_EQ(prop.backend(), active_device.driver);
+        ASSERT_EQ(prop.type(), (is_cpu ? xpu::mem_type::unknown : xpu::mem_type::host));
+        prop = xpu::ptr_prop{bprop.d_ptr()};
+        ASSERT_NE(prop.ptr(), nullptr);
+        ASSERT_EQ(prop.backend(), active_device.driver);
+        ASSERT_EQ(prop.type(), (is_cpu ? xpu::mem_type::unknown : xpu::mem_type::device));
     }
 
     {
         xpu::buffer<int> dbuf{1, xpu::device_buffer};
         xpu::buffer_prop<int> bprop{dbuf};
-        prop = xpu::pointer_get_device(bprop.d_ptr());
-        ASSERT_EQ(prop.name, active_device.name);
+        prop = xpu::ptr_prop{bprop.d_ptr()};
+        ASSERT_NE(prop.ptr(), nullptr);
+        ASSERT_EQ(prop.backend(), active_device.driver);
+        ASSERT_EQ(prop.type(), (is_cpu ? xpu::mem_type::unknown : xpu::mem_type::device));
+        ASSERT_EQ(bprop.h_ptr(), nullptr);
     }
 
     {
         xpu::buffer<int> hbuf{1, xpu::host_buffer};
         xpu::buffer_prop<int> bprop{hbuf};
-        prop = xpu::pointer_get_device(bprop.h_ptr());
-        ASSERT_EQ(prop.driver, xpu::cpu);
+        prop = xpu::ptr_prop{bprop.h_ptr()};
+        ASSERT_NE(prop.ptr(), nullptr);
+        ASSERT_EQ(prop.backend(), active_device.driver);
+        ASSERT_EQ(prop.type(), (is_cpu ? xpu::mem_type::unknown : xpu::mem_type::host));
     }
 }
 

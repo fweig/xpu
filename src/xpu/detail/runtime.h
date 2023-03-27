@@ -14,6 +14,7 @@
 #include <vector>
 
 namespace xpu {
+class ptr_prop;
 struct settings;
 }
 
@@ -64,11 +65,12 @@ public:
 
     std::vector<device_prop> get_devices() { return m_devices; }
     device_prop device_properties();
+    device_prop device_properties(driver_t, int);
 
     // FIXME this clashes / is ambigious with private function get_active_driver
     driver_t active_driver() const { return m_active_driver; }
 
-    device_prop pointer_get_device(const void *);
+    void get_ptr_prop(const void *, ptr_prop *);
 
     template<typename Kernel, typename... Args>
     void run_kernel(grid g, Args&&... args) {

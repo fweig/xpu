@@ -62,12 +62,12 @@ xpu::device_prop xpu::device_properties() {
     return detail::runtime::instance().device_properties();
 }
 
-xpu::driver_t xpu::active_driver() {
-    return detail::runtime::instance().active_driver();
+xpu::device_prop xpu::device_properties(driver_t backend, int device) {
+    return detail::runtime::instance().device_properties(backend, device);
 }
 
-xpu::device_prop xpu::pointer_get_device(const void *ptr) {
-    return detail::runtime::instance().pointer_get_device(ptr);
+xpu::driver_t xpu::active_driver() {
+    return detail::runtime::instance().active_driver();
 }
 
 template<typename Kernel>
@@ -93,6 +93,10 @@ void xpu::call(Args&&... args) {
 template<typename C>
 void xpu::set_constant(const typename C::data_t &symbol) {
     detail::runtime::instance().set_constant<C>(symbol);
+}
+
+inline xpu::ptr_prop::ptr_prop(const void *ptr) {
+    detail::runtime::instance().get_ptr_prop(ptr, this);
 }
 
 template<typename T>

@@ -185,8 +185,15 @@ void runtime::free(void *ptr) {
 
 void runtime::memcpy(void *dst, const void *src, size_t bytes) {
     if (logger::instance().active()) {
-        device_prop from = pointer_get_device(src);
-        device_prop to = pointer_get_device(dst);
+        ptr_prop src_prop{src};
+        ptr_prop dst_prop{dst};
+
+        device_prop from;
+        DRIVER_CALL_I(src_prop.backend(), get_properties(&from, src_prop.device()));
+
+        device_prop to;
+        DRIVER_CALL_I(dst_prop.backend(), get_properties(&to, dst_prop.device()));
+
         XPU_LOG("Copy %lu bytes from %s to %s.", bytes, from.name.c_str(), to.name.c_str());
     }
     DRIVER_CALL(memcpy(dst, src, bytes));
@@ -194,7 +201,9 @@ void runtime::memcpy(void *dst, const void *src, size_t bytes) {
 
 void runtime::memset(void *dst, int ch, size_t bytes) {
     if (logger::instance().active()) {
-        device_prop dev = pointer_get_device(dst);
+        ptr_prop dst_prop{dst};
+        device_prop dev;
+        DRIVER_CALL_I(dst_prop.backend(), get_properties(&dev, dst_prop.device()));
         XPU_LOG("Setting %lu bytes on %s to %d.", bytes, dev.name.c_str(), ch);
     }
     DRIVER_CALL(memset(dst, ch, bytes));
@@ -209,11 +218,19 @@ xpu::device_prop runtime::device_properties() {
     return props;
 }
 
+xpu::device_prop runtime::device_properties(driver_t backend, int device) {
+    device_prop props;
+    DRIVER_CALL_I(backend, get_properties(&props, device));
+    return props;
+}
+
 bool runtime::has_driver(driver_t d) const {
     return get_driver(d) != nullptr;
 }
 
-xpu::device_prop runtime::pointer_get_device(const void *ptr) {
+void runtime::get_ptr_prop(const void *ptr, ptr_prop *prop) {
+
+    prop->m_ptr = const_cast<void *>(ptr);
 
     for (driver_t driver_type : {cuda, hip, sycl, cpu}) {
         auto *driver = get_driver(driver_type);
@@ -221,17 +238,22 @@ xpu::device_prop runtime::pointer_get_device(const void *ptr) {
             continue;
         }
         int platform_device = 0;
-        throw_on_driver_error(driver_type, driver->pointer_get_device(ptr, &platform_device));
+        detail::mem_type mem_type;
+        throw_on_driver_error(driver_type, driver->get_ptr_prop(ptr, &platform_device, &mem_type));
 
         if (platform_device == -1) {
             continue;
         }
 
-        return m_devices_by_driver.at(driver_type).at(platform_device);
+        prop->m_type = static_cast<xpu::mem_type>(mem_type);
+        prop->m_backend = driver_type;
+        prop->m_device = platform_device;
+        return;
     }
 
     // UNREACHABLE
-    // cpu driver is always available
+    // cpu driver will always return a valid device,
+    // that's why it needs to be the last driver to be checked.
     RAISE_INTERNAL_ERROR();
 }
 

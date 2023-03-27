@@ -77,10 +77,26 @@ error sycl_driver::get_properties(device_prop *props, int device) {
     return 0;
 }
 
-error sycl_driver::pointer_get_device(const void *ptr, int *device) {
+error sycl_driver::get_ptr_prop(const void *ptr, int *device, mem_type *type) {
     try {
         sycl::usm::alloc alloc = sycl::get_pointer_type(ptr, m_default_queue.get_context());
-        if (alloc == sycl::usm::alloc::host) {
+
+        switch (alloc) {
+        case sycl::usm::alloc::device:
+            *type = mem_type::device;
+            break;
+        case sycl::usm::alloc::host:
+            *type = mem_type::host;
+            break;
+        case sycl::usm::alloc::shared:
+            *type = mem_type::shared;
+            break;
+        case sycl::usm::alloc::unknown:
+            *type = mem_type::unknown;
+            break;
+        }
+
+        if (*type == mem_type::unknown) {
             *device = -1;
             return 0;
         }
@@ -89,7 +105,7 @@ error sycl_driver::pointer_get_device(const void *ptr, int *device) {
         // XPU_LOG("sycl_driver::pointer_get_device: %s", dev.get_info<sycl::info::device::name>().c_str());
         *device = get_device_id(dev);
     } catch (sycl::exception &e) {
-        // XPU_LOG("sycl_driver::pointer_get_device: %s", e.what());
+        *type = mem_type::unknown;
         *device = -1;
     }
     return 0;

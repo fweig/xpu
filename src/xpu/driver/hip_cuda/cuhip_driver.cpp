@@ -99,37 +99,66 @@ public:
         return 0;
     }
 
-    error pointer_get_device(const void *ptr, int *device) override {
+    error get_ptr_prop(const void *ptr, int *device, mem_type *type) override {
         cuhip_pointer_attributes ptrattrs;
         error err = CUHIP(PointerGetAttributes)(&ptrattrs, ptr);
 
         #if XPU_IS_CUDA
             if (err != 0) {
+                *type = mem_type::unknown;
+                *device = -1;
                 return err;
             }
 
-            if (ptrattrs.type == cudaMemoryTypeUnregistered || ptrattrs.type == cudaMemoryTypeHost) {
-                *device = -1;
-            } else {
+            switch (ptrattrs.type) {
+            case cudaMemoryTypeHost:
+                *type = mem_type::host;
                 *device = ptrattrs.device;
+                break;
+            case cudaMemoryTypeDevice:
+                *type = mem_type::device;
+                *device = ptrattrs.device;
+                break;
+            case cudaMemoryTypeManaged:
+                *type = mem_type::shared;
+                *device = ptrattrs.device;
+                break;
+            case cudaMemoryTypeUnregistered:
+            default:
+                *type = mem_type::unknown;
+                *device = -1;
+                break;
             }
 
         #else // HIP
+
             if (err == hipErrorInvalidValue) {
+                *type = mem_type::unknown;
                 *device = -1;
                 return 0;
             }
 
             if (err != 0) {
+                *type = mem_type::unknown;
+                *device = -1;
                 return err;
             }
 
-            if (ptrattrs.memoryType == hipMemoryTypeHost) {
-                *device = -1;
-                return 0;
+            switch (ptrattrs.memoryType) {
+            case hipMemoryTypeHost:
+                *type = mem_type::host;
+                *device = ptrattrs.device;
+                break;
+            case hipMemoryTypeArray:
+            case hipMemoryTypeDevice:
+                *type = mem_type::device;
+                *device = ptrattrs.device;
+                break;
+            case hipMemoryTypeManaged:
+                *type = mem_type::shared;
+                *device = ptrattrs.device;
+                break;
             }
-
-            *device = ptrattrs.device;
 
         #endif
 

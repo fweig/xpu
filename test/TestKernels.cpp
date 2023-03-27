@@ -22,12 +22,15 @@ int get_driver_type::operator()(xpu::driver_t *driver) {
     return 0;
 }
 
-XPU_D void do_vector_add(xpu::tpos &pos, const float *x, const float *y, float *z, int N) {
-    int iThread = pos.block_idx_x() * pos.block_dim_x() + pos.thread_idx_x();
-    if (iThread >= N) {
+XPU_D void do_vector_add(xpu::tpos &pos, const float *x, const float *y, float *z, size_t N) {
+    xpu::view<const float> xv{x, N};
+    xpu::view<const float> yv{y, N};
+    xpu::view<float> zv{z, N};
+    size_t iThread = pos.block_idx_x() * pos.block_dim_x() + pos.thread_idx_x();
+    if (iThread >= xv.size()) {
         return;
     }
-    z[iThread] = x[iThread] + y[iThread];
+    zv[iThread] = xv[iThread] + yv[iThread];
 }
 
 // Ensure that kernels without arguments can compile.
@@ -45,17 +48,17 @@ XPU_D void buffer_access::operator()(context &ctx, xpu::buffer<int> buf) {
 
 XPU_EXPORT(vector_add);
 XPU_D void vector_add::operator()(context &ctx, const float *x, const float *y, float *z, int N) {
-    do_vector_add(ctx.pos(), x, y, z, N);
+    do_vector_add(ctx.pos(), x, y, z, static_cast<size_t>(N));
 }
 
 XPU_EXPORT(vector_add_timing0);
 XPU_D void vector_add_timing0::operator()(context &ctx, const float *x, const float *y, float *z, int N) {
-    do_vector_add(ctx.pos(), x, y, z, N);
+    do_vector_add(ctx.pos(), x, y, z, static_cast<size_t>(N));
 }
 
 XPU_EXPORT(vector_add_timing1);
 XPU_D void vector_add_timing1::operator()(context &ctx, const float *x, const float *y, float *z, int N) {
-    do_vector_add(ctx.pos(), x, y, z, N);
+    do_vector_add(ctx.pos(), x, y, z, static_cast<size_t>(N));
 }
 
 XPU_EXPORT(sort_float);

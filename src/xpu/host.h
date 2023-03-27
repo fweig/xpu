@@ -17,6 +17,9 @@
 
 namespace xpu {
 
+// Forward declarations
+template<typename T> class buffer_prop;
+
 enum direction {
     host_to_device,
     device_to_host,
@@ -161,6 +164,75 @@ void call(Args&&... args);
 template<typename C>
 void set_constant(const typename C::data_t &symbol);
 
+/**
+ * @brief Create a view from a buffer.
+ * Create a view from a buffer to access the underlying data on the host.
+ * The view is a lightweight wrapper around the buffer and does not own the data.
+ * If the underlying buffer can't be accessed on the host, an runtime_error is thrown.
+ * Note that no synchronization with the device is performed, so the data may be out of date.
+ */
+template<typename T>
+class h_view {
+
+public:
+    /**
+     * @brief Create an empty view.
+     */
+    h_view() = default;
+
+    /**
+     * @brief Create a view from a buffer.
+     */
+    explicit h_view(buffer<T> &);
+
+    /**
+     * @brief Create a view from buffer properties.
+     */
+    explicit h_view(const buffer_prop<T> &);
+
+    /**
+     * @returns Pointer to the underlying data.
+     */
+    T *data() const { return m_data; }
+
+    /**
+     * @returns Size of the view in number of elements.
+     */
+    size_t size() const { return m_size; }
+
+    /**
+     * Check if the view is empty.
+     */
+    bool empty() const { return m_size == 0; }
+
+    /**
+     * @returns Reference to the element at index i.
+     * @note This call is always bounds checked. Use instead unsafe_at() if no bounds check are needed.
+     * Equivalent to calling at(i).
+     */
+          T &operator[](size_t i);
+    const T &operator[](size_t i) const;
+
+    /**
+     * @returns Reference to the element at index i.
+     * @note This call is always bounds checked. Use instead unsafe_at() if no bounds check are needed.
+     * Equivalent to []-operator.
+     */
+          T &at(size_t i);
+    const T &at(size_t i) const;
+
+    /**
+     * @returns Reference to the element at index i.
+     * @note No bounds checking is performed. Usually you want to use at() instead.
+     */
+          T &unsafe_at(size_t i) { return m_data[i]; }
+    const T &unsafe_at(size_t i) const { return m_data[i]; }
+
+private:
+    T *m_data = nullptr;
+    size_t m_size = 0;
+};
+
 template<typename T>
 class buffer_prop {
 
@@ -170,8 +242,10 @@ public:
     size_t size() const { return m_size_bytes / sizeof(T); }
     size_t size_bytes() const { return m_size_bytes; }
     buffer_type type() const { return m_type; }
-    T *host_ptr() const { return m_host; }
-    T *device_ptr() const { return m_device; }
+    T *h_ptr() const { return m_host; }
+    T *d_ptr() const { return m_device; }
+
+    h_view<T> view() const { return h_view<T>{*this}; }
 
 private:
     size_t m_size_bytes;

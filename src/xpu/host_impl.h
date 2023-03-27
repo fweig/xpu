@@ -104,6 +104,51 @@ xpu::buffer_prop<T>::buffer_prop(const buffer<T> &buf) {
 }
 
 template<typename T>
+xpu::h_view<T>::h_view(buffer<T> &buf) : h_view(buffer_prop{buf}) {}
+
+template<typename T>
+xpu::h_view<T>::h_view(const buffer_prop<T> &buf) {
+    if (buf.h_ptr() == nullptr) {
+        throw std::runtime_error("h_view: buffer not accessible on host");
+    }
+
+    m_size = buf.size();
+    m_data = buf.h_ptr();
+}
+
+template<typename T>
+T &xpu::h_view<T>::operator[](size_t i) {
+    if (i >= m_size) {
+        throw std::out_of_range("h_view::operator[]: index out of range: i = " + std::to_string(i) + ", size = " + std::to_string(m_size));
+    }
+    return m_data[i];
+}
+
+template<typename T>
+const T &xpu::h_view<T>::operator[](size_t i) const {
+    if (i >= m_size) {
+        throw std::out_of_range("h_view::operator[]: index out of range: i = " + std::to_string(i) + ", size = " + std::to_string(m_size));
+    }
+    return m_data[i];
+}
+
+template<typename T>
+T &xpu::h_view<T>::at(size_t i) {
+    if (i >= m_size) {
+        throw std::out_of_range("h_view::at: index out of range: i = " + std::to_string(i) + ", size = " + std::to_string(m_size));
+    }
+    return m_data[i];
+}
+
+template<typename T>
+const T &xpu::h_view<T>::at(size_t i) const {
+    if (i >= m_size) {
+        throw std::out_of_range("h_view::at: index out of range: i = " + std::to_string(i) + ", size = " + std::to_string(m_size));
+    }
+    return m_data[i];
+}
+
+template<typename T>
 xpu::hd_buffer<T>::hd_buffer(size_t N) {
     m_size = N;
     m_h = static_cast<T *>(std::malloc(sizeof(T) * N));

@@ -24,23 +24,23 @@ TEST(XPUTest, CanGetDeviceFromPointer) {
     {
         xpu::buffer<int> hdbuf{1, xpu::io_buffer};
         xpu::buffer_prop<int> bprop{hdbuf};
-        prop = xpu::pointer_get_device(bprop.host_ptr());
+        prop = xpu::pointer_get_device(bprop.h_ptr());
         ASSERT_EQ(prop.driver, xpu::cpu);
-        prop = xpu::pointer_get_device(bprop.device_ptr());
+        prop = xpu::pointer_get_device(bprop.d_ptr());
         ASSERT_EQ(prop.name, active_device.name);
     }
 
     {
         xpu::buffer<int> dbuf{1, xpu::device_buffer};
         xpu::buffer_prop<int> bprop{dbuf};
-        prop = xpu::pointer_get_device(bprop.device_ptr());
+        prop = xpu::pointer_get_device(bprop.d_ptr());
         ASSERT_EQ(prop.name, active_device.name);
     }
 
     {
         xpu::buffer<int> hbuf{1, xpu::host_buffer};
         xpu::buffer_prop<int> bprop{hbuf};
-        prop = xpu::pointer_get_device(bprop.host_ptr());
+        prop = xpu::pointer_get_device(bprop.h_ptr());
         ASSERT_EQ(prop.driver, xpu::cpu);
     }
 }
@@ -63,7 +63,10 @@ TEST(XPUTest, IoBufferIsAccessibleFromDevice) {
 
     xpu::copy(buf, xpu::device_to_host);
     xpu::buffer_prop<int> bprop{buf};
-    ASSERT_EQ(bprop.host_ptr()[0], 42);
+    ASSERT_EQ(bprop.h_ptr()[0], 42);
+
+    auto bview = xpu::h_view{buf};
+    ASSERT_EQ(bview[0], 42);
 }
 
 TEST(XPUTest, IoBufferCanCopyToHost) {

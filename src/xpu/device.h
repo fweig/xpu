@@ -132,6 +132,58 @@ public:
 
 };
 
+/**
+ * Create a view of a buffer.
+ * The view is a pointer to the buffer's data and a size.
+ * This class should be used to access a buffer in device code only.
+ * To access buffer-data on the host, use 'h_view' instead.
+ */
+template<typename T>
+class view {
+
+public:
+    /**
+     * Create an empty view.
+     */
+    view() = default;
+
+    /**
+     * Create a view from a pointer and a size.
+    */
+    XPU_D view(T *data, size_t size);
+
+    /**
+     * Create a view from a buffer and a size.
+     */
+    XPU_D view(buffer<T> &buffer, size_t size);
+
+    /**
+     * Return a pointer to the view's data.
+     */
+    XPU_D T *data() const { return m_data; }
+
+    /**
+     * Return the view's size.
+     */
+    XPU_D size_t size() const { return m_size; }
+
+    /**
+     * Check if the view is empty.
+     */
+    XPU_D bool empty() const { return m_size == 0; }
+
+    XPU_D       T &operator[](size_t idx);
+    XPU_D const T &operator[](size_t idx) const;
+
+    XPU_D       T &at(size_t idx);
+    XPU_D const T &at(size_t idx) const;
+
+private:
+    T *m_data = nullptr;
+    size_t m_size = 0;
+
+};
+
 XPU_D constexpr float pi();
 XPU_D constexpr float pi_2();
 XPU_D constexpr float pi_4();
@@ -402,7 +454,6 @@ public:
 } // namespace xpu
 
 #include "detail/dynamic_loader.h"
-#include "detail/constants.h"
 
 #if XPU_IS_HIP_CUDA
 #include "driver/hip_cuda/device.h"
@@ -413,5 +464,8 @@ public:
 #else
 #error "Unknown XPU driver."
 #endif
+
+#include "detail/constants.h"
+#include "detail/view_impl.h"
 
 #endif

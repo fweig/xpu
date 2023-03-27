@@ -8,6 +8,11 @@
 
 #include <sycl/sycl.hpp>
 
+#define XPU_DETAIL_ASSERT(x) assert(x)
+
+// Pull printf into global namespace, to be consistent with other backends.
+using sycl::ext::oneapi::experimental::printf;
+
 template<typename T>
 struct sycl::is_device_copyable<xpu::buffer<T>> : std::true_type {};
 

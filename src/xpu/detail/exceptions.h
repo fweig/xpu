@@ -6,7 +6,7 @@
 #if __cplusplus >= 202002L // C++20
 #define XPU_UNLIKELY_IF(x) if (x) [[unlikely]]
 #elif __gcc__ || __clang__
-#define XPU_UNLIKELY_IF(x) if (x) __attribute__((__unlikely__))
+#define XPU_UNLIKELY_IF(x) if (x)
 #else
 #define XPU_UNLIKELY_IF(x) if (x)
 #endif

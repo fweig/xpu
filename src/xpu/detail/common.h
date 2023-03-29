@@ -9,8 +9,6 @@ struct action {
     using tag = T;
 };
 
-struct kernel_dispatcher {};
-
 using error = int;
 
 } // namespace xpu::detail

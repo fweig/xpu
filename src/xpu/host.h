@@ -27,9 +27,6 @@ enum direction {
     device_to_host,
 };
 
-template<class Kernel>
-struct is_kernel : std::is_base_of<detail::kernel_dispatcher, Kernel> {};
-
 class exception : public std::exception {
 
 public:
@@ -41,7 +38,6 @@ private:
     std::string message;
 
 };
-
 
 /**
  * @brief Settings used to initialize xpu.

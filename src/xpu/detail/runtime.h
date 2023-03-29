@@ -3,12 +3,14 @@
 
 #include "../common.h"
 #include "../driver/cpu/cpu_driver.h"
+#include "common.h"
 #include "dl_utils.h"
 #include "dynamic_loader.h"
 #include "log.h"
 
 #include <array>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -63,13 +65,14 @@ public:
     void memcpy(void *, const void *, size_t);
     void memset(void *, int, size_t);
 
-    std::vector<device_prop> get_devices() { return m_devices; }
-    device_prop device_properties();
-    device_prop device_properties(driver_t, int);
+    std::vector<detail::device> get_devices() { return m_devices; }
+    detail::device active_device() const { return m_active_device; }
+    detail::device get_device(int id) const { return m_devices.at(id); }
+    detail::device get_device(driver_t driver, int id) const;
+    detail::device get_device(std::string_view name) const;
+    detail::device_prop device_properties(int id);
 
-    // FIXME this clashes / is ambigious with private function get_active_driver
-    driver_t active_driver() const { return m_active_driver; }
-
+    int device_get_id(driver_t backend, int device_nr);
     void get_ptr_prop(const void *, ptr_prop *);
 
     template<typename Kernel, typename... Args>
@@ -78,7 +81,7 @@ public:
 
         float ms;
         error err = get_image<Kernel>()->template run_kernel<Kernel>((m_measure_time ? &ms : nullptr), get_active_driver(), g, std::forward<Args>(args)...);
-        throw_on_driver_error(active_driver(), err);
+        throw_on_driver_error(m_active_device.backend, err);
 
         if (m_measure_time) {
             size_t id = linear_type_id<Kernel>::get();
@@ -95,14 +98,14 @@ public:
     void call(Args&&... args) {
         static_assert(std::is_same_v<typename Func::tag, function_tag>);
         error err = get_image<Func>()->template call<Func>(std::forward<Args>(args)...);
-        throw_on_driver_error(active_driver(), err);
+        throw_on_driver_error(m_active_device.backend, err);
     }
 
     template<typename C>
     void set_constant(const typename C::data_t &symbol) {
         static_assert(std::is_same_v<typename C::tag, constant_tag>);
         error err = get_image<C>()->template set<C>(symbol);
-        throw_on_driver_error(active_driver(), err);
+        throw_on_driver_error(m_active_device.backend, err);
     }
 
     template<typename Kernel>
@@ -123,24 +126,22 @@ private:
     std::unique_ptr<lib_obj<driver_interface>> m_hip_driver;
     std::unique_ptr<lib_obj<driver_interface>> m_sycl_driver;
 
-    driver_t m_active_driver = cpu;
-
     image_pool m_images;
 
     bool m_measure_time = false;
     std::vector<std::vector<float>> m_profiling;
 
-    std::vector<device_prop> m_devices;
-    std::array<std::vector<device_prop>, num_drivers> m_devices_by_driver;
+    detail::device m_active_device;
+    std::vector<detail::device> m_devices;
 
     static bool getenv_bool(std::string name, bool fallback);
     static std::string getenv_str(std::string name, std::string_view fallback);
 
     template<typename A>
     image<typename A::image> *get_image() {
-        auto *img = m_images.find< image<typename A::image> >(active_driver());
+        auto *img = m_images.find< image<typename A::image> >(m_active_device.backend);
         if (img == nullptr) {
-            img = load_image<typename A::image>(active_driver());
+            img = load_image<typename A::image>(m_active_device.backend);
         }
         if (img == nullptr) {
             raise_error(format("Failed to load image for kernel '%s'", type_name<A>()));
@@ -164,6 +165,8 @@ private:
         m_images.add(i, d);
         return i;
     }
+
+    std::optional<detail::device> try_parse_device(std::string_view) const;
 
     bool has_driver(driver_t) const;
     driver_interface *get_driver(driver_t) const;

@@ -4,7 +4,6 @@
 #include "defines.h"
 #include "common.h"
 #include "detail/common.h"
-#include "detail/mem_type.h"
 
 #include <cstddef>
 #include <cstdio>
@@ -14,6 +13,7 @@
 #include <string>
 #include <string_view>
 #include <type_traits>
+#include <variant>
 #include <vector>
 
 namespace xpu {
@@ -66,7 +66,7 @@ struct settings {
      * By default messages are written to stderr. Has no effect if 'verbose' is false.
      */
     std::function<void(std::string_view)> logging_sink = [](std::string_view msg) {
-        // Use c functions for output to avoid including iostream...
+        // Use c functions for output to avoid including iostream in host.h ...
         std::fwrite(msg.data(), 1, msg.size(), stderr);
         std::fputc('\n', stderr);
     };
@@ -144,10 +144,109 @@ inline void free(void *);
 inline void memcpy(void *, const void *, size_t);
 inline void memset(void *, int, size_t);
 
-inline std::vector<device_prop> get_devices();
-inline device_prop device_properties();
-inline device_prop device_properties(driver_t backend, int device);
-inline xpu::driver_t active_driver();
+/**
+ * Represents a device found on the system.
+ */
+class device {
+
+public:
+    /**
+     * @brief Get all available devices.
+     */
+    static std::vector<device> all();
+
+    /**
+     * @brief Get the active device.
+     */
+    static device active();
+
+    /**
+     * @brief Construct CPU device.
+     */
+    device();
+
+    /**
+     * @brief Lookup device by string.
+     * @see xpu::settings::device for possible values.
+     */
+    explicit device(std::string_view xpuid);
+
+    /**
+     * @brief Construct device from device id.
+     * @param id Device id.
+     * The device id is a unique number assigned to each device.
+     * It is also the index of the device in the vector returned by device::all().
+     */
+    explicit device(int id);
+
+    /**
+     * @brief Construct device from driver and device number.
+     */
+    explicit device(driver_t driver, int device_nr);
+
+    device(const device &) = default;
+    device(device &&) = default;
+    device &operator=(const device &) = default;
+    device &operator=(device &&) = default;
+
+    /**
+     * @brief Get the device id.
+     */
+    int id() const { return m_impl.id; }
+
+    /**
+     * @brief Get the backend associated with the device.
+     */
+    driver_t backend() const { return m_impl.backend; }
+
+    /**
+     * @brief Get the device number within the backend.
+     */
+    int device_nr() const { return m_impl.device_nr; }
+
+private:
+    explicit device(detail::device impl) : m_impl(std::move(impl)) {}
+    detail::device m_impl;
+
+};
+
+/**
+ * Device properties.
+ */
+class device_prop {
+
+public:
+    device_prop() = delete;
+
+    /**
+     * @brief Get the properties of the given device.
+     */
+    device_prop(device);
+
+    /**
+     * @brief Get the name of the device.
+     */
+    std::string_view name() const { return m_prop.name; }
+
+    /**
+     * @brief Get the string used to identify the device.
+     * @see xpu::settings::device for possible values.
+     */
+    std::string_view xpuid() const { return m_prop.xpuid; }
+
+    /**
+     * @brief Get the backend associated with the device.
+     */
+    driver_t backend() const { return m_prop.driver; }
+
+    /**
+     * @brief Returns the architecture of the device, if applicable.
+     */
+    std::string_view arch() const { return m_prop.arch; }
+
+private:
+    detail::device_prop m_prop;
+};
 
 template<typename Kernel>
 const char *get_name();
@@ -241,26 +340,26 @@ enum class mem_type {
      * Memory allocated on the host by the GPU driver.
      * Can be accessed by the device. (also known as pinned memory)
      */
-    host = detail::host,
+    host = detail::mem_host,
 
     /**
      * Memory allocated on the device by the GPU driver.
      */
-    device = detail::device,
+    device = detail::mem_device,
 
     /**
      * Memory allocated on the host and device by the GPU driver.
      * GPU driver will synchronise data to the device when needed.
      * (also known as unified or managed memory)
      */
-    shared = detail::shared,
+    shared = detail::mem_shared,
 
     /**
      * Uknown memory type.
      * Usually memory allocated on the host by libc.
      * Can't be accessed on the device.
      */
-    unknown = detail::unknown,
+    unknown = detail::mem_unknown,
 };
 
 /**

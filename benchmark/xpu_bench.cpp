@@ -221,7 +221,7 @@ int main() {
 
     runner.add(new sort_bench<sort<1>>{});
     // Parameters don't have an effect on cpu merge, so running one sort benchmark is enough
-    if (xpu::active_driver() != xpu::cpu) {
+    if (xpu::device::active().backend() != xpu::cpu) {
         runner.add(new sort_bench<sort<2>>{});
         runner.add(new sort_bench<sort<4>>{});
         runner.add(new sort_bench<sort<8>>{});
@@ -234,7 +234,7 @@ int main() {
 
     runner.add(new merge_bench<merge<4>>{});
     // Parameters don't have an effect on cpu sort, so running one sort benchmark is enough
-    if (xpu::active_driver() != xpu::cpu) {
+    if (xpu::device::active().backend() != xpu::cpu) {
         runner.add(new merge_bench<merge<8>>{});
         runner.add(new merge_bench<merge<12>>{});
         runner.add(new merge_bench<merge<16>>{});

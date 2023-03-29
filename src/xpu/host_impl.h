@@ -54,20 +54,41 @@ void xpu::memset(void *dst, int ch, size_t bytes) {
     return detail::runtime::instance().memset(dst, ch, bytes);
 }
 
-std::vector<xpu::device_prop> xpu::get_devices() {
-    return detail::runtime::instance().get_devices();
+inline std::vector<xpu::device> xpu::device::all() {
+    auto dev_impl = detail::runtime::instance().get_devices();
+
+    std::vector<xpu::device> devices;
+    devices.reserve(dev_impl.size());
+
+    for (auto &d : dev_impl) {
+        devices.push_back(device{d});
+    }
+
+    return devices;
 }
 
-xpu::device_prop xpu::device_properties() {
-    return detail::runtime::instance().device_properties();
+inline xpu::device xpu::device::active() {
+    return device{detail::runtime::instance().active_device()};
 }
 
-xpu::device_prop xpu::device_properties(driver_t backend, int device) {
-    return detail::runtime::instance().device_properties(backend, device);
+inline xpu::device::device() {
+    m_impl = detail::runtime::instance().get_devices()[0];
 }
 
-xpu::driver_t xpu::active_driver() {
-    return detail::runtime::instance().active_driver();
+inline xpu::device::device(std::string_view xpuid) {
+    m_impl = detail::runtime::instance().get_device(xpuid);
+}
+
+inline xpu::device::device(driver_t backend, int device) {
+    m_impl = detail::runtime::instance().get_device(backend, device);
+}
+
+inline xpu::device::device(int id) {
+    m_impl = detail::runtime::instance().get_device(id);
+}
+
+inline xpu::device_prop::device_prop(xpu::device dev) {
+    m_prop = detail::runtime::instance().device_properties(dev.id());
 }
 
 template<typename Kernel>
@@ -150,7 +171,8 @@ xpu::hd_buffer<T>::hd_buffer(size_t N) {
     m_size = N;
     m_h = static_cast<T *>(std::malloc(sizeof(T) * N));
 
-    if (active_driver() == cpu) {
+    xpu::device active_dev = xpu::device::active();
+    if (active_dev.backend() == cpu) {
         m_d = m_h;
     } else {
         m_d = malloc_device<T>(N);

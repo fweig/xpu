@@ -17,14 +17,6 @@ enum driver_t {
 
 constexpr inline size_t num_drivers = 4;
 
-struct device_prop {
-    std::string name;
-    std::string xpuid;
-    driver_t driver;
-    int major;
-    int minor;
-};
-
 struct dim {
     int x = -1;
     int y = -1;

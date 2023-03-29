@@ -2,7 +2,6 @@
 #define XPU_DETAIL_DRIVER_INTERFACE_H
 
 #include "common.h"
-#include "mem_type.h"
 #include "../common.h"
 
 #include <cstddef>

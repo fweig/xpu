@@ -30,17 +30,19 @@ void *buffer_registry::create(size_t size, buffer_type type, void *host_ptr) {
         }
         host_ptr = ptr;
         break;
-    case io_buffer:
-        if (host_ptr == nullptr) {
-            host_ptr = xpu::malloc_host(size);
-            owns_host_ptr = true;
+    case io_buffer: {
+            if (host_ptr == nullptr) {
+                host_ptr = xpu::malloc_host(size);
+                owns_host_ptr = true;
+            }
+            xpu::device active_dev = xpu::device::active();
+            if (active_dev.backend() == xpu::cpu) {
+                ptr = host_ptr;
+            } else {
+                ptr = xpu::malloc_device(size);
+            }
+            break;
         }
-        if (xpu::active_driver() == xpu::cpu) {
-            ptr = host_ptr;
-        } else {
-            ptr = xpu::malloc_device(size);
-        }
-        break;
     }
 
     buffer_data data {
@@ -89,14 +91,16 @@ void buffer_registry::remove(buffer_map::iterator it) {
     case shared_buffer:
         xpu::free(entry.data.ptr);
         break;
-    case io_buffer:
-        if (xpu::active_driver() != xpu::cpu) {
-            xpu::free(entry.data.ptr);
+    case io_buffer: {
+            xpu::device active_dev = xpu::device::active();
+            if (active_dev.backend() != xpu::cpu) {
+                xpu::free(entry.data.ptr);
+            }
+            if (entry.data.owns_host_ptr) {
+                xpu::free(entry.data.host_ptr);
+            }
+            break;
         }
-        if (entry.data.owns_host_ptr) {
-            xpu::free(entry.data.host_ptr);
-        }
-        break;
     }
     m_entries.erase(it);
 }

@@ -12,11 +12,21 @@ int main() {
 
     xpu::initialize();
 
-    xpu::hd_buffer<float> x{NElems};
-    std::fill_n(x.h(), NElems, 8);
-    xpu::hd_buffer<float> y{NElems};
-    std::fill_n(y.h(), NElems, 8);
-    xpu::hd_buffer<float> z{NElems};
+    xpu::device_prop prop{xpu::device::active()};
+    std::cout << "Running VectorAdd on Device '" << prop.name() << "' " <<  std::endl;
+
+    constexpr int NElems = 1000;
+    xpu::buffer<float> x{NElems, xpu::io_buffer};
+    xpu::buffer<float> y{NElems, xpu::io_buffer};
+    xpu::buffer<float> z{NElems, xpu::io_buffer};
+
+    xpu::h_view xh{x};
+    xpu::h_view yh{y};
+
+    for (int i = 0; i < NElems; i++) {
+        xh[i] = i;
+        yh[i] = i;
+    }
 
     xpu::copy(x, xpu::host_to_device);
     xpu::copy(y, xpu::host_to_device);

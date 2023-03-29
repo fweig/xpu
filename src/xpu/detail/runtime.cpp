@@ -5,19 +5,19 @@
 #include <sstream>
 
 #define DRIVER_CALL_I(type, func) throw_on_driver_error((type), get_driver((type))->func)
-#define DRIVER_CALL(func) DRIVER_CALL_I(active_driver(), func)
+#define DRIVER_CALL(func) DRIVER_CALL_I(m_active_device.backend, func)
 #define CPU_DRIVER_CALL(func) DRIVER_CALL_I(cpu, func)
 #define RAISE_INTERNAL_ERROR() raise_error(format("%s:%d: Internal xpu error. This should never happen! Please file a bug.", __FILE__, __LINE__))
 
 using namespace xpu::detail;
 
-bool runtime::getenv_bool(std::string name, bool fallback) {
-    const char *env = getenv(name.c_str());
+bool runtime::getenv_bool(std::string driver_name, bool fallback) {
+    const char *env = getenv(driver_name.c_str());
     return (env == nullptr ? fallback : (strcmp(env, "0") != 0));
 }
 
-std::string runtime::getenv_str(std::string name, std::string_view fallback) {
-    const char *env = getenv(name.c_str());
+std::string runtime::getenv_str(std::string driver_name, std::string_view fallback) {
+    const char *env = getenv(driver_name.c_str());
     return (env == nullptr ? std::string{fallback} : std::string{env});
 }
 
@@ -34,46 +34,6 @@ void runtime::initialize(const settings &settings) {
     }
 
     m_measure_time = getenv_bool("XPU_PROFILE", settings.profile);
-
-    int target_device = -1;
-    driver_t target_driver = cpu;
-    if (auto device_env = getenv_str("XPU_DEVICE", settings.device); true) {
-        std::vector<std::pair<std::string, xpu::driver_t>> str_to_driver {
-            {"cpu", cpu},
-            {"cuda", cuda},
-            {"hip", hip},
-            {"sycl", sycl},
-        };
-
-        XPU_LOG("Parsing XPU_DEVICE environment variable: '%s'", device_env.c_str());
-        bool valid_driver = false;
-        for (auto &driver_str : str_to_driver) {
-            const std::string &name = driver_str.first;
-            if (strncmp(device_env.c_str(), name.c_str(), name.size()) == 0) {
-                valid_driver = true;
-                target_driver = driver_str.second;
-
-                if (device_env == name) {
-                    target_device = 0;
-                } else {
-                    std::string device_id = device_env.substr(name.size());
-                    try {
-                        target_device = std::stoi(device_id);
-                    } catch (std::exception &e) {
-                        raise_error(format("Invalid device ID '%s' in environment variable XPU_DEVICE='%s'", device_id.c_str(), device_env.c_str()));
-                    }
-                }
-
-                break;
-            }
-        }
-
-        if (not valid_driver) {
-            raise_error(format("Requested unknown driver with environment variable XPU_DEVICE='%s'", device_env.c_str()));
-        }
-    }
-
-    raise_error_if(target_device < 0, "Invalid device ID. This should never happen! Please file a bug.");
 
     XPU_LOG("Loading cpu driver.");
     m_cpu_driver.reset(new cpu_driver{});
@@ -109,7 +69,6 @@ void runtime::initialize(const settings &settings) {
 
     XPU_LOG("Found devices:");
     for (driver_t driver : {cpu, cuda, hip, sycl}) {
-
         if (not has_driver(driver)) {
             XPU_LOG("  No %s devices found.", driver_str(driver));
             continue;
@@ -118,31 +77,31 @@ void runtime::initialize(const settings &settings) {
         DRIVER_CALL_I(driver, num_devices(&ndevices));
         XPU_LOG(" %s (%d)", driver_str(driver), ndevices);
         for (int i = 0; i < ndevices; i++) {
-            device_prop props;
-            DRIVER_CALL_I(driver, get_properties(&props, i));
-            props.xpuid = detail::format("%s%d", driver_str(props.driver), i);
-            std::transform(props.xpuid.begin(), props.xpuid.end(), props.xpuid.begin(), ::tolower);
-            if (props.driver != cpu) {
-                XPU_LOG("  %lu: %s (arch = %d%d)", m_devices.size(), props.name.c_str(), props.major, props.minor);
-            } else {
-                XPU_LOG("  %lu: %s", m_devices.size(), props.name.c_str());
-            }
-            m_devices.emplace_back(props);
-            m_devices_by_driver.at(props.driver).emplace_back(props);
+            device dev;
+            dev.backend = driver;
+            dev.device_nr = i;
+            dev.id = m_devices.size();
+            m_devices.emplace_back(dev);
         }
     }
 
-    if (not has_driver(target_driver)) {
-        raise_error(format("xpu: Requested %s device, but failed to load that driver.", driver_str(target_driver)));
+    std::optional<detail::device> target_device;
+    if (auto device_env = getenv_str("XPU_DEVICE", settings.device); true) {
+        target_device = try_parse_device(device_env);
+
+        if (target_device == std::nullopt) {
+            raise_error(format("Requested unknown driver with environment variable XPU_DEVICE='%s'", device_env.c_str()));
+        }
     }
-    m_active_driver = target_driver;
-    device_prop props;
-    DRIVER_CALL(get_properties(&props, target_device));
-    DRIVER_CALL(set_device(target_device));
+
+    m_active_device = *target_device;
+    xpu::detail::device_prop props;
+    DRIVER_CALL(get_properties(&props, m_active_device.device_nr));
+    DRIVER_CALL(set_device(m_active_device.device_nr));
     DRIVER_CALL(device_synchronize());
 
-    if (m_active_driver != cpu) {
-        XPU_LOG("Selected %s(arch = %d%d) as active device. (id = %d)", props.name.c_str(), props.major, props.minor, target_device);
+    if (m_active_device.backend != cpu) {
+        XPU_LOG("Selected %s(arch = %s) as active device. (id = %d)", props.name.c_str(), props.arch.c_str(), m_active_device.id);
     } else {
         XPU_LOG("Selected %s as active device.", props.name.c_str());
     }
@@ -151,7 +110,7 @@ void runtime::initialize(const settings &settings) {
 void *runtime::malloc_host(size_t bytes) {
     void *ptr = nullptr;
     DRIVER_CALL(malloc_host(&ptr, bytes));
-    XPU_LOG("Allocating %lu bytes @ address %p on host memory with driver %s.", bytes, ptr, driver_str(m_active_driver));
+    XPU_LOG("Allocating %lu bytes @ address %p on host memory with driver %s.", bytes, ptr, driver_str(m_active_device.backend));
     return ptr;
 }
 
@@ -159,7 +118,7 @@ void *runtime::malloc_device(size_t bytes) {
     if (logger::instance().active()) {
         size_t free, total;
         DRIVER_CALL(meminfo(&free, &total));
-        device_prop props = device_properties();
+        device_prop props = device_properties(m_active_device.id);
         XPU_LOG("Allocating %lu bytes on device %s. [%lu / %lu available]", bytes, props.name.c_str(), free, total);
     }
     void *ptr = nullptr;
@@ -171,7 +130,7 @@ void *runtime::malloc_shared(size_t bytes) {
     if (logger::instance().active()) {
         size_t free, total;
         DRIVER_CALL(meminfo(&free, &total));
-        device_prop props = device_properties();
+        device_prop props = device_properties(m_active_device.id);
         XPU_LOG("Allocating %lu bytes of managed memory on device %s. [%lu / %lu available]", bytes, props.name.c_str(), free, total);
     }
     void *ptr = nullptr;
@@ -209,19 +168,56 @@ void runtime::memset(void *dst, int ch, size_t bytes) {
     DRIVER_CALL(memset(dst, ch, bytes));
 }
 
-xpu::device_prop runtime::device_properties() {
-    int device;
-    DRIVER_CALL(get_device(&device));
-    raise_error_if(device < 0, "Invalid device.");
-    device_prop props;
-    DRIVER_CALL(get_properties(&props, device));
+xpu::detail::device_prop runtime::device_properties(int id) {
+    detail::device_prop props;
+    detail::device d = m_devices.at(id);
+    DRIVER_CALL_I(d.backend, get_properties(&props, d.device_nr));
     return props;
 }
 
-xpu::device_prop runtime::device_properties(driver_t backend, int device) {
-    device_prop props;
-    DRIVER_CALL_I(backend, get_properties(&props, device));
-    return props;
+std::optional<xpu::detail::device> runtime::try_parse_device(std::string_view device_name) const {
+    std::vector<std::pair<std::string, xpu::driver_t>> str_to_driver {
+        {"cpu", cpu},
+        {"cuda", cuda},
+        {"hip", hip},
+        {"sycl", sycl},
+    };
+
+    bool valid_driver = false;
+    int target_device = 0;
+    driver_t target_driver = cpu;
+    for (auto &driver_str : str_to_driver) {
+        const std::string &driver_name = driver_str.first;
+        if (strncmp(device_name.data(), driver_name.c_str(), driver_name.size()) == 0) {
+            valid_driver = true;
+            target_driver = driver_str.second;
+
+            if (device_name == driver_name) {
+                target_device = 0;
+            } else {
+                std::string device_id{device_name.substr(driver_name.size())};
+                try {
+                    target_device = std::stoi(device_id);
+                } catch (std::exception &e) {
+                    raise_error(format("Invalid device ID '%*.s'", static_cast<int>(device_name.size()), device_name.data()));
+                }
+            }
+
+            break;
+        }
+    }
+
+    if (not valid_driver) {
+        raise_error(format("Requested unknown driver '%*.s'", static_cast<int>(device_name.size()), device_name.data()));
+    }
+
+    for (auto &dev : m_devices) {
+        if (dev.backend == target_driver and dev.device_nr == target_device) {
+            return dev;
+        }
+    }
+
+    return std::nullopt;
 }
 
 bool runtime::has_driver(driver_t d) const {
@@ -269,10 +265,10 @@ driver_interface *runtime::get_driver(driver_t d) const {
 }
 
 driver_interface *runtime::get_active_driver() const {
-    return get_driver(m_active_driver);
+    return get_driver(m_active_device.backend);
 }
 
-std::string runtime::complete_file_name(const char *fname, driver_t d) const {
+std::string runtime::complete_file_name(const char *fdriver_name, driver_t d) const {
     std::string prefix = "lib";
     std::string suffix = "";
     switch (d) {
@@ -281,7 +277,7 @@ std::string runtime::complete_file_name(const char *fname, driver_t d) const {
     case sycl: suffix = "_Sycl.so"; break;
     case cpu:  suffix = ".so"; break;
     }
-    return prefix + std::string{fname} + suffix;
+    return prefix + std::string{fdriver_name} + suffix;
 }
 
 const char *runtime::driver_str(driver_t d) const {

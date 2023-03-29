@@ -15,8 +15,8 @@ TEST(XPUTest, CanCreatePointerBuffer) {
 }
 
 TEST(XPUTest, CanGetDeviceFromPointer) {
-    xpu::device_prop active_device = xpu::device_properties();
-    bool is_cpu = active_device.driver == xpu::driver_t::cpu;
+    xpu::device_prop active_device{xpu::device::active()};
+    bool is_cpu = active_device.backend() == xpu::driver_t::cpu;
 
     int h = 0;
     xpu::ptr_prop prop{&h};
@@ -30,11 +30,11 @@ TEST(XPUTest, CanGetDeviceFromPointer) {
         xpu::buffer_prop<int> bprop{hdbuf};
         prop = xpu::ptr_prop{bprop.h_ptr()};
         ASSERT_NE(prop.ptr(), nullptr);
-        ASSERT_EQ(prop.backend(), active_device.driver);
+        ASSERT_EQ(prop.backend(), active_device.backend());
         ASSERT_EQ(prop.type(), (is_cpu ? xpu::mem_type::unknown : xpu::mem_type::host));
         prop = xpu::ptr_prop{bprop.d_ptr()};
         ASSERT_NE(prop.ptr(), nullptr);
-        ASSERT_EQ(prop.backend(), active_device.driver);
+        ASSERT_EQ(prop.backend(), active_device.backend());
         ASSERT_EQ(prop.type(), (is_cpu ? xpu::mem_type::unknown : xpu::mem_type::device));
     }
 
@@ -43,7 +43,7 @@ TEST(XPUTest, CanGetDeviceFromPointer) {
         xpu::buffer_prop<int> bprop{dbuf};
         prop = xpu::ptr_prop{bprop.d_ptr()};
         ASSERT_NE(prop.ptr(), nullptr);
-        ASSERT_EQ(prop.backend(), active_device.driver);
+        ASSERT_EQ(prop.backend(), active_device.backend());
         ASSERT_EQ(prop.type(), (is_cpu ? xpu::mem_type::unknown : xpu::mem_type::device));
         ASSERT_EQ(bprop.h_ptr(), nullptr);
     }
@@ -53,7 +53,7 @@ TEST(XPUTest, CanGetDeviceFromPointer) {
         xpu::buffer_prop<int> bprop{hbuf};
         prop = xpu::ptr_prop{bprop.h_ptr()};
         ASSERT_NE(prop.ptr(), nullptr);
-        ASSERT_EQ(prop.backend(), active_device.driver);
+        ASSERT_EQ(prop.backend(), active_device.backend());
         ASSERT_EQ(prop.type(), (is_cpu ? xpu::mem_type::unknown : xpu::mem_type::host));
     }
 }
@@ -300,7 +300,8 @@ TEST(XPUTest, CanRunBlockScan) {
 #ifdef DONT_TEST_BLOCK_FUNCS
     GTEST_SKIP();
 #endif
-    size_t blockSize = xpu::active_driver() == xpu::cpu ? 1 : 64;
+
+    size_t blockSize = xpu::device::active().backend() == xpu::cpu ? 1 : 64;
 
     xpu::hd_buffer<int> incl{blockSize};
     xpu::hd_buffer<int> excl{blockSize};
@@ -404,7 +405,7 @@ void test_thread_position(xpu::dim gpu_block_size, xpu::dim gpu_grid_dim) {
     xpu::copy(block_idx, xpu::device_to_host);
     xpu::copy(grid_dim, xpu::device_to_host);
 
-    xpu::dim exp_block_dim = (xpu::active_driver() == xpu::cpu ? xpu::dim{1, 1, 1} : gpu_block_size);
+    xpu::dim exp_block_dim = (xpu::device::active().backend() == xpu::cpu ? xpu::dim{1, 1, 1} : gpu_block_size);
     xpu::dim exp_grid_dim;
     exec_grid.get_compute_grid(exp_block_dim, exp_grid_dim);
     for (int i = 0; i < nthreads.x; i++) {
@@ -599,7 +600,7 @@ TEST(XPUTest, CanCallImageFunction) {
     xpu::driver_t driver;
     xpu::call<get_driver_type>(&driver);
 
-    xpu::driver_t expected_driver = xpu::active_driver();
+    xpu::driver_t expected_driver = xpu::device::active().backend();
 
     ASSERT_EQ(driver, expected_driver);
 }

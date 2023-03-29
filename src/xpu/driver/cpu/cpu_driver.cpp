@@ -80,8 +80,7 @@ error cpu_driver::get_properties(device_prop *props, int device) {
 
     props->name = "CPU";
     props->driver = cpu;
-    props->major = 0;
-    props->minor = 0;
+    props->arch = "";
 
     return SUCCESS;
 }
@@ -90,7 +89,7 @@ error cpu_driver::get_ptr_prop(const void * /*ptr*/, int *device, mem_type *type
     // There's no way to query the actual device here for the pointer
     // Therefore we have to assume it's pointing to cpu memory...
     *device = 0;
-    *type = mem_type::unknown;
+    *type = mem_unknown;
     return SUCCESS;
 }
 

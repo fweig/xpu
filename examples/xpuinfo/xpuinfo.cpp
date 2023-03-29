@@ -5,10 +5,17 @@
 int main() {
     xpu::initialize();
 
-    std::vector<xpu::device_prop> devices = xpu::get_devices();
+    std::vector<xpu::device> devices = xpu::device::all();
 
     for (auto &d : devices) {
-        printf("%s: %s [%d%d]\n", d.xpuid.c_str(), d.name.c_str(), d.major, d.minor);
+        xpu::device_prop prop{d};
+
+        std::cout << prop.xpuid() << ": " << prop.name();
+
+        if (!prop.arch().empty())
+            std::cout << " [" << prop.arch() << "]";
+
+        std::cout << std::endl;
     }
 
     return 0;

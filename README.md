@@ -1,23 +1,115 @@
 # XPU
 
+## Introduction
+
+`xpu` is a tiny C++ library (< 5000 LOC) that provides a unified interface to run kernels on CPU, CUDA, HIP and SYCL. It is designed to be used in conjunction with a device library that is compiled for CPU, CUDA and HIP. The device library is created by compiling a subset of the sources as device code. The device library is then linked against the host code. The host code can then call kernels on CPU or GPU.
+
 ---
 
-## Repo Structure
+## Requirements
 
-- `examples/`:
-    - `vector_add/`: Simple example showcasing vector addition.
-    - `sorting/`: Example on how to use the sorting API.
-- `src/xpu/`: source code
-    - `common.h`: Public datatypes used in both host and device code.
-    - `defines.h`: Public definitions.
-    - `device.h`: Public device-side functions and dataypes.
-    - `host.h`: Public host-side functions and datatypes.
-    - `driver/`: Internal code that is platform specific (cpu, cuda or hip).
-    - `detail/`: Internal code that is not tied to a specific platform.
-- `templates/`: Code templates used to generate boilerplate code for device libraries.
-- `test/`: Unittests
+- C++17 capable compiler
+- CMake 3.11 or newer
+- For Nvidia GPUs: CUDA 10.2 or newer (optional)
+- For AMD GPUs: ROCm 4.0 or newer (optional)
+- For Intel GPUs / SYCL Targets: Intel oneAPI DPC++ Compiler (optional)
 
-The public headers in `src/xpu` expose the entire API (With the exception of defining kernels and constant memory, see below). They are also designed to contain as little implementation details as possible, and should be therefore very easy to read. However proper documentation is missing at the moment.
+Note: `xpu` doesn't support Windows at the moment.
+
+---
+
+## Getting started
+
+Adding `xpu` to your project is as simple as adding the following to your `CMakeLists.txt`:
+```cmake
+include(FetchContent)
+FetchContent_Declare(xpu
+    GIT_REPOSITORY https://github.com/fweig/xpu
+    GIT_TAG        v0.8.0
+)
+FetchContent_MakeAvailable(xpu)
+```
+
+Then attach `xpu` to your target:
+```cmake
+add_library(Library SHARED ${LibrarySources}) # Works for executables as well
+xpu_attach(Library ${DeviceSources}) # DeviceSources is a subset of LibrarySources that should be compiled for GPU
+```
+
+Enable the desired backends by passing `-DXPU_ENABLE_<BACKEND>=ON` to cmake. (e.g. `-DXPU_ENABLE_CUDA=ON` for CUDA or `-DXPU_ENABLE_HIP=ON` for HIP).
+
+See the [wiki](https://github.com/fweig/xpu/wiki/CMake-Options) for all available CMake options.
+
+---
+
+## Example
+
+*TODO: Move this to the wiki. Add a shorter version here.*
+
+Kernels are declared as callable objects that inherit from `xpu::kernel`. The kernel is implemented as a regular C++ function. The function header must be wrapped with the `XPU_KERNEL` macro. The kernel is then exported by calling `XPU_EXPORT_KERNEL` or `XPU_EXPORT`. The kernel can then be called on the host side by calling `xpu::run_kernel`.
+
+For example, declare and implement a kernel that adds two vectors in your header file:
+```c++
+#include <xpu/device.h>
+
+struct DeviceLib {}; // Dummy type to match kernels to a library.
+
+struct VectorAdd : xpu::kernel<DeviceLib> {
+    using context = xpu::kernel_context<xpu::no_smem>; // optional shorthand
+    XPU_D void operator()(context &, const float *, const float *, float *, size_t);
+};
+```
+
+Then implement the kernel in a source file:
+```c++
+#include "VectorAdd.h"
+
+XPU_IMAGE(DeviceLib); // Define the device library. This call must happen in exactly one source file.
+
+XPU_EXPORT(VectorAdd); // Export the kernel.
+XPU_D void VectorAdd::operator()(context &ctx, const float *a, const float *b, float *c, size_t n) {
+    size_t i = ctx.block_idx_x() * ctx.block_dim_x() + ctx.thread_idx_x(); // Get the global thread index.
+    if (i >= n) return; // Check if we are out of bounds.
+    c[i] = a[i] + b[i];
+}
+```
+
+Finally, call the kernel on the host side:
+```c++
+#include <xpu/host.h>
+#include "VectorAdd.h"
+
+int main() {
+    xpu::initialize(); // Initialize xpu. Must be called before any other xpu function.
+
+    // Create buffers on the host and device.
+    xpu::buffer<float> a(1000, xpu::io_buffer);
+    xpu::buffer<float> b(1000, xpu::io_buffer);
+    xpu::buffer<float> c(1000, xpu::io_buffer);
+
+    xpu::h_view a_view = a.view(); // Access buffer data on the host.
+    xpu::h_view b_view = b.view();
+
+    // Fill buffers with data.
+    for (size_t i = 0; i < a_view.size(); ++i)
+        a_view[i] = b_view[i] = i;
+
+    // Transfer data to the device.
+    xpu::copy(a, xpu::host_to_device);
+    xpu::copy(b, xpu::host_to_device);
+
+    // Run the kernel.
+    xpu::run_kernel<VectorAdd>(xpu::n_threads(a_view.size()), a, b, c, a_view.size());
+
+    // Transfer data back to the host.
+    xpu::copy(c, xpu::device_to_host);
+
+    // Check the result.
+    xpu::h_view c_view = c.view();
+    for (size_t i = 0; i < c_view.size(); ++i)
+        assert(c_view[i] == 2 * i);
+}
+```
 
 ---
 
@@ -25,18 +117,7 @@ The public headers in `src/xpu` expose the entire API (With the exception of def
 
 CMake Options:
 
-- `XPU_ENABLE_OPENMP`: Enable / Disable compilation for OpenMP. (default=`ON` on Linux, `OFF` on MacOS)
-- `XPU_ENABLE_CUDA`: Enable / Disable compilation for cuda. (default=`OFF`)
-- `XPU_CUDA_ARCH`: List of target cuda architectures. (default=`75`)
-- `XPU_ENABLE_HIP`: Enable / Disable compilation for hip. (default=`OFF`)
-- `XPU_HIP_ARCH`: List of target hip architectures. (default=`gfx906;gfx908`)
-- `XPU_ROCM_ROOT`: Path to rocm installation. (default=`/opt/rocm`)
-- `XPU_ENABLE_SYCL`: Enable / Disable compilation for sycl. (default=`OFF`)
-- `XPU_SYCL_CXX`: Path to sycl compiler. (default=`icpx`)
-- `XPU_SYCL_TARGETS`: List of target sycl architectures. (default=`spir64`)
-- `XPU_DEBUG`: Build gpu code with debug symbols and disable optimizations. (default=`OFF`)
-- `XPU_BUILD_TESTS`: Build unittests and benchmarks. (default=`OFF`)
-- `XPU_BUILD_EXAMPLES`: Build examples. (default=`OFF`)
+
 
 Environment variables:
 

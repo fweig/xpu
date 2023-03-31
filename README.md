@@ -2,7 +2,7 @@
 
 ## Introduction
 
-`xpu` is a tiny C++ library (< 5000 LOC) that provides a unified interface to run kernels on CPU, CUDA, HIP and SYCL. It is designed to be used in conjunction with a device library that is compiled for CPU, CUDA and HIP. The device library is created by compiling a subset of the sources as device code. The device library is then linked against the host code. The host code can then call kernels on CPU or GPU.
+`xpu` is a tiny C++ library  that provides a unified interface to run kernels on CPU, CUDA, HIP and SYCL. It is designed to be used in conjunction with a device library that is compiled for CPU, CUDA and HIP. The device library is created by compiling a subset of the sources as device code. The device library is then linked against the host code. The host code can then call kernels on CPU or GPU.
 
 ---
 
@@ -30,7 +30,7 @@ FetchContent_Declare(xpu
 FetchContent_MakeAvailable(xpu)
 ```
 
-Then attach `xpu` to your target:
+Then call `xpu_attach` on your target:
 ```cmake
 add_library(Library SHARED ${LibrarySources}) # Works for executables as well
 xpu_attach(Library ${DeviceSources}) # DeviceSources is a subset of LibrarySources that should be compiled for GPU

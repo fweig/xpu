@@ -3,6 +3,7 @@
 
 #include "../common.h"
 
+#include <array>
 #include <string>
 
 namespace xpu::detail {
@@ -27,10 +28,24 @@ struct device {
 };
 
 struct device_prop {
+    // Filled by driver
     std::string name;
-    std::string xpuid;
     driver_t driver;
     std::string arch;
+    size_t shared_mem_size;
+    size_t const_mem_size;
+
+    size_t warp_size;
+    size_t max_threads_per_block;
+    std::array<size_t, 3> max_grid_size;
+
+    // Filled by runtime
+    std::string xpuid;
+    int id;
+    int device_nr;
+
+    size_t global_mem_total;
+    size_t global_mem_available;
 };
 
 using error = int;

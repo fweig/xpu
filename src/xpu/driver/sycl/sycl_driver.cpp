@@ -73,6 +73,16 @@ error sycl_driver::get_properties(device_prop *props, int device) {
 
     // XPU_LOG("sycl_driver::get_properties: device name: %s, version: %s", props->name.c_str(), dev.get_info<sycl::info::device::version>().c_str());
     props->arch = dev.get_info<sycl::info::device::version>();
+
+    props->shared_mem_size = dev.get_info<sycl::info::device::local_mem_size>();
+    props->const_mem_size = 0; // constant memory deprecated in SYCL 2020
+
+    props->warp_size = dev.get_info<sycl::info::device::sub_group_sizes>()[0];
+    props->max_threads_per_block = dev.get_info<sycl::info::device::max_work_group_size>();
+    props->max_grid_size = {dev.get_info<sycl::info::device::max_work_item_sizes<3>>()[0],
+                            dev.get_info<sycl::info::device::max_work_item_sizes<3>>()[1],
+                            dev.get_info<sycl::info::device::max_work_item_sizes<3>>()[2]};
+
     return 0;
 }
 

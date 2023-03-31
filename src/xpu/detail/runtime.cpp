@@ -172,7 +172,12 @@ xpu::detail::device_prop runtime::device_properties(int id) {
     detail::device_prop props;
     detail::device d = m_devices.at(id);
     DRIVER_CALL_I(d.backend, get_properties(&props, d.device_nr));
+
     props.xpuid = detail::format("%s%d", driver_str(d.backend, true), d.device_nr);
+    props.id = d.id;
+    props.device_nr = d.device_nr;
+    DRIVER_CALL_I(d.backend, meminfo(&props.global_mem_available, &props.global_mem_total));
+
     return props;
 }
 

@@ -219,7 +219,7 @@ public:
     device_prop() = delete;
 
     /**
-     * @brief Get the properties of the given device.
+     * @brief Query properties of the given device.
      */
     device_prop(device);
 
@@ -227,12 +227,6 @@ public:
      * @brief Get the name of the device.
      */
     std::string_view name() const { return m_prop.name; }
-
-    /**
-     * @brief Get the string used to identify the device.
-     * @see xpu::settings::device for possible values.
-     */
-    std::string_view xpuid() const { return m_prop.xpuid; }
 
     /**
      * @brief Get the backend associated with the device.
@@ -243,6 +237,57 @@ public:
      * @brief Returns the architecture of the device, if applicable.
      */
     std::string_view arch() const { return m_prop.arch; }
+
+    /**
+     * @brief Returns the size of shared memory per block in bytes.
+     */
+    size_t shared_mem_size() const { return m_prop.shared_mem_size; }
+
+    /**
+     * @brief Returns the size of constant memory in bytes.
+     */
+    size_t const_mem_size() const { return m_prop.const_mem_size; }
+
+    /**
+     * @brief Returns the number of threads in a warp.
+     */
+    size_t warp_size() const { return m_prop.warp_size; }
+
+    /**
+     * @brief Returns the max number of threads in a block.
+     */
+    size_t max_threads_per_block() const { return m_prop.max_threads_per_block; }
+
+    /**
+     * @brief Returns the max number of threads in a block.
+     */
+    std::array<size_t, 3> max_grid_size() const { return m_prop.max_grid_size; }
+
+    /**
+     * @brief Get the string used to identify the device.
+     * @see xpu::settings::device for possible values.
+     */
+    std::string_view xpuid() const { return m_prop.xpuid; }
+
+    /**
+     * @brief Get the device id.
+     */
+    int id() const { return m_prop.id; }
+
+    /**
+     * @brief Get the device number within the backend.
+     */
+    int device_nr() const { return m_prop.device_nr; }
+
+    /**
+     * @brief Returns the total amount of global memory in bytes.
+     */
+    size_t global_mem_total() const { return m_prop.global_mem_total; }
+
+    /**
+     * @brief Returns the amount of global memory available in bytes.
+     */
+    size_t global_mem_available() const { return m_prop.global_mem_available; }
 
 private:
     detail::device_prop m_prop;

@@ -95,6 +95,13 @@ public:
         props->driver = get_type();
         props->arch = std::to_string(cuprop.major) + std::to_string(cuprop.minor);
 
+        props->shared_mem_size = cuprop.sharedMemPerBlock;
+        props->const_mem_size = cuprop.totalConstMem;
+
+        props->warp_size = cuprop.warpSize;
+        props->max_threads_per_block = cuprop.maxThreadsPerBlock;
+        props->max_grid_size = {size_t(cuprop.maxGridSize[0]), size_t(cuprop.maxGridSize[1]), size_t(cuprop.maxGridSize[2])};
+
         return 0;
     }
 

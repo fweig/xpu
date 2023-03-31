@@ -82,6 +82,15 @@ error cpu_driver::get_properties(device_prop *props, int device) {
     props->driver = cpu;
     props->arch = "";
 
+    size_t free_mem, total_mem;
+    meminfo(&free_mem, &total_mem);
+    props->shared_mem_size = total_mem;
+    props->const_mem_size = total_mem;
+
+    props->warp_size = 1;
+    props->max_threads_per_block = 1024;
+    props->max_grid_size = {1024, 1024, 1024};
+
     return SUCCESS;
 }
 

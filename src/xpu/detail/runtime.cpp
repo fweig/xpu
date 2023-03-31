@@ -172,6 +172,7 @@ xpu::detail::device_prop runtime::device_properties(int id) {
     detail::device_prop props;
     detail::device d = m_devices.at(id);
     DRIVER_CALL_I(d.backend, get_properties(&props, d.device_nr));
+    props.xpuid = detail::format("%s%d", driver_str(d.backend, true), d.device_nr);
     return props;
 }
 
@@ -280,12 +281,12 @@ std::string runtime::complete_file_name(const char *fdriver_name, driver_t d) co
     return prefix + std::string{fdriver_name} + suffix;
 }
 
-const char *runtime::driver_str(driver_t d) const {
+const char *runtime::driver_str(driver_t d, bool lower) const {
     switch (d) {
-    case cpu: return "CPU";
-    case cuda: return "CUDA";
-    case hip: return "HIP";
-    case sycl: return "SYCL";
+    case cpu: return (lower ? "cpu" : "CPU");
+    case cuda: return (lower ? "cuda" : "CUDA");
+    case hip: return (lower ? "hip" : "HIP");
+    case sycl: return (lower ? "sycl" : "SYCL");
     }
     RAISE_INTERNAL_ERROR();
 }

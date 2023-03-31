@@ -174,7 +174,7 @@ private:
 
     std::string complete_file_name(const char *, driver_t) const;
 
-    const char *driver_str(driver_t) const;
+    const char *driver_str(driver_t, bool lower = false) const;
 
     void throw_on_driver_error(driver_t, error) const;
 

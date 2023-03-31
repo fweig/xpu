@@ -35,6 +35,6 @@ if (XPU_ENABLE_HIP)
 endif()
 
 if (XPU_ENABLE_SYCL)
-  add_test(NAME xpu_test_sycl COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/run_sycl_test.sh ${CMAKE_CURRENT_BINARY_DIR}/xpu_test ${libDir})
+  add_test(NAME xpu_test_sycl COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/run_sycl_test.sh ${CMAKE_CURRENT_BINARY_DIR}/../bin/xpu_test ${libDir})
   set_tests_properties(xpu_test_sycl PROPERTIES ENVIRONMENT "XPU_DEVICE=sycl1")
 endif()

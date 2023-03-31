@@ -40,7 +40,7 @@ XPU_H XPU_D xpu::buffer<T>::~buffer() {
 
 template<typename T>
 XPU_H XPU_D xpu::buffer<T>::buffer(const xpu::buffer<T> &other) {
-    m_data = other.get();
+    m_data = other.m_data;
     add_ref();
 }
 
@@ -62,7 +62,38 @@ XPU_H XPU_D xpu::buffer<T> &xpu::buffer<T>::operator=(const xpu::buffer<T> &othe
 template<typename T>
 XPU_H XPU_D xpu::buffer<T> &xpu::buffer<T>::operator=(xpu::buffer<T> &&other) {
     if (this != &other) {
+        remove_ref();
         m_data = std::exchange(other.m_data, nullptr);
+    }
+    return *this;
+}
+
+template<typename T> template<typename U>
+XPU_H XPU_D xpu::buffer<T>::buffer(const xpu::buffer<U> &other) {
+    m_data = static_cast<T *>(other.get());
+    add_ref();
+}
+
+template<typename T> template<typename U>
+XPU_H XPU_D xpu::buffer<T>::buffer(xpu::buffer<U> &&other) {
+    m_data = std::exchange(static_cast<T *>(other.m_data), nullptr);
+}
+
+template<typename T> template<typename U>
+XPU_H XPU_D xpu::buffer<T> &xpu::buffer<T>::operator=(const xpu::buffer<U> &other) {
+    if (this != &other) {
+        remove_ref();
+        m_data = static_cast<T *>(other.m_data);
+        add_ref();
+    }
+    return *this;
+}
+
+template<typename T> template<typename U>
+XPU_H XPU_D xpu::buffer<T> &xpu::buffer<T>::operator=(xpu::buffer<U> &&other) {
+    if (this != &other) {
+        remove_ref();
+        m_data = std::exchange(static_cast<T *>(other.m_data), nullptr);
     }
     return *this;
 }

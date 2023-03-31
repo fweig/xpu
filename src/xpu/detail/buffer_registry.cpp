@@ -61,13 +61,13 @@ void *buffer_registry::create(size_t size, buffer_type type, void *host_ptr) {
     return ptr;
 }
 
-void buffer_registry::add_ref(void *ptr) {
+void buffer_registry::add_ref(const void *ptr) {
     auto &entry = m_entries.at(ptr);
     XPU_LOG("Add ref: %p", ptr);
     (*entry.ref_count)++;
 }
 
-void buffer_registry::remove_ref(void *ptr) {
+void buffer_registry::remove_ref(const void *ptr) {
     auto it = m_entries.find(ptr);
     if (it == m_entries.end()) {
         return;

@@ -28,10 +28,10 @@ public:
     static buffer_registry &instance();
 
     void *create(size_t size, buffer_type type, void *host_ptr = nullptr);
-    void add_ref(void *ptr);
-    void remove_ref(void *ptr);
+    void add_ref(const void *ptr);
+    void remove_ref(const void *ptr);
 
-    buffer_data &get(void *ptr) { return m_entries.at(ptr).data; }
+    buffer_data &get(const void *ptr) { return m_entries.at(ptr).data; }
 
 private:
     struct buffer_entry {
@@ -39,7 +39,7 @@ private:
         std::unique_ptr<std::atomic<int>> ref_count;
     };
 
-    using buffer_map = std::unordered_map<void *, buffer_entry>;
+    using buffer_map = std::unordered_map<const void *, buffer_entry>;
 
     buffer_map m_entries;
 

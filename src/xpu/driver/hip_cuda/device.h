@@ -634,7 +634,7 @@ struct action_runner<kernel_tag, K, void(K::*)(kernel_context<typename K::shared
         if (measure_time) {
             ON_ERROR_GOTO(err, hipEventRecord(start), cleanup_events);
         }
-        hipLaunchKernelGGL(HIP_KERNEL_NAME(kernel_entry_bounded<K, K::block_size::value.linear(), Args...>), grid_dim.as_cuda_grid(), block_dim.as_cuda_grid(), 0, 0, args...);
+        hipLaunchKernelGGL(HIP_KERNEL_NAME(kernel_entry_bounded<K, K::block_size::value.linear(), Args...>), grid_dim.as_cuda_grid(), block_dim.as_cuda_grid(), 0, 0, std::forward<Args>(args)...);
         if (measure_time) {
             ON_ERROR_GOTO(err, hipEventRecord(end), cleanup_events);
         }

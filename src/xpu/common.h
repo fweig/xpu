@@ -79,6 +79,8 @@ template<typename T>
 class buffer {
 
 public:
+    using value_type = T;
+
     /**
      * @brief Create an emtpy buffer.
      */
@@ -114,16 +116,30 @@ public:
      */
     XPU_H XPU_D ~buffer();
 
+
     XPU_H XPU_D buffer(const buffer &other);
     XPU_H XPU_D buffer(buffer &&other);
-
     XPU_H XPU_D buffer &operator=(const buffer &other);
     XPU_H XPU_D buffer &operator=(buffer &&other);
 
-    XPU_H XPU_D       T *get() const { return m_data; }
+    template<typename U>
+    XPU_H XPU_D buffer(const buffer<U> &other);
+
+    template<typename U>
+    XPU_H XPU_D buffer(buffer<U> &&other);
+
+    template<typename U>
+    XPU_H XPU_D buffer &operator=(const buffer<U> &other);
+
+    template<typename U>
+    XPU_H XPU_D buffer &operator=(buffer<U> &&other);
+
+    XPU_H XPU_D T *get() const { return m_data; }
 
     XPU_H XPU_D T &operator*() const { return *m_data; }
     XPU_H XPU_D T *operator->() const { return m_data; }
+
+    XPU_H XPU_D T &operator[](size_t i) const { return m_data[i]; }
 
 private:
     T *m_data = nullptr;

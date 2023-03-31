@@ -8,7 +8,6 @@
 #include <vector>
 
 int main() {
-    constexpr int NElems = 100;
 
     xpu::initialize();
 
@@ -31,13 +30,14 @@ int main() {
     xpu::copy(x, xpu::host_to_device);
     xpu::copy(y, xpu::host_to_device);
 
-    xpu::run_kernel<VectorAdd>(xpu::n_threads(NElems), x.d(), y.d(), z.d(), NElems);
+    xpu::run_kernel<VectorAdd>(xpu::n_threads(NElems), x, y, z, NElems);
 
     xpu::copy(z, xpu::device_to_host);
 
+    xpu::h_view zh{z};
     for (int i = 0; i < NElems; i++) {
-        if (z.h()[i] != 16) {
-            std::cout << "ERROR " << i << " " << z.h()[i] << " " << z.d()[i] << std::endl;
+        if (zh[i] != 2 * i) {
+            std::cout << "ERROR " << i << " " << zh[i] << std::endl;
             abort();
         }
     }

@@ -5,6 +5,8 @@
 
 #include <sycl/sycl.hpp>
 
+#include <memory>
+
 namespace xpu::detail {
 
 class sycl_driver : public driver_interface {
@@ -19,8 +21,14 @@ public:
     error malloc_host(void **, size_t) override;
     error malloc_shared(void **, size_t) override;
     error free(void *) override;
+
+    error create_queue(void **, int) override;
+    error destroy_queue(void *) override;
+    error synchronize_queue(void *) override;
+
     error memcpy(void *, const void *, size_t) override;
     error memset(void *, int, size_t) override;
+
     error num_devices(int *) override;
     error set_device(int) override;
     error get_device(int *) override;
@@ -35,6 +43,8 @@ private:
     sycl::property_list m_prop_list;
     sycl::queue m_default_queue;
     int m_device = -1;
+
+    std::vector<std::unique_ptr<sycl::queue>> m_queues;
 
     int get_device_id(sycl::device);
 };

@@ -18,6 +18,11 @@ public:
     virtual error malloc_host(void **, size_t) = 0;
     virtual error malloc_shared(void **, size_t) = 0;
     virtual error free(void *) = 0;
+
+    virtual error create_queue(void **, int) = 0;
+    virtual error destroy_queue(void *) = 0;
+    virtual error synchronize_queue(void *) = 0;
+
     virtual error memcpy(void *, const void *, size_t) = 0;
     virtual error memset(void *, int, size_t) = 0;
 

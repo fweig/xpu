@@ -20,6 +20,7 @@ namespace xpu {
 
 // Forward declarations
 template<typename T> class buffer_prop;
+class queue;
 namespace detail { class runtime; }
 
 enum direction {
@@ -205,6 +206,7 @@ public:
     int device_nr() const { return m_impl.device_nr; }
 
 private:
+    friend class queue;
     explicit device(detail::device impl) : m_impl(std::move(impl)) {}
     detail::device m_impl;
 
@@ -291,6 +293,39 @@ public:
 
 private:
     detail::device_prop m_prop;
+};
+
+class queue {
+
+public:
+    /**
+     * Construct a queue for the standard device set via the XPU_DEVICE environment variable.
+     */
+    queue();
+
+    /**
+     * Construct a queue for the given device.
+     */
+    explicit queue(device);
+
+    void memcpy(void *dst, const void *src, size_t size);
+
+    template<typename T>
+    void copy(buffer<T>, direction);
+
+    void memset(void *dst, int value, size_t size);
+
+    template<typename T>
+    void memset(buffer<T>, int value);
+
+    template<typename Kernel, typename... Args>
+    void run_kernel(grid params, Args&&... args);
+
+    void wait();
+
+private:
+    std::shared_ptr<detail::queue_handle> m_handle;
+
 };
 
 template<typename Kernel>

@@ -60,8 +60,12 @@ public:
     void *malloc_host(size_t);
     void *malloc_device(size_t);
     void *malloc_shared(size_t);
-
     void free(void *);
+
+    void *create_queue(device);
+    void destroy_queue(queue_handle);
+    void synchronize_queue(queue_handle);
+
     void memcpy(void *, const void *, size_t);
     void memset(void *, int, size_t);
 
@@ -166,7 +170,7 @@ private:
         return i;
     }
 
-    std::optional<detail::device> try_parse_device(std::string_view) const;
+    std::optional<std::pair<driver_t, int>> try_parse_device(std::string_view) const;
 
     bool has_driver(driver_t) const;
     driver_interface *get_driver(driver_t) const;

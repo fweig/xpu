@@ -45,6 +45,34 @@ public:
         }
     }
 
+    error create_queue(void **queue, int device) override {
+        int err = 0;
+        int current_device = 0;
+        err = CUHIP(GetDevice)(&current_device);
+        if (err != 0) {
+            return err;
+        }
+        err = set_device(device);
+        if (err != 0) {
+            return err;
+        }
+        CUHIP(Stream_t) *stream = static_cast<CUHIP(Stream_t) *>(*queue);
+        err = CUHIP(StreamCreate)(stream);
+        if (err != 0) {
+            return err;
+        }
+        err = CUHIP(SetDevice)(current_device);
+        return err;
+    }
+
+    error destroy_queue(void *queue) override {
+        return CUHIP(StreamDestroy)(static_cast<CUHIP(Stream_t)>(queue));
+    }
+
+    error synchronize_queue(void *queue) override {
+        return CUHIP(StreamSynchronize)(static_cast<CUHIP(Stream_t)>(queue));
+    }
+
     error memcpy(void *dst, const void *src, size_t bytes) override {
         error err = CUHIP(Memcpy)(dst, src, bytes, CUHIP(MemcpyDefault));
         device_synchronize();

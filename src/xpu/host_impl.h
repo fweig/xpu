@@ -91,6 +91,12 @@ inline xpu::device_prop::device_prop(xpu::device dev) {
     m_prop = detail::runtime::instance().device_properties(dev.id());
 }
 
+inline xpu::queue::queue() : m_handle(std::make_shared<detail::queue_handle>()) {
+}
+
+inline xpu::queue::queue(xpu::device dev) : m_handle(std::make_shared<detail::queue_handle>(dev.m_impl)) {
+}
+
 template<typename Kernel>
 const char *xpu::get_name() {
     return detail::type_name<Kernel>();

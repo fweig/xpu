@@ -44,6 +44,19 @@ error cpu_driver::free(void *ptr) {
     return SUCCESS;
 }
 
+error cpu_driver::create_queue(void **queue, int device) {
+    *queue = nullptr;
+    return (device == 0 ? SUCCESS : INVALID_DEVICE);
+}
+
+error cpu_driver::destroy_queue(void * /*queue*/) {
+    return SUCCESS;
+}
+
+error cpu_driver::synchronize_queue(void * /*queue*/) {
+    return SUCCESS;
+}
+
 error cpu_driver::memcpy(void *dst, const void *src, size_t bytes) {
     XPU_LOG("memcpy %lu bytes", bytes);
     std::memcpy(dst, src, bytes);

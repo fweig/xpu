@@ -4,6 +4,7 @@
 #include "../common.h"
 
 #include <array>
+#include <memory>
 #include <string>
 
 namespace xpu::detail {
@@ -46,6 +47,14 @@ struct device_prop {
 
     size_t global_mem_total;
     size_t global_mem_available;
+};
+
+struct queue_handle {
+    queue_handle();
+    queue_handle(device dev);
+    ~queue_handle();
+    void *handle;
+    device dev;
 };
 
 using error = int;

@@ -87,7 +87,7 @@ void runtime::initialize(const settings &settings) {
 
     std::optional<detail::device> target_device;
     if (auto device_env = getenv_str("XPU_DEVICE", settings.device); true) {
-        target_device = try_parse_device(device_env);
+        target_device = get_device(device_env);
 
         if (target_device == std::nullopt) {
             raise_error(format("Requested unknown driver with environment variable XPU_DEVICE='%s'", device_env.c_str()));
@@ -142,6 +142,20 @@ void runtime::free(void *ptr) {
     DRIVER_CALL(free(ptr));
 }
 
+void *runtime::create_queue(device dev) {
+    void *queue = nullptr;
+    DRIVER_CALL_I(dev.backend, create_queue(&queue, dev.device_nr));
+    return queue;
+}
+
+void runtime::destroy_queue(queue_handle queue) {
+    DRIVER_CALL_I(queue.dev.backend, destroy_queue(queue.handle));
+}
+
+void runtime::synchronize_queue(queue_handle queue) {
+    DRIVER_CALL_I(queue.dev.backend, synchronize_queue(queue.handle));
+}
+
 void runtime::memcpy(void *dst, const void *src, size_t bytes) {
     if (logger::instance().active()) {
         ptr_prop src_prop{src};
@@ -181,8 +195,8 @@ xpu::detail::device_prop runtime::device_properties(int id) {
     return props;
 }
 
-std::optional<xpu::detail::device> runtime::try_parse_device(std::string_view device_name) const {
-    std::vector<std::pair<std::string, xpu::driver_t>> str_to_driver {
+std::optional<std::pair<xpu::driver_t, int>> runtime::try_parse_device(std::string_view device_name) const {
+    std::vector<std::pair<std::string, driver_t>> str_to_driver {
         {"cpu", cpu},
         {"cuda", cuda},
         {"hip", hip},
@@ -217,17 +231,31 @@ std::optional<xpu::detail::device> runtime::try_parse_device(std::string_view de
         raise_error(format("Requested unknown driver '%*.s'", static_cast<int>(device_name.size()), device_name.data()));
     }
 
-    for (auto &dev : m_devices) {
-        if (dev.backend == target_driver and dev.device_nr == target_device) {
-            return dev;
-        }
-    }
-
-    return std::nullopt;
+    return std::make_pair(target_driver, target_device);
 }
 
 bool runtime::has_driver(driver_t d) const {
     return get_driver(d) != nullptr;
+}
+
+device runtime::get_device(driver_t d, int device_nr) const {
+    auto it = std::find_if(m_devices.begin(), m_devices.end(), [d, device_nr](const device &dev) {
+        return dev.backend == d and dev.device_nr == device_nr;
+    });
+
+    if (it != m_devices.end()) {
+        return *it;
+    }
+
+    raise_error(format("Requested device %s%d does not exist.", driver_str(d, true), device_nr));
+}
+
+device runtime::get_device(std::string_view device_name) const {
+    auto dev = try_parse_device(device_name);
+    if (dev == std::nullopt) {
+        raise_error(format("Invalid device name '%*.s'.", static_cast<int>(device_name.size()), device_name.data()));
+    }
+    return get_device(dev->first, dev->second);
 }
 
 void runtime::get_ptr_prop(const void *ptr, ptr_prop *prop) {

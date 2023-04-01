@@ -10,7 +10,7 @@ sycl::queue &sycl_driver::default_queue() {
 
 error sycl_driver::setup() {
     // TODO: check if profiling was enabled by user
-    m_prop_list = sycl::property_list{sycl::property::queue::enable_profiling()};
+    m_prop_list = sycl::property_list{sycl::property::queue::enable_profiling(), sycl::property::queue::in_order()};
     m_default_queue = sycl::queue(sycl::default_selector_v, m_prop_list);
     return 0;
 }
@@ -32,6 +32,28 @@ error sycl_driver::malloc_shared(void **ptr, size_t bytes) {
 
 error sycl_driver::free(void *ptr) {
     sycl::free(ptr, m_default_queue);
+    return 0;
+}
+
+error sycl_driver::create_queue(void **queue, int device) {
+    auto q = std::make_unique<sycl::queue>(sycl::device::get_devices()[device], m_prop_list);
+    m_queues.emplace_back(std::move(q));
+    *queue = m_queues.back().get();
+    return 0;
+}
+
+error sycl_driver::destroy_queue(void *queue) {
+    auto q = static_cast<sycl::queue *>(queue);
+    auto it = std::find_if(m_queues.begin(), m_queues.end(), [q](const auto &q_ptr) { return q_ptr.get() == q; });
+    if (it != m_queues.end()) {
+        m_queues.erase(it);
+    }
+    return 0;
+}
+
+error sycl_driver::synchronize_queue(void *queue) {
+    auto q = static_cast<sycl::queue *>(queue);
+    q->wait();
     return 0;
 }
 

@@ -15,6 +15,11 @@ public:
     error malloc_host(void **, size_t) override;
     error malloc_shared(void **, size_t) override;
     error free(void *) override;
+
+    error create_queue(void **, int) override;
+    error destroy_queue(void *) override;
+    error synchronize_queue(void *) override;
+
     error memcpy(void *, const void *, size_t) override;
     error memset(void *, int, size_t) override;
 

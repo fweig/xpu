@@ -326,7 +326,7 @@ struct action_runner<kernel_tag, K, void(K::*)(kernel_context<typename K::shared
     using constants = typename K::constants;
     using context = kernel_context<shared_memory>;
 
-    static int call(float *ms, driver_interface * /*cpu_driver*/, grid g, Args... args) {
+    static int call(float *ms, backend_base * /*cpu_driver*/, grid g, Args... args) {
         dim block_dim{1, 1, 1};
         dim grid_dim{};
 

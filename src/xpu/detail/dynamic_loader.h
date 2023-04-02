@@ -5,7 +5,7 @@
 #include "../driver/cpu/this_thread.h"
 #include "common.h"
 #include "constant_memory.h"
-#include "driver_interface.h"
+#include "backend_base.h"
 #include "log.h"
 #include "macros.h"
 #include "type_info.h"
@@ -51,7 +51,7 @@ struct action_interface<function_tag, int(*)(Args...)> {
 
 template<typename S, typename... Args>
 struct action_interface<kernel_tag, void(*)(S, Args...)> {
-    using type = int(*)(float *, driver_interface *, grid, Args...);
+    using type = int(*)(float *, backend_base *, grid, Args...);
 };
 
 template<typename Constant>
@@ -158,7 +158,7 @@ public:
     }
 
     template<typename K, typename... Args>
-    typename std::enable_if<is_kernel<I, K>::value, int>::type run_kernel(float *ms, driver_interface *driver, grid g, Args&&... args) {
+    typename std::enable_if<is_kernel<I, K>::value, int>::type run_kernel(float *ms, backend_base *driver, grid g, Args&&... args) {
         return call_action<K>(ms, driver, g, args...);
     }
 

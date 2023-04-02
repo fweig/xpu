@@ -27,6 +27,8 @@ enum driver_t {
     sycl,
 };
 constexpr inline size_t num_drivers = 4;
+const char *driver_to_str(driver_t, bool lower = false);
+
 
 struct device {
     int id;

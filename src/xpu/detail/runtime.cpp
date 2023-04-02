@@ -1,11 +1,12 @@
 #include "runtime.h"
+#include "backend.h"
 #include "../host.h"
 
 #include <cstdlib>
 #include <sstream>
 
 #define DRIVER_CALL_I(type, func) throw_on_driver_error(static_cast<detail::driver_t>(type), \
-    get_driver(static_cast<detail::driver_t>(type))->func)
+    backend::get(static_cast<detail::driver_t>(type))->func)
 #define DRIVER_CALL(func) DRIVER_CALL_I(m_active_device.backend, func)
 #define CPU_DRIVER_CALL(func) DRIVER_CALL_I(cpu, func)
 #define RAISE_INTERNAL_ERROR() raise_error(format("%s:%d: Internal xpu error. This should never happen! Please file a bug.", __FILE__, __LINE__))
@@ -36,47 +37,17 @@ void runtime::initialize(const settings &settings) {
 
     m_measure_time = getenv_bool("XPU_PROFILE", settings.profile);
 
-    XPU_LOG("Loading cpu driver.");
-    m_cpu_driver.reset(new cpu_driver{});
-    CPU_DRIVER_CALL(setup());
-    XPU_LOG("Finished loading cuda driver.");
-
-    XPU_LOG("Loading cuda driver.");
-    m_cuda_driver.reset(new lib_obj<driver_interface>{"libxpu_Cuda.so"});
-    if (m_cuda_driver->ok()) {
-        DRIVER_CALL_I(cuda, setup());
-        XPU_LOG("Finished loading cuda driver.");
-    } else {
-        XPU_LOG("Couldn't find 'libxpu_Cuda.so'. Cuda driver not active.");
-    }
-
-    XPU_LOG("Loading hip driver.");
-    m_hip_driver.reset(new lib_obj<driver_interface>{"libxpu_Hip.so"});
-    if (m_hip_driver->ok()) {
-        DRIVER_CALL_I(hip, setup());
-        XPU_LOG("Finished loading hip driver.");
-    } else {
-        XPU_LOG("Couldn't find 'libxpu_Hip.so'. Hip driver not active.");
-    }
-
-    XPU_LOG("Loading sycl driver.");
-    m_sycl_driver.reset(new lib_obj<driver_interface>{"libxpu_Sycl.so"});
-    if (m_sycl_driver->ok()) {
-        DRIVER_CALL_I(sycl, setup());
-        XPU_LOG("Finished loading sycl driver.");
-    } else {
-        XPU_LOG("Couldn't find 'libxpu_Sycl.so'. Sycl driver not active.");
-    }
+    backend::load();
 
     XPU_LOG("Found devices:");
     for (driver_t driver : {cpu, cuda, hip, sycl}) {
-        if (not has_driver(driver)) {
-            XPU_LOG("  No %s devices found.", driver_str(driver));
+        if (not backend::is_available(driver)) {
+            XPU_LOG("  No %s devices found.", driver_to_str(driver));
             continue;
         }
         int ndevices = 0;
         DRIVER_CALL_I(driver, num_devices(&ndevices));
-        XPU_LOG(" %s (%d)", driver_str(driver), ndevices);
+        XPU_LOG(" %s (%d)", driver_to_str(driver), ndevices);
         for (int i = 0; i < ndevices; i++) {
             device dev;
             dev.backend = driver;
@@ -111,7 +82,7 @@ void runtime::initialize(const settings &settings) {
 void *runtime::malloc_host(size_t bytes) {
     void *ptr = nullptr;
     DRIVER_CALL(malloc_host(&ptr, bytes));
-    XPU_LOG("Allocating %lu bytes @ address %p on host memory with driver %s.", bytes, ptr, driver_str(m_active_device.backend));
+    XPU_LOG("Allocating %lu bytes @ address %p on host memory with driver %s.", bytes, ptr, driver_to_str(m_active_device.backend));
     return ptr;
 }
 
@@ -188,7 +159,7 @@ xpu::detail::device_prop runtime::device_properties(int id) {
     detail::device d = m_devices.at(id);
     DRIVER_CALL_I(d.backend, get_properties(&props, d.device_nr));
 
-    props.xpuid = detail::format("%s%d", driver_str(d.backend, true), d.device_nr);
+    props.xpuid = detail::format("%s%d", driver_to_str(d.backend, true), d.device_nr);
     props.id = d.id;
     props.device_nr = d.device_nr;
     DRIVER_CALL_I(d.backend, meminfo(&props.global_mem_available, &props.global_mem_total));
@@ -235,10 +206,6 @@ std::optional<std::pair<xpu::detail::driver_t, int>> runtime::try_parse_device(s
     return std::make_pair(target_driver, target_device);
 }
 
-bool runtime::has_driver(driver_t d) const {
-    return get_driver(d) != nullptr;
-}
-
 device runtime::get_device(driver_t d, int device_nr) const {
     auto it = std::find_if(m_devices.begin(), m_devices.end(), [d, device_nr](const device &dev) {
         return dev.backend == d and dev.device_nr == device_nr;
@@ -248,7 +215,7 @@ device runtime::get_device(driver_t d, int device_nr) const {
         return *it;
     }
 
-    raise_error(format("Requested device %s%d does not exist.", driver_str(d, true), device_nr));
+    raise_error(format("Requested device %s%d does not exist.", driver_to_str(d, true), device_nr));
 }
 
 device runtime::get_device(std::string_view device_name) const {
@@ -264,13 +231,12 @@ void runtime::get_ptr_prop(const void *ptr, ptr_prop *prop) {
     prop->ptr = const_cast<void *>(ptr);
 
     for (driver_t driver_type : {cuda, hip, sycl, cpu}) {
-        auto *driver = get_driver(driver_type);
-        if (driver == nullptr) {
+        if (not backend::is_available(driver_type)) {
             continue;
         }
         int platform_device = 0;
         detail::mem_type mem_type;
-        throw_on_driver_error(driver_type, driver->get_ptr_prop(ptr, &platform_device, &mem_type));
+        backend::call(driver_type, &backend_base::get_ptr_prop, ptr, &platform_device, &mem_type);
 
         if (platform_device == -1) {
             continue;
@@ -287,21 +253,6 @@ void runtime::get_ptr_prop(const void *ptr, ptr_prop *prop) {
     RAISE_INTERNAL_ERROR();
 }
 
-driver_interface *runtime::get_driver(driver_t d) const {
-    switch (d) {
-        case cpu: return m_cpu_driver.get();
-        case cuda: return m_cuda_driver->obj;
-        case hip: return m_hip_driver->obj;
-        case sycl: return m_sycl_driver->obj;
-    }
-
-    RAISE_INTERNAL_ERROR();
-}
-
-driver_interface *runtime::get_active_driver() const {
-    return get_driver(m_active_device.backend);
-}
-
 std::string runtime::complete_file_name(const char *fdriver_name, driver_t d) const {
     std::string prefix = "lib";
     std::string suffix = "";
@@ -314,22 +265,12 @@ std::string runtime::complete_file_name(const char *fdriver_name, driver_t d) co
     return prefix + std::string{fdriver_name} + suffix;
 }
 
-const char *runtime::driver_str(driver_t d, bool lower) const {
-    switch (d) {
-    case cpu: return (lower ? "cpu" : "CPU");
-    case cuda: return (lower ? "cuda" : "CUDA");
-    case hip: return (lower ? "hip" : "HIP");
-    case sycl: return (lower ? "sycl" : "SYCL");
-    }
-    RAISE_INTERNAL_ERROR();
-}
-
 void runtime::throw_on_driver_error(driver_t d, error err) const {
     if (err == 0) {
         return;
     }
 
-    raise_error(format("xpu: Driver '%s' raised error: %s (code %d)", driver_str(d), get_driver(d)->error_to_string(err), err));
+    raise_error(format("xpu: Driver '%s' raised error: %s (code %d)", driver_to_str(d), backend::get(d)->error_to_string(err), err));
 }
 
 void runtime::raise_error_if(bool condition, std::string_view error_msg) const {

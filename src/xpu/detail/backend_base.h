@@ -1,5 +1,5 @@
-#ifndef XPU_DETAIL_DRIVER_INTERFACE_H
-#define XPU_DETAIL_DRIVER_INTERFACE_H
+#ifndef XPU_DETAIL_BACKEND_BASE_H
+#define XPU_DETAIL_BACKEND_BASE_H
 
 #include "common.h"
 
@@ -7,10 +7,10 @@
 
 namespace xpu::detail {
 
-class driver_interface {
+class backend_base {
 
 public:
-    virtual ~driver_interface() {}
+    virtual ~backend_base() {}
 
     virtual error setup() = 0;
     virtual error malloc_device(void **, size_t) = 0;

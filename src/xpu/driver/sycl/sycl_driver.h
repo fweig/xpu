@@ -1,7 +1,7 @@
 #ifndef XPU_DRIVER_SYCL_SYCL_DRIVER_H
 #define XPU_DRIVER_SYCL_SYCL_DRIVER_H
 
-#include "../../detail/driver_interface.h"
+#include "../../detail/backend_base.h"
 
 #include <sycl/sycl.hpp>
 
@@ -9,7 +9,7 @@
 
 namespace xpu::detail {
 
-class sycl_driver : public driver_interface {
+class sycl_driver : public backend_base {
 
 public:
     virtual ~sycl_driver() {}

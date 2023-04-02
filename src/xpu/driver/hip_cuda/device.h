@@ -553,7 +553,7 @@ struct action_runner<constant_tag, F> {
 template<typename K, typename... Args>
 struct action_runner<kernel_tag, K, void(K::*)(kernel_context<typename K::shared_memory, typename K::constants> &, Args...)> {
 
-    static int call(float *ms, driver_interface * /*cuda_driver*/, grid g, Args... args) {
+    static int call(float *ms, backend_base * /*cuda_driver*/, grid g, Args... args) {
         dim block_dim = K::block_size::value;
         dim grid_dim{};
 
@@ -614,7 +614,7 @@ struct action_runner<constant_tag, F> {
 template<typename K, typename... Args>
 struct action_runner<kernel_tag, K, void(K::*)(kernel_context<typename K::shared_memory, typename K::constants> &, Args...)> {
 
-    static int call(float *ms, driver_interface * /*hip_driver*/, grid g, Args... args) {
+    static int call(float *ms, backend_base * /*hip_driver*/, grid g, Args... args) {
         dim block_dim = K::block_size::value;
         dim grid_dim{};
 

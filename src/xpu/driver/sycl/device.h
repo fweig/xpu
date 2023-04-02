@@ -324,7 +324,7 @@ struct xpu::detail::action_runner<xpu::detail::kernel_tag, K, void(K::*)(xpu::ke
     using constants = typename K::constants;
     using context = kernel_context<shared_memory, constants>;
 
-    static int call(float *ms, driver_interface *i_driver, grid g, Args... args) {
+    static int call(float *ms, backend_base *i_driver, grid g, Args... args) {
         dim block_dim = K::block_size::value;
         dim grid_dim{};
         g.get_compute_grid(block_dim, grid_dim);

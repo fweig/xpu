@@ -1,11 +1,11 @@
 #ifndef XPU_DRIVER_CPU_CPU_DRIVER_H
 #define XPU_DRIVER_CPU_CPU_DRIVER_H
 
-#include "../../detail/driver_interface.h"
+#include "../../detail/backend_base.h"
 
 namespace xpu::detail {
 
-class cpu_driver : public driver_interface {
+class cpu_driver : public backend_base {
 
 public:
     virtual ~cpu_driver() {}

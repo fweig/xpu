@@ -163,10 +163,10 @@ int sycl_driver::get_device_id(sycl::device dev) {
     return std::distance(devices.begin(), it);
 }
 
-extern "C" xpu::detail::driver_interface *create() {
+extern "C" xpu::detail::backend_base *create() {
     return new xpu::detail::sycl_driver{};
 }
 
-extern "C" void destroy(xpu::detail::driver_interface *b) {
+extern "C" void destroy(xpu::detail::backend_base *b) {
     delete b;
 }

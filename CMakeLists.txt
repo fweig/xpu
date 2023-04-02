@@ -190,7 +190,9 @@ function(xpu_attach Library)
 endfunction()
 
 add_library(xpu SHARED
+    src/xpu/detail/backend.cpp
     src/xpu/detail/buffer_registry.cpp
+    src/xpu/detail/common.cpp
     src/xpu/detail/dl_utils.cpp
     src/xpu/detail/exceptions.cpp
     src/xpu/detail/log.cpp

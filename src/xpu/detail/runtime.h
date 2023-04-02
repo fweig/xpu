@@ -3,6 +3,7 @@
 
 // #include "../common.h"
 #include "../driver/cpu/cpu_driver.h"
+#include "backend.h"
 #include "common.h"
 #include "dl_utils.h"
 #include "dynamic_loader.h"
@@ -125,11 +126,6 @@ public:
     }
 
 private:
-    std::unique_ptr<cpu_driver> m_cpu_driver;
-    std::unique_ptr<lib_obj<driver_interface>> m_cuda_driver;
-    std::unique_ptr<lib_obj<driver_interface>> m_hip_driver;
-    std::unique_ptr<lib_obj<driver_interface>> m_sycl_driver;
-
     image_pool m_images;
 
     bool m_measure_time = false;
@@ -170,15 +166,13 @@ private:
         return i;
     }
 
+    backend_base *get_active_driver() const {
+        return backend::get(m_active_device.backend);
+    }
+
     std::optional<std::pair<driver_t, int>> try_parse_device(std::string_view) const;
 
-    bool has_driver(driver_t) const;
-    driver_interface *get_driver(driver_t) const;
-    driver_interface *get_active_driver() const;
-
     std::string complete_file_name(const char *, driver_t) const;
-
-    const char *driver_str(driver_t, bool lower = false) const;
 
     void throw_on_driver_error(driver_t, error) const;
 

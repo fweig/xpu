@@ -1,4 +1,4 @@
-#include "../../detail/driver_interface.h"
+#include "../../detail/backend_base.h"
 #include "../../detail/log.h"
 #include "../../detail/macros.h"
 #include "../../common.h"
@@ -16,7 +16,7 @@ using cuhip_pointer_attributes = hipPointerAttribute_t;
 
 namespace xpu::detail {
 
-class CUHIP(driver) : public driver_interface {
+class CUHIP(driver) : public backend_base {
 
 public:
     virtual ~CUHIP(driver)() {}
@@ -229,10 +229,10 @@ public:
 
 } // namespace xpu::detail
 
-extern "C" xpu::detail::driver_interface *create() {
+extern "C" xpu::detail::backend_base *create() {
     return new xpu::detail::CUHIP(driver){};
 }
 
-extern "C" void destroy(xpu::detail::driver_interface *b) {
+extern "C" void destroy(xpu::detail::backend_base *b) {
     delete b;
 }

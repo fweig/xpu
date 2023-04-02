@@ -22,7 +22,7 @@ TEST(XPUTest, CanGetDeviceFromPointer) {
     xpu::ptr_prop prop{&h};
     ASSERT_EQ(prop.ptr(), &h);
     ASSERT_EQ(prop.backend(), xpu::cpu);
-    ASSERT_EQ(prop.device(), 0);
+    ASSERT_EQ(prop.device().device_nr(), 0);
     ASSERT_EQ(prop.type(), xpu::mem_type::unknown);
 
     {

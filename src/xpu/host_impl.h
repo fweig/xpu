@@ -80,7 +80,7 @@ inline xpu::device::device(std::string_view xpuid) {
 }
 
 inline xpu::device::device(driver_t backend, int device) {
-    m_impl = detail::runtime::instance().get_device(backend, device);
+    m_impl = detail::runtime::instance().get_device(static_cast<detail::driver_t>(backend), device);
 }
 
 inline xpu::device::device(int id) {
@@ -123,7 +123,7 @@ void xpu::set_constant(const typename C::data_t &symbol) {
 }
 
 inline xpu::ptr_prop::ptr_prop(const void *ptr) {
-    detail::runtime::instance().get_ptr_prop(ptr, this);
+    detail::runtime::instance().get_ptr_prop(ptr, &m_prop);
 }
 
 template<typename T>

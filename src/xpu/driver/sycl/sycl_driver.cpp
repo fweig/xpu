@@ -91,7 +91,7 @@ error sycl_driver::device_synchronize() {
 error sycl_driver::get_properties(device_prop *props, int device) {
     sycl::device dev = sycl::device::get_devices().at(device);
     props->name = dev.get_info<sycl::info::device::name>();
-    props->driver = xpu::sycl;
+    props->driver = sycl;
 
     // XPU_LOG("sycl_driver::get_properties: device name: %s, version: %s", props->name.c_str(), dev.get_info<sycl::info::device::version>().c_str());
     props->arch = dev.get_info<sycl::info::device::version>();
@@ -153,7 +153,7 @@ const char *sycl_driver::error_to_string(error err) {
     return "Unknown error";
 }
 
-xpu::driver_t sycl_driver::get_type() {
+driver_t sycl_driver::get_type() {
     return driver_t::sycl;
 }
 

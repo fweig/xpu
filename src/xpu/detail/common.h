@@ -1,8 +1,6 @@
 #ifndef XPU_DETAIL_COMMON_H
 #define XPU_DETAIL_COMMON_H
 
-#include "../common.h"
-
 #include <array>
 #include <memory>
 #include <string>
@@ -21,6 +19,14 @@ enum mem_type {
     mem_shared,
     mem_unknown,
 };
+
+enum driver_t {
+    cpu,
+    cuda,
+    hip,
+    sycl,
+};
+constexpr inline size_t num_drivers = 4;
 
 struct device {
     int id;
@@ -47,6 +53,12 @@ struct device_prop {
 
     size_t global_mem_total;
     size_t global_mem_available;
+};
+
+struct ptr_prop {
+    mem_type type;
+    device dev;
+    void *ptr;
 };
 
 struct queue_handle {

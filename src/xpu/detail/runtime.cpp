@@ -4,7 +4,8 @@
 #include <cstdlib>
 #include <sstream>
 
-#define DRIVER_CALL_I(type, func) throw_on_driver_error((type), get_driver((type))->func)
+#define DRIVER_CALL_I(type, func) throw_on_driver_error(static_cast<detail::driver_t>(type), \
+    get_driver(static_cast<detail::driver_t>(type))->func)
 #define DRIVER_CALL(func) DRIVER_CALL_I(m_active_device.backend, func)
 #define CPU_DRIVER_CALL(func) DRIVER_CALL_I(cpu, func)
 #define RAISE_INTERNAL_ERROR() raise_error(format("%s:%d: Internal xpu error. This should never happen! Please file a bug.", __FILE__, __LINE__))
@@ -158,14 +159,14 @@ void runtime::synchronize_queue(queue_handle queue) {
 
 void runtime::memcpy(void *dst, const void *src, size_t bytes) {
     if (logger::instance().active()) {
-        ptr_prop src_prop{src};
-        ptr_prop dst_prop{dst};
+        xpu::ptr_prop src_prop{src};
+        xpu::ptr_prop dst_prop{dst};
 
         device_prop from;
-        DRIVER_CALL_I(src_prop.backend(), get_properties(&from, src_prop.device()));
+        DRIVER_CALL_I(src_prop.backend(), get_properties(&from, src_prop.device().device_nr()));
 
         device_prop to;
-        DRIVER_CALL_I(dst_prop.backend(), get_properties(&to, dst_prop.device()));
+        DRIVER_CALL_I(dst_prop.backend(), get_properties(&to, dst_prop.device().device_nr()));
 
         XPU_LOG("Copy %lu bytes from %s to %s.", bytes, from.name.c_str(), to.name.c_str());
     }
@@ -174,9 +175,9 @@ void runtime::memcpy(void *dst, const void *src, size_t bytes) {
 
 void runtime::memset(void *dst, int ch, size_t bytes) {
     if (logger::instance().active()) {
-        ptr_prop dst_prop{dst};
+        xpu::ptr_prop dst_prop{dst};
         device_prop dev;
-        DRIVER_CALL_I(dst_prop.backend(), get_properties(&dev, dst_prop.device()));
+        DRIVER_CALL_I(dst_prop.backend(), get_properties(&dev, dst_prop.device().device_nr()));
         XPU_LOG("Setting %lu bytes on %s to %d.", bytes, dev.name.c_str(), ch);
     }
     DRIVER_CALL(memset(dst, ch, bytes));
@@ -195,7 +196,7 @@ xpu::detail::device_prop runtime::device_properties(int id) {
     return props;
 }
 
-std::optional<std::pair<xpu::driver_t, int>> runtime::try_parse_device(std::string_view device_name) const {
+std::optional<std::pair<xpu::detail::driver_t, int>> runtime::try_parse_device(std::string_view device_name) const {
     std::vector<std::pair<std::string, driver_t>> str_to_driver {
         {"cpu", cpu},
         {"cuda", cuda},
@@ -260,7 +261,7 @@ device runtime::get_device(std::string_view device_name) const {
 
 void runtime::get_ptr_prop(const void *ptr, ptr_prop *prop) {
 
-    prop->m_ptr = const_cast<void *>(ptr);
+    prop->ptr = const_cast<void *>(ptr);
 
     for (driver_t driver_type : {cuda, hip, sycl, cpu}) {
         auto *driver = get_driver(driver_type);
@@ -275,9 +276,8 @@ void runtime::get_ptr_prop(const void *ptr, ptr_prop *prop) {
             continue;
         }
 
-        prop->m_type = static_cast<xpu::mem_type>(mem_type);
-        prop->m_backend = driver_type;
-        prop->m_device = platform_device;
+        prop->type = mem_type;
+        prop->dev = get_device(driver_type, platform_device);
         return;
     }
 

@@ -21,6 +21,7 @@ namespace xpu {
 // Forward declarations
 template<typename T> class buffer_prop;
 class queue;
+class ptr_prop;
 namespace detail { class runtime; }
 
 enum direction {
@@ -198,7 +199,7 @@ public:
     /**
      * @brief Get the backend associated with the device.
      */
-    driver_t backend() const { return m_impl.backend; }
+    driver_t backend() const { return static_cast<driver_t>(m_impl.backend); }
 
     /**
      * @brief Get the device number within the backend.
@@ -207,6 +208,7 @@ public:
 
 private:
     friend class queue;
+    friend class ptr_prop;
     explicit device(detail::device impl) : m_impl(std::move(impl)) {}
     detail::device m_impl;
 
@@ -233,7 +235,7 @@ public:
     /**
      * @brief Get the backend associated with the device.
      */
-    driver_t backend() const { return m_prop.driver; }
+    driver_t backend() const { return static_cast<driver_t>(m_prop.driver); }
 
     /**
      * @brief Returns the architecture of the device, if applicable.
@@ -460,31 +462,27 @@ public:
     /**
      * @returns The pointer.
      */
-    void *ptr() const { return m_ptr; }
+    void *ptr() const { return m_prop.ptr; }
 
     /**
      * @returns The type of the memory.
      * @see mem_type
      */
-    mem_type type() const { return m_type; }
+    mem_type type() const { return static_cast<mem_type>(m_prop.type); }
 
     /**
      * @returns The device the memory is allocated on.
      */
-    int device() const { return m_device; }
+    xpu::device device() const { return xpu::device{m_prop.dev}; }
 
     /**
      * @returns The backend used to allocate the memory.
      * @see driver_t
      */
-    driver_t backend() const { return m_backend; }
+    driver_t backend() const { return static_cast<driver_t>(m_prop.dev.backend); }
 
 private:
-    friend class detail::runtime;
-    void *m_ptr;
-    int m_device;
-    xpu::driver_t m_backend;
-    mem_type m_type;
+    detail::ptr_prop m_prop;
 };
 
 template<typename T>

@@ -1,6 +1,7 @@
 #ifndef XPU_COMMON_H
 #define XPU_COMMON_H
 
+#include "detail/common.h"
 #include "defines.h"
 #include "detail/buffer_registry.h"
 
@@ -9,13 +10,11 @@
 namespace xpu {
 
 enum driver_t {
-    cpu,
-    cuda,
-    hip,
-    sycl,
+    cpu = detail::driver_t::cpu,
+    cuda = detail::cuda,
+    hip = detail::hip,
+    sycl = detail::sycl,
 };
-
-constexpr inline size_t num_drivers = 4;
 
 struct dim {
     int x = -1;

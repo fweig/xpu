@@ -1,7 +1,6 @@
 #include "cpu_driver.h"
 
 #include "../../detail/log.h"
-#include "../../host.h"
 
 #include <unistd.h>
 
@@ -157,6 +156,6 @@ const char *cpu_driver::error_to_string(error err) {
     return "Unknown error code";
 }
 
-xpu::driver_t cpu_driver::get_type() {
-    return xpu::cpu;
+xpu::detail::driver_t cpu_driver::get_type() {
+    return cpu;
 }

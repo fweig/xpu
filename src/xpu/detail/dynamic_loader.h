@@ -1,9 +1,9 @@
 #ifndef XPU_DETAIL_DYNAMIC_LOADER_H
 #define XPU_DETAIL_DYNAMIC_LOADER_H
 
-#include "../common.h"
 #include "../defines.h"
 #include "../driver/cpu/this_thread.h"
+#include "common.h"
 #include "constant_memory.h"
 #include "driver_interface.h"
 #include "log.h"

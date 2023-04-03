@@ -69,7 +69,7 @@ if (XPU_STANDALONE)
     endif()
     set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
     # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g3 -Wall -Wextra -Werror -Wfatal-errors")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror")
 
     check_cxx_compiler_flag("-fmax-errors=5" CXX_HAS_MAX_ERRORS_FLAG)
     if (CXX_HAS_MAX_ERRORS_FLAG)

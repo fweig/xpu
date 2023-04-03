@@ -373,13 +373,17 @@ XPU_D float trunc(float x);
 
 XPU_D          int atomic_cas(int *addr, int compare, int val);
 XPU_D unsigned int atomic_cas(unsigned int *addr, unsigned int compare, unsigned int val);
+XPU_D        float atomic_cas(float *addr, float compare, float val);
 XPU_D          int atomic_cas_block(int *addr, int compare, int val);
 XPU_D unsigned int atomic_cas_block(unsigned int *addr, unsigned int compare, unsigned int val);
+XPU_D        float atomic_cas_block(float *addr, float compare, float val);
 
 XPU_D          int atomic_add(int *addr, int val);
 XPU_D unsigned int atomic_add(unsigned int *addr, unsigned int val);
+XPU_D        float atomic_add(float *addr, float val);
 XPU_D          int atomic_add_block(int *addr, int val);
 XPU_D unsigned int atomic_add_block(unsigned int *addr, unsigned int val);
+XPU_D        float atomic_add_block(float *addr, float val);
 
 XPU_D          int atomic_sub(int *addr, int val);
 XPU_D unsigned int atomic_sub(unsigned int *addr, unsigned int val);

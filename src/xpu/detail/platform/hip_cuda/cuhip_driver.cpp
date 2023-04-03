@@ -37,7 +37,13 @@ public:
     }
 
     error malloc_host(void **ptr, size_t bytes) override {
-        return CUHIP(MallocHost)(ptr, bytes);
+        return
+            #if XPU_IS_HIP
+                hipHostMalloc(ptr, bytes, hipHostMallocDefault)
+            #else
+                cudaHostAlloc(ptr, bytes, 0)
+            #endif
+        ;
     }
 
     error malloc_shared(void **ptr, size_t bytes) override {
@@ -46,7 +52,13 @@ public:
 
     error free(void *ptr) override {
         if (resides_on_host(ptr)) {
-            return CUHIP(FreeHost)(ptr);
+            return
+                #if XPU_IS_HIP
+                    hipHostFree(ptr)
+                #else
+                    cudaFreeHost(ptr)
+                #endif
+            ;
         } else {
             return CUHIP(Free)(ptr);
         }
@@ -100,8 +112,7 @@ public:
     }
 
     error num_devices(int *devices) override {
-        CUHIP(GetDeviceCount)(devices);
-        return 0;
+        return CUHIP(GetDeviceCount)(devices);
     }
 
     error set_device(int device) override {
@@ -205,6 +216,7 @@ public:
                 *device = ptrattrs.device;
                 break;
             case hipMemoryTypeManaged:
+            case hipMemoryTypeUnified:
                 *type = mem_shared;
                 *device = ptrattrs.device;
                 break;

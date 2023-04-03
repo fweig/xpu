@@ -109,44 +109,43 @@ XPU_FORCE_INLINE float xpu::tanh(float x) { return std::tanh(x); }
 XPU_FORCE_INLINE float xpu::tgamma(float x) { return std::tgammaf(x); }
 XPU_FORCE_INLINE float xpu::trunc(float x) { return std::truncf(x); }
 
-namespace xpu {
 
-inline int atomic_cas(int *addr, int compare, int val) {
+inline int xpu::atomic_cas(int *addr, int compare, int val) {
     __atomic_compare_exchange(addr, &compare, &val, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
     return compare;
 }
 
-inline unsigned int atomic_cas(unsigned int *addr, unsigned int compare, unsigned int val) {
+inline unsigned int xpu::atomic_cas(unsigned int *addr, unsigned int compare, unsigned int val) {
     __atomic_compare_exchange(addr, &compare, &val, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
     return compare;
 }
 
-inline float atomic_cas(float *addr, float compare, float val) {
+inline float xpu::atomic_cas(float *addr, float compare, float val) {
     __atomic_compare_exchange(addr, &compare, &val, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
     return compare;
 }
 
-inline int atomic_cas_block(int *addr, int compare, int val) {
+inline int xpu::atomic_cas_block(int *addr, int compare, int val) {
     return std::exchange(*addr, (*addr == compare ? val : *addr));
 }
 
-inline unsigned int atomic_cas_block(unsigned int *addr, unsigned int compare, unsigned int val) {
+inline unsigned int xpu::atomic_cas_block(unsigned int *addr, unsigned int compare, unsigned int val) {
     return std::exchange(*addr, (*addr == compare ? val : *addr));
 }
 
-inline float atomic_cas_block(float *addr, float compare, float val) {
+inline float xpu::atomic_cas_block(float *addr, float compare, float val) {
     return std::exchange(*addr, (*addr == compare ? val : *addr));
 }
 
-inline int atomic_add(int *addr, int val) {
+inline int xpu::atomic_add(int *addr, int val) {
     return __atomic_fetch_add(addr, val, __ATOMIC_SEQ_CST);
 }
 
-inline unsigned int atomic_add(unsigned int *addr, unsigned int val) {
+inline unsigned int xpu::atomic_add(unsigned int *addr, unsigned int val) {
     return __atomic_fetch_add(addr, val, __ATOMIC_SEQ_CST);
 }
 
-inline float atomic_add(float *addr, float val) {
+inline float xpu::atomic_add(float *addr, float val) {
     float old = *addr;
     float assumed;
 
@@ -158,83 +157,85 @@ inline float atomic_add(float *addr, float val) {
     return old;
 }
 
-inline int atomic_add_block(int *addr, int val) {
+inline int xpu::atomic_add_block(int *addr, int val) {
     return std::exchange(*addr, *addr + val);
 }
 
-inline unsigned int atomic_add_block(unsigned int *addr, unsigned int val) {
+inline unsigned int xpu::atomic_add_block(unsigned int *addr, unsigned int val) {
     return std::exchange(*addr, *addr + val);
 }
 
-inline float atomic_add_block(float *addr, float val) {
+inline float xpu::atomic_add_block(float *addr, float val) {
     return std::exchange(*addr, *addr + val);
 }
 
-inline int atomic_sub(int *addr, int val) {
+inline int xpu::atomic_sub(int *addr, int val) {
     return __atomic_fetch_sub(addr, val, __ATOMIC_SEQ_CST);
 }
 
-inline unsigned int atomic_sub(unsigned int *addr, unsigned int val) {
+inline unsigned int xpu::atomic_sub(unsigned int *addr, unsigned int val) {
     return __atomic_fetch_sub(addr, val, __ATOMIC_SEQ_CST);
 }
 
-inline int atomic_sub_block(int *addr, int val) {
+inline int xpu::atomic_sub_block(int *addr, int val) {
     return std::exchange(*addr, *addr - val);
 }
 
-inline unsigned int atomic_sub_block(unsigned int *addr, unsigned int val) {
+inline unsigned int xpu::atomic_sub_block(unsigned int *addr, unsigned int val) {
     return std::exchange(*addr, *addr - val);
 }
 
-inline int atomic_and(int *addr, int val) {
+inline int xpu::atomic_and(int *addr, int val) {
     return __atomic_fetch_and(addr, val, __ATOMIC_SEQ_CST);
 }
 
-inline unsigned int atomic_and(unsigned int *addr, unsigned int val) {
+inline unsigned int xpu::atomic_and(unsigned int *addr, unsigned int val) {
     return __atomic_fetch_and(addr, val, __ATOMIC_SEQ_CST);
 }
 
-inline int atomic_and_block(int *addr, int val) {
+inline int xpu::atomic_and_block(int *addr, int val) {
     return std::exchange(*addr, *addr & val);
 }
 
-inline unsigned int atomic_and_block(unsigned int *addr, unsigned int val) {
+inline unsigned int xpu::atomic_and_block(unsigned int *addr, unsigned int val) {
     return std::exchange(*addr, *addr & val);
 }
 
-inline int atomic_or(int *addr, int val) {
+inline int xpu::atomic_or(int *addr, int val) {
     return __atomic_fetch_or(addr, val, __ATOMIC_SEQ_CST);
 }
 
-inline unsigned int atomic_or(unsigned int *addr, unsigned int val) {
+inline unsigned int xpu::atomic_or(unsigned int *addr, unsigned int val) {
     return __atomic_fetch_or(addr, val, __ATOMIC_SEQ_CST);
 }
 
-inline int atomic_or_block(int *addr, int val) {
+inline int xpu::atomic_or_block(int *addr, int val) {
     return std::exchange(*addr, *addr | val);
 }
 
-inline unsigned int atomic_or_block(unsigned int *addr, unsigned int val) {
+inline unsigned int xpu::atomic_or_block(unsigned int *addr, unsigned int val) {
     return std::exchange(*addr, *addr | val);
 }
 
-inline int atomic_xor(int *addr, int val) {
+inline int xpu::atomic_xor(int *addr, int val) {
     return __atomic_fetch_xor(addr, val, __ATOMIC_SEQ_CST);
 }
 
-inline unsigned int atomic_xor(unsigned int *addr, unsigned int val) {
+inline unsigned int xpu::atomic_xor(unsigned int *addr, unsigned int val) {
     return __atomic_fetch_xor(addr, val, __ATOMIC_SEQ_CST);
 }
 
-inline int atomic_xor_block(int *addr, int val) {
+inline int xpu::atomic_xor_block(int *addr, int val) {
     return std::exchange(*addr, *addr ^ val);
 }
 
-inline unsigned int atomic_xor_block(unsigned int *addr, unsigned int val) {
+inline unsigned int xpu::atomic_xor_block(unsigned int *addr, unsigned int val) {
     return std::exchange(*addr, *addr ^ val);
 }
 
-XPU_FORCE_INLINE void barrier() { return; }
+XPU_FORCE_INLINE void xpu::barrier(xpu::tpos &) { return; }
+
+namespace xpu {
 
 namespace detail {
     union float_int_reint {

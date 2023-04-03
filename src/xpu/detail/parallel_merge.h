@@ -42,7 +42,7 @@ public:
 
         int diag_next = 0;
         int mp_next = merge_path<MgpuBoundsLower>(a, size_a, b, size_b, diag_next, comp);
-        for (int diag = 0; diag < size_a + size_b; diag = diag_next) {
+        for (int diag = 0; diag < static_cast<int>(size_a + size_b); diag = diag_next) {
 
             int mp = mp_next;
 

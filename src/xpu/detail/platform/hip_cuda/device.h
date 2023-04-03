@@ -106,21 +106,20 @@ XPU_D XPU_FORCE_INLINE float xpu::tanh(float x) { return ::tanhf(x); }
 XPU_D XPU_FORCE_INLINE float xpu::tgamma(float x) { return ::tgammaf(x); }
 XPU_D XPU_FORCE_INLINE float xpu::trunc(float x) { return ::truncf(x); }
 
-namespace xpu {
 
-XPU_D XPU_FORCE_INLINE int atomic_cas(int *addr, int compare, int val) {
+XPU_D XPU_FORCE_INLINE int xpu::atomic_cas(int *addr, int compare, int val) {
     return atomicCAS(addr, compare, val);
 }
 
-XPU_D XPU_FORCE_INLINE unsigned int atomic_cas(unsigned int *addr, unsigned int compare, unsigned int val) {
+XPU_D XPU_FORCE_INLINE unsigned int xpu::atomic_cas(unsigned int *addr, unsigned int compare, unsigned int val) {
     return atomicCAS(addr, compare, val);
 }
 
-XPU_D XPU_FORCE_INLINE float atomic_cas(float *addr, float compare, float val) {
+XPU_D XPU_FORCE_INLINE float xpu::atomic_cas(float *addr, float compare, float val) {
     return __int_as_float(atomicCAS((int *) addr, __float_as_int(compare), __float_as_int(val)));
 }
 
-XPU_D XPU_FORCE_INLINE int atomic_cas_block(int *addr, int compare, int val) {
+XPU_D XPU_FORCE_INLINE int xpu::atomic_cas_block(int *addr, int compare, int val) {
 #if XPU_CUDA_HAS_BLOCK_ATOMICS
     return atomicCAS_block(addr, compare, val);
 #else
@@ -128,7 +127,7 @@ XPU_D XPU_FORCE_INLINE int atomic_cas_block(int *addr, int compare, int val) {
 #endif
 }
 
-XPU_D XPU_FORCE_INLINE unsigned int atomic_cas_block(unsigned int *addr, unsigned int compare, unsigned int val) {
+XPU_D XPU_FORCE_INLINE unsigned int xpu::atomic_cas_block(unsigned int *addr, unsigned int compare, unsigned int val) {
 #if XPU_CUDA_HAS_BLOCK_ATOMICS
     return atomicCAS_block(addr, compare, val);
 #else
@@ -136,23 +135,23 @@ XPU_D XPU_FORCE_INLINE unsigned int atomic_cas_block(unsigned int *addr, unsigne
 #endif
 }
 
-XPU_D XPU_FORCE_INLINE float atomic_cas_block(float *addr, float compare, float val) {
+XPU_D XPU_FORCE_INLINE float xpu::atomic_cas_block(float *addr, float compare, float val) {
     return int_as_float(atomic_cas_block((int *) addr, float_as_int(compare), float_as_int(val)));
 }
 
-XPU_D XPU_FORCE_INLINE int atomic_add(int *addr, int compare, int val) {
+XPU_D XPU_FORCE_INLINE int xpu::atomic_add(int *addr, int val) {
     return atomicAdd(addr, val);
 }
 
-XPU_D XPU_FORCE_INLINE unsigned int atomic_add(unsigned int *addr, unsigned int compare, unsigned int val) {
+XPU_D XPU_FORCE_INLINE unsigned int xpu::atomic_add(unsigned int *addr, unsigned int val) {
     return atomicAdd(addr, val);
 }
 
-XPU_D XPU_FORCE_INLINE float atomic_add(float *addr, float val) {
+XPU_D XPU_FORCE_INLINE float xpu::atomic_add(float *addr, float val) {
     return atomicAdd(addr, val);
 }
 
-XPU_D XPU_FORCE_INLINE int atomic_add_block(int *addr, int val) {
+XPU_D XPU_FORCE_INLINE int xpu::atomic_add_block(int *addr, int val) {
 #if XPU_CUDA_HAS_BLOCK_ATOMICS
     return atomicAdd_block(addr, val);
 #else
@@ -160,7 +159,7 @@ XPU_D XPU_FORCE_INLINE int atomic_add_block(int *addr, int val) {
 #endif
 }
 
-XPU_D XPU_FORCE_INLINE unsigned int atomic_add_block(unsigned int *addr, unsigned int val) {
+XPU_D XPU_FORCE_INLINE unsigned int xpu::atomic_add_block(unsigned int *addr, unsigned int val) {
 #if XPU_CUDA_HAS_BLOCK_ATOMICS
     return atomicAdd_block(addr, val);
 #else
@@ -168,7 +167,7 @@ XPU_D XPU_FORCE_INLINE unsigned int atomic_add_block(unsigned int *addr, unsigne
 #endif
 }
 
-XPU_D XPU_FORCE_INLINE float atomic_add_block(float *addr, float val) {
+XPU_D XPU_FORCE_INLINE float xpu::atomic_add_block(float *addr, float val) {
 #if XPU_CUDA_HAS_BLOCK_ATOMICS
     return atomicAdd_block(addr, val);
 #else
@@ -176,15 +175,15 @@ XPU_D XPU_FORCE_INLINE float atomic_add_block(float *addr, float val) {
 #endif
 }
 
-XPU_D XPU_FORCE_INLINE int atomic_sub(int *addr, int val) {
+XPU_D XPU_FORCE_INLINE int xpu::atomic_sub(int *addr, int val) {
     return atomicSub(addr, val);
 }
 
-XPU_D XPU_FORCE_INLINE unsigned int atomic_sub(unsigned int *addr, unsigned int val) {
+XPU_D XPU_FORCE_INLINE unsigned int xpu::atomic_sub(unsigned int *addr, unsigned int val) {
     return atomicSub(addr, val);
 }
 
-XPU_D XPU_FORCE_INLINE int atomic_sub_block(int *addr, int val) {
+XPU_D XPU_FORCE_INLINE int xpu::atomic_sub_block(int *addr, int val) {
 #if XPU_CUDA_HAS_BLOCK_ATOMICS
     return atomicSub_block(addr, val);
 #else
@@ -192,7 +191,7 @@ XPU_D XPU_FORCE_INLINE int atomic_sub_block(int *addr, int val) {
 #endif
 }
 
-XPU_D XPU_FORCE_INLINE unsigned int atomic_sub_block(unsigned int *addr, unsigned int val) {
+XPU_D XPU_FORCE_INLINE unsigned int xpu::atomic_sub_block(unsigned int *addr, unsigned int val) {
 #if XPU_CUDA_HAS_BLOCK_ATOMICS
     return atomicSub_block(addr, val);
 #else
@@ -200,15 +199,15 @@ XPU_D XPU_FORCE_INLINE unsigned int atomic_sub_block(unsigned int *addr, unsigne
 #endif
 }
 
-XPU_D XPU_FORCE_INLINE int atomic_and(int *addr, int val) {
+XPU_D XPU_FORCE_INLINE int xpu::atomic_and(int *addr, int val) {
     return atomicAnd(addr, val);
 }
 
-XPU_D XPU_FORCE_INLINE unsigned int atomic_and(unsigned int *addr, unsigned int val) {
+XPU_D XPU_FORCE_INLINE unsigned int xpu::atomic_and(unsigned int *addr, unsigned int val) {
     return atomicAnd(addr, val);
 }
 
-XPU_D XPU_FORCE_INLINE int atomic_and_block(int *addr, int val) {
+XPU_D XPU_FORCE_INLINE int xpu::atomic_and_block(int *addr, int val) {
 #if XPU_CUDA_HAS_BLOCK_ATOMICS
     return atomicAnd_block(addr, val);
 #else
@@ -216,7 +215,7 @@ XPU_D XPU_FORCE_INLINE int atomic_and_block(int *addr, int val) {
 #endif
 }
 
-XPU_D XPU_FORCE_INLINE unsigned int atomic_and_block(unsigned int *addr, unsigned int val) {
+XPU_D XPU_FORCE_INLINE unsigned int xpu::atomic_and_block(unsigned int *addr, unsigned int val) {
 #if XPU_CUDA_HAS_BLOCK_ATOMICS
     return atomicAnd_block(addr, val);
 #else
@@ -224,15 +223,15 @@ XPU_D XPU_FORCE_INLINE unsigned int atomic_and_block(unsigned int *addr, unsigne
 #endif
 }
 
-XPU_D XPU_FORCE_INLINE int atomic_or(int *addr, int val) {
+XPU_D XPU_FORCE_INLINE int xpu::atomic_or(int *addr, int val) {
     return atomicOr(addr, val);
 }
 
-XPU_D XPU_FORCE_INLINE unsigned int atomic_or(unsigned int *addr, unsigned int val) {
+XPU_D XPU_FORCE_INLINE unsigned int xpu::atomic_or(unsigned int *addr, unsigned int val) {
     return atomicOr(addr, val);
 }
 
-XPU_D XPU_FORCE_INLINE int atomic_or_block(int *addr, int val) {
+XPU_D XPU_FORCE_INLINE int xpu::atomic_or_block(int *addr, int val) {
 #if XPU_CUDA_HAS_BLOCK_ATOMICS
     return atomicOr_block(addr, val);
 #else
@@ -240,7 +239,7 @@ XPU_D XPU_FORCE_INLINE int atomic_or_block(int *addr, int val) {
 #endif
 }
 
-XPU_D XPU_FORCE_INLINE unsigned int atomic_or_block(unsigned int *addr, unsigned int val) {
+XPU_D XPU_FORCE_INLINE unsigned int xpu::atomic_or_block(unsigned int *addr, unsigned int val) {
 #if XPU_CUDA_HAS_BLOCK_ATOMICS
     return atomicOr_block(addr, val);
 #else
@@ -248,15 +247,15 @@ XPU_D XPU_FORCE_INLINE unsigned int atomic_or_block(unsigned int *addr, unsigned
 #endif
 }
 
-XPU_D XPU_FORCE_INLINE int atomic_xor(int *addr, int val) {
+XPU_D XPU_FORCE_INLINE int xpu::atomic_xor(int *addr, int val) {
     return atomicXor(addr, val);
 }
 
-XPU_D XPU_FORCE_INLINE unsigned int atomic_xor(unsigned int *addr, unsigned int val) {
+XPU_D XPU_FORCE_INLINE unsigned int xpu::atomic_xor(unsigned int *addr, unsigned int val) {
     return atomicXor(addr, val);
 }
 
-XPU_D XPU_FORCE_INLINE int atomic_xor_block(int *addr, int val) {
+XPU_D XPU_FORCE_INLINE int xpu::atomic_xor_block(int *addr, int val) {
 #if XPU_CUDA_HAS_BLOCK_ATOMICS
     return atomicXor_block(addr, val);
 #else
@@ -264,7 +263,7 @@ XPU_D XPU_FORCE_INLINE int atomic_xor_block(int *addr, int val) {
 #endif
 }
 
-XPU_D XPU_FORCE_INLINE unsigned int atomic_xor_block(unsigned int *addr, unsigned int val) {
+XPU_D XPU_FORCE_INLINE unsigned int xpu::atomic_xor_block(unsigned int *addr, unsigned int val) {
 #if XPU_CUDA_HAS_BLOCK_ATOMICS
     return atomicXor_block(addr, val);
 #else
@@ -272,10 +271,12 @@ XPU_D XPU_FORCE_INLINE unsigned int atomic_xor_block(unsigned int *addr, unsigne
 #endif
 }
 
-XPU_D XPU_FORCE_INLINE void barrier(tpos &) { __syncthreads(); }
+XPU_D XPU_FORCE_INLINE void xpu::barrier(tpos &) { __syncthreads(); }
 
-XPU_D XPU_FORCE_INLINE int float_as_int(float val) { return __float_as_int(val); }
-XPU_D XPU_FORCE_INLINE float int_as_float(int val) { return __int_as_float(val); }
+XPU_D XPU_FORCE_INLINE int xpu::float_as_int(float val) { return __float_as_int(val); }
+XPU_D XPU_FORCE_INLINE float xpu::int_as_float(int val) { return __int_as_float(val); }
+
+namespace xpu {
 
 namespace detail {
 

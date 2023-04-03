@@ -1,6 +1,5 @@
 #include "sycl_driver.h"
-#include "../../detail/log.h"
-
+#include "../../log.h"
 
 using namespace xpu::detail;
 

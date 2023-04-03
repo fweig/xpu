@@ -8,14 +8,14 @@
 #include "detail/type_info.h"
 
 #if XPU_IS_CPU
-#include "driver/cpu/cmem_impl.h"
-#include "driver/cpu/tpos_impl.h"
+#include "detail/platform/cpu/cmem_impl.h"
+#include "detail/platform/cpu/tpos_impl.h"
 #elif XPU_IS_HIP_CUDA
-#include "driver/hip_cuda/cmem_impl.h"
-#include "driver/hip_cuda/tpos_impl.h"
+#include "detail/platform/hip_cuda/cmem_impl.h"
+#include "detail/platform/hip_cuda/tpos_impl.h"
 #elif XPU_IS_SYCL
-#include "driver/sycl/cmem_impl.h"
-#include "driver/sycl/tpos_impl.h"
+#include "detail/platform/sycl/cmem_impl.h"
+#include "detail/platform/sycl/tpos_impl.h"
 #else
 #error "Unsupported XPU target"
 #endif
@@ -456,11 +456,11 @@ public:
 #include "detail/dynamic_loader.h"
 
 #if XPU_IS_HIP_CUDA
-#include "driver/hip_cuda/device.h"
+#include "detail/platform/hip_cuda/device.h"
 #elif XPU_IS_SYCL
-#include "driver/sycl/device.h"
+#include "detail/platform/sycl/device.h"
 #elif XPU_IS_CPU
-#include "driver/cpu/device.h"
+#include "detail/platform/cpu/device.h"
 #else
 #error "Unknown XPU driver."
 #endif

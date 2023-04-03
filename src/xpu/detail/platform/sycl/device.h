@@ -1,8 +1,8 @@
 #ifndef XPU_DRIVER_SYCL_DEVICE_H
 #define XPU_DRIVER_SYCL_DEVICE_H
 
-#include "../../detail/constant_memory.h"
-#include "../../detail/parallel_merge.h"
+#include "../../constant_memory.h"
+#include "../../parallel_merge.h"
 #include "cmem_impl.h"
 #include "sycl_driver.h"
 

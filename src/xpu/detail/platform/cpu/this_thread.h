@@ -1,7 +1,7 @@
 #ifndef XPU_DRIVER_CPU_THIS_THREAD_H
 #define XPU_DRIVER_CPU_THIS_THREAD_H
 
-#include "../../common.h"
+#include "../../../common.h"
 
 namespace xpu::detail::this_thread {
 

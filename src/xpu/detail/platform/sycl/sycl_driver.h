@@ -1,14 +1,20 @@
-#ifndef XPU_DRIVER_CPU_CPU_DRIVER_H
-#define XPU_DRIVER_CPU_CPU_DRIVER_H
+#ifndef XPU_DRIVER_SYCL_SYCL_DRIVER_H
+#define XPU_DRIVER_SYCL_SYCL_DRIVER_H
 
-#include "../../detail/backend_base.h"
+#include "../../backend_base.h"
+
+#include <sycl/sycl.hpp>
+
+#include <memory>
 
 namespace xpu::detail {
 
-class cpu_driver : public backend_base {
+class sycl_driver : public backend_base {
 
 public:
-    virtual ~cpu_driver() {}
+    virtual ~sycl_driver() {}
+
+    sycl::queue &default_queue();
 
     error setup() override;
     error malloc_device(void **, size_t) override;
@@ -29,21 +35,18 @@ public:
     error device_synchronize() override;
     error get_properties(device_prop *, int) override;
     error get_ptr_prop(const void *, int *, mem_type *) override;
-
     error meminfo(size_t *, size_t *) override;
-
     const char *error_to_string(error) override;
-
     driver_t get_type() override;
 
 private:
-    enum error_code : int {
-        SUCCESS = 0,
-        OUT_OF_MEMORY,
-        INVALID_DEVICE,
-        MACOSX_ERROR
-    };
+    sycl::property_list m_prop_list;
+    sycl::queue m_default_queue;
+    int m_device = -1;
 
+    std::vector<std::unique_ptr<sycl::queue>> m_queues;
+
+    int get_device_id(sycl::device);
 };
 
 } // namespace xpu::detail

@@ -1,8 +1,6 @@
 #ifndef XPU_DETAIL_RUNTIME_H
 #define XPU_DETAIL_RUNTIME_H
 
-// #include "../common.h"
-#include "../driver/cpu/cpu_driver.h"
 #include "backend.h"
 #include "common.h"
 #include "dl_utils.h"

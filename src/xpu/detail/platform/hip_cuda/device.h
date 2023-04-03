@@ -6,9 +6,9 @@
 #error "This header should not be included directly. Include xpu/device.h instead."
 #endif
 
-#include "../../detail/constant_memory.h"
-#include "../../detail/macros.h"
-#include "../../detail/parallel_merge.h"
+#include "../../constant_memory.h"
+#include "../../macros.h"
+#include "../../parallel_merge.h"
 
 #if XPU_IS_CUDA
 #include <cub/cub.cuh>

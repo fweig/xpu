@@ -2,7 +2,7 @@
 #define XPU_DRIVER_HIP_CUDA_CMEM_IMPL_H
 
 #include "../../defines.h"
-#include "../../detail/constant_memory.h"
+#include "../../constant_memory.h"
 
 namespace xpu::detail {
 

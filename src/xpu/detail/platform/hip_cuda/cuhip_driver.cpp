@@ -1,7 +1,7 @@
-#include "../../detail/backend_base.h"
-#include "../../detail/log.h"
-#include "../../detail/macros.h"
-#include "../../common.h"
+#include "../../backend_base.h"
+#include "../../log.h"
+#include "../../macros.h"
+#include "../../../defines.h"
 
 #if XPU_IS_CUDA
 #define CUHIP(expr) XPU_CONCAT(cuda, expr)

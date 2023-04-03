@@ -198,8 +198,8 @@ add_library(xpu SHARED
     src/xpu/detail/log.cpp
     src/xpu/detail/queue_handle.cpp
     src/xpu/detail/runtime.cpp
-    src/xpu/driver/cpu/cpu_driver.cpp
-    src/xpu/driver/cpu/this_thread.cpp
+    src/xpu/detail/platform/cpu/cpu_driver.cpp
+    src/xpu/detail/platform/cpu/this_thread.cpp
 )
 target_link_libraries(xpu dl)
 target_include_directories(xpu PUBLIC src)
@@ -215,21 +215,21 @@ install(DIRECTORY src/ TYPE INCLUDE
 if (XPU_ENABLE_CUDA)
     xpu_create_subproject(
         xpu Cuda
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/xpu/driver/hip_cuda/cuhip_driver.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/xpu/detail/platform/hip_cuda/cuhip_driver.cpp"
     )
 endif()
 
 if (XPU_ENABLE_HIP)
     xpu_create_subproject(
         xpu Hip
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/xpu/driver/hip_cuda/cuhip_driver.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/xpu/detail/platform/hip_cuda/cuhip_driver.cpp"
     )
 endif()
 
 if (XPU_ENABLE_SYCL)
     xpu_create_subproject(
         xpu Sycl
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/xpu/driver/sycl/sycl_driver.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/xpu/detail/platform/sycl/sycl_driver.cpp"
     )
 endif()
 

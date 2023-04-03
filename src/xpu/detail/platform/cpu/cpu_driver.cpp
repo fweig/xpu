@@ -1,6 +1,6 @@
 #include "cpu_driver.h"
 
-#include "../../detail/log.h"
+#include "../../log.h"
 
 #include <unistd.h>
 

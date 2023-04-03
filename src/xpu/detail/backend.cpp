@@ -1,7 +1,7 @@
 #include "backend.h"
 #include "dl_utils.h"
 #include "log.h"
-#include "../driver/cpu/cpu_driver.h"
+#include "platform/cpu/cpu_driver.h"
 #include <memory>
 #include <stdexcept>
 

@@ -5,8 +5,8 @@
 #error "This header should not be included directly. Include xpu/device.h instead."
 #endif
 
-#include "../../detail/macros.h"
-#include "../../detail/constant_memory.h"
+#include "../../macros.h"
+#include "../../constant_memory.h"
 #include "this_thread.h"
 
 #include <algorithm>

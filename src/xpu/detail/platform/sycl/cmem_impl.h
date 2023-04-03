@@ -1,7 +1,7 @@
 #ifndef XPU_DRIVER_SYCL_CMEM_IMPL_H
 #define XPU_DRIVER_SYCL_CMEM_IMPL_H
 
-#include "../../detail/constant_memory.h"
+#include "../../constant_memory.h"
 
 #include <sycl/sycl.hpp>
 

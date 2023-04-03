@@ -22,7 +22,14 @@ public:
     virtual ~CUHIP(driver)() {}
 
     error setup() override {
-        return 0;
+        error err =
+            #if XPU_IS_HIP
+                hipInit(0)
+            #else
+                0
+            #endif
+        ;
+        return err;
     }
 
     error malloc_device(void **ptr, size_t bytes) override {

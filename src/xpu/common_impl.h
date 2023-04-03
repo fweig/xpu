@@ -99,6 +99,19 @@ XPU_H XPU_D xpu::buffer<T> &xpu::buffer<T>::operator=(xpu::buffer<U> &&other) {
 }
 
 template<typename T>
+XPU_H XPU_D void xpu::buffer<T>::reset() {
+    m_data = nullptr;
+    remove_ref();
+}
+
+template<typename T>
+void xpu::buffer<T>::reset(size_t N, xpu::buffer_type type, T *data) {
+    remove_ref();
+    auto &registry = detail::buffer_registry::instance();
+    m_data = static_cast<T *>(registry.create(N * sizeof(T), static_cast<detail::buffer_type>(type), data));
+}
+
+template<typename T>
 XPU_H XPU_D void xpu::buffer<T>::add_ref() {
 #if !XPU_IS_DEVICE_CODE
     if (m_data != nullptr) {
@@ -115,17 +128,5 @@ XPU_H XPU_D void xpu::buffer<T>::remove_ref() {
     }
 #endif
 }
-
-// Always provide the device side for constant memory classes
-// host side is provided in host_impl.h
-template<typename T>
-struct xpu::cmem_io<T, xpu::side::device> {
-    using type = T *;
-};
-
-template<typename T>
-struct xpu::cmem_device<T, xpu::side::device> {
-    using type = T *;
-};
 
 #endif

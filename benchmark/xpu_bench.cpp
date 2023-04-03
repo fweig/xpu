@@ -115,17 +115,17 @@ private:
     static constexpr size_t n_blocks = 2000;
     static constexpr size_t buf_size = elems_per_block * n_blocks;
 
-    xpu::hd_buffer<float> a;
-    xpu::hd_buffer<float> b;
-    xpu::hd_buffer<float> c;
+    xpu::buffer<float> a;
+    xpu::buffer<float> b;
+    xpu::buffer<float> c;
 
 public:
     std::string name() { return xpu::get_name<Kernel>(); }
 
     void setup() {
-        a = xpu::hd_buffer<float>(buf_size);
-        b = xpu::hd_buffer<float>(buf_size);
-        c = xpu::hd_buffer<float>(buf_size * 2);
+        a.reset(buf_size, xpu::io_buffer);
+        b.reset(buf_size, xpu::io_buffer);
+        c.reset(buf_size * 2, xpu::io_buffer);
 
         std::mt19937 gen{42};
 
@@ -134,10 +134,12 @@ public:
         float partial_sum = 0.f;
         auto rand_partial_sum = [&](){ partial_sum += dist(gen); return partial_sum; };
 
-        std::generate(a.h(), a.h()+buf_size, rand_partial_sum);
+        xpu::h_view a_h{a};
+        std::generate(a_h.begin(), a_h.end(), rand_partial_sum);
 
         partial_sum = 0.f;
-        std::generate(b.h(), b.h()+buf_size, rand_partial_sum);
+        xpu::h_view b_h{b};
+        std::generate(b_h.begin(), b_h.end(), rand_partial_sum);
     }
 
     void teardown() {
@@ -150,7 +152,7 @@ public:
         xpu::copy(a, xpu::host_to_device);
         xpu::copy(b, xpu::host_to_device);
 
-        xpu::run_kernel<Kernel>(xpu::n_blocks(n_blocks), a.d(), b.d(), elems_per_block, c.d());
+        xpu::run_kernel<Kernel>(xpu::n_blocks(n_blocks), a.get(), b.get(), elems_per_block, c.get());
 
         xpu::copy(c, xpu::device_to_host);
     }
@@ -171,25 +173,25 @@ private:
     static constexpr size_t n_blocks = 2000;
     static constexpr size_t buf_size = elems_per_block * n_blocks;
 
-    xpu::hd_buffer<float> a;
-    xpu::hd_buffer<float> b;
-    xpu::hd_buffer<float *> dst;
+    xpu::buffer<float> a;
+    xpu::buffer<float> b;
+    xpu::buffer<float *> dst;
 
 public:
     std::string name() { return xpu::get_name<Kernel>(); }
 
     void setup() {
-        a = xpu::hd_buffer<float>(buf_size);
-        b = xpu::hd_buffer<float>(buf_size);
-        dst = xpu::hd_buffer<float *>(n_blocks);
+        a.reset(buf_size, xpu::io_buffer);
+        b.reset(buf_size, xpu::device_buffer);
+        dst.reset(n_blocks, xpu::io_buffer);
 
         std::mt19937 gen{1337};
 
         std::uniform_real_distribution<float> dist{0, 1000000};
 
+        xpu::h_view a_h{a};
         auto rand = [&](){ return dist(gen); };
-
-        std::generate(a.h(), a.h()+buf_size, rand);
+        std::generate(a_h.begin(), a_h.end(), rand);
     }
 
     void teardown() {
@@ -200,7 +202,7 @@ public:
 
     void run() {
         xpu::copy(a, xpu::host_to_device);
-        xpu::run_kernel<Kernel>(xpu::n_blocks(n_blocks), a.d(), elems_per_block, b.d(), dst.d());
+        xpu::run_kernel<Kernel>(xpu::n_blocks(n_blocks), a.get(), elems_per_block, b.get(), dst.get());
         xpu::copy(dst, xpu::device_to_host);
     }
 

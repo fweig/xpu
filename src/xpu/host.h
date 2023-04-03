@@ -386,6 +386,11 @@ public:
      */
     bool empty() const { return m_size == 0; }
 
+          T *begin() { return m_data; }
+    const T *begin() const { return m_data; }
+          T *end() { return m_data + m_size; }
+    const T *end() const { return m_data + m_size; }
+
     /**
      * @returns Reference to the element at index i.
      * @note This call is always bounds checked. Use instead unsafe_at() if no bounds check are needed.
@@ -507,79 +512,11 @@ private:
     buffer_type m_type;
 };
 
-// DEPRECATED - use buffer instead
-template<typename T>
-class hd_buffer {
-
-public:
-    hd_buffer() = default;
-    explicit hd_buffer(size_t N);
-    ~hd_buffer();
-
-    hd_buffer<T> &operator=(const hd_buffer<T> &) = delete;
-    hd_buffer<T> &operator=(hd_buffer<T> &&);
-
-    size_t size() const { return m_size; }
-
-          T *h()       { return m_h; }
-    const T *h() const { return m_h; }
-
-          T *d()       { return m_d; }
-    const T *d() const { return m_d; }
-
-          T &operator[](size_t idx)       { return m_h[idx]; }
-    const T &operator[](size_t idx) const { return m_h[idx]; }
-
-    bool copy_required() const { return m_h != m_d; }
-
-    void reset();
-
-private:
-    size_t m_size = 0;
-    T *m_h = nullptr;
-    T *m_d = nullptr;
-
-};
-
-// DEPRECATED - use buffer instead
-template<typename T>
-class d_buffer {
-
-public:
-    d_buffer() = default;
-    explicit d_buffer(size_t N);
-    ~d_buffer();
-
-    d_buffer<T> &operator=(const d_buffer<T> &) = delete;
-    d_buffer<T> &operator=(d_buffer<T> &&);
-
-    size_t size() const { return m_size; }
-
-          T *d()       { return m_d; }
-    const T *d() const { return m_d; }
-
-    void reset();
-
-private:
-    size_t m_size = 0;
-    T *m_d = nullptr;
-
-};
-
 template<typename T>
 void copy(T *dst, const T *src, size_t entries);
 
 template<typename T>
-void copy(hd_buffer<T> &buf, direction dir);
-
-template<typename T>
 void copy(buffer<T> &buf, direction dir);
-
-template<typename T>
-void memset(hd_buffer<T> &buf, int ch);
-
-template<typename T>
-void memset(d_buffer<T> &buf, int ch);
 
 } // namespace xpu
 

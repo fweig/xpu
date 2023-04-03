@@ -261,38 +261,41 @@ TEST(XPUTest, CanSortFloatsShort) {
 
 template<typename K>
 void testMergeKernel(size_t M, size_t N) {
-    xpu::hd_buffer<float> a{M};
-    xpu::hd_buffer<float> b{N};
-    xpu::hd_buffer<float> dst{a.size() + b.size()};
+    xpu::buffer<float> a{M, xpu::io_buffer};
+    xpu::buffer<float> b{N, xpu::io_buffer};
+    xpu::buffer<float> dst{M + N, xpu::io_buffer};
 
     std::mt19937 gen{1337};
     std::uniform_real_distribution<float> dist{0, 100000};
 
+    xpu::h_view a_h{a};
     for (size_t i = 0; i < M; i++) {
-        a.h()[i] = dist(gen);
+        a_h[i] = dist(gen);
     }
-    std::sort(a.h(), a.h() + a.size());
+    std::sort(&a_h[0], &a_h[0] + a_h.size());
 
+    xpu::h_view b_h{b};
     for (size_t i = 0; i < N; i++) {
-        b.h()[i] = dist(gen);
+        b_h[i] = dist(gen);
     }
-    std::sort(b.h(), b.h() + b.size());
+    std::sort(&b_h[0], &b_h[0] + b_h.size());
 
     xpu::copy(a, xpu::host_to_device);
     xpu::copy(b, xpu::host_to_device);
 
-    xpu::run_kernel<K>(xpu::n_blocks(1), a.d(), a.size(), b.d(), b.size(), dst.d());
+    xpu::run_kernel<K>(xpu::n_blocks(1), a.get(), a_h.size(), b.get(), b_h.size(), dst.get());
 
     xpu::copy(dst, xpu::device_to_host);
 
-    float *h = dst.h();
+    xpu::h_view h{dst};
+    ASSERT_EQ(h.size(), a_h.size() + b_h.size());
     bool isSorted = true;
-    for (size_t i = 1; i < dst.size(); i++) {
+    for (size_t i = 1; i < h.size(); i++) {
         isSorted &= (h[i-1] <= h[i]);
     }
 
     if (!isSorted) {
-        for (size_t i = 0; i < dst.size(); i++) {
+        for (size_t i = 0; i < h.size(); i++) {
             std::cout << h[i] << " ";
             if (i % 10 == 9) {
                 std::cout << std::endl;
@@ -332,10 +335,10 @@ TEST(XPUTest, CanRunBlockScan) {
 
     size_t blockSize = xpu::device::active().backend() == xpu::cpu ? 1 : 64;
 
-    xpu::hd_buffer<int> incl{blockSize};
-    xpu::hd_buffer<int> excl{blockSize};
+    xpu::buffer<int> incl{blockSize, xpu::io_buffer};
+    xpu::buffer<int> excl{blockSize, xpu::io_buffer};
 
-    xpu::run_kernel<block_scan>(xpu::n_blocks(1), incl.d(), excl.d());
+    xpu::run_kernel<block_scan>(xpu::n_blocks(1), incl.get(), excl.get());
 
     xpu::copy(incl, xpu::device_to_host);
     xpu::copy(excl, xpu::device_to_host);
@@ -343,9 +346,11 @@ TEST(XPUTest, CanRunBlockScan) {
     int inclSum = 1;
     int exclSum = 0;
 
+    xpu::h_view incl_h{incl};
+    xpu::h_view excl_h{excl};
     for (size_t i = 0; i < blockSize; i++) {
-        ASSERT_EQ(incl.h()[i], inclSum);
-        ASSERT_EQ(excl.h()[i], exclSum);
+        ASSERT_EQ(incl_h[i], inclSum);
+        ASSERT_EQ(excl_h[i], exclSum);
         inclSum++;
         exclSum++;
     }
@@ -353,14 +358,14 @@ TEST(XPUTest, CanRunBlockScan) {
 
 TEST(XPUTest, CanSetAndReadCMem) {
     float3_ orig{1, 2, 3};
-    xpu::hd_buffer<float3_> out{1};
+    xpu::buffer<float3_> out{1, xpu::io_buffer};
 
     xpu::set_constant<test_constant0>(orig);
 
-    xpu::run_kernel<access_cmem_single>(xpu::n_threads(1), out.d());
+    xpu::run_kernel<access_cmem_single>(xpu::n_threads(1), out.get());
     xpu::copy(out, xpu::device_to_host);
 
-    float3_ result = *out.h();
+    float3_ result = xpu::h_view(out)[0];
     EXPECT_EQ(orig.x, result.x);
     EXPECT_EQ(orig.y, result.y);
     EXPECT_EQ(orig.z, result.z);
@@ -368,34 +373,34 @@ TEST(XPUTest, CanSetAndReadCMem) {
 
 TEST(XPUTest, CanSetAndReadCMemMultiple) {
     float3_ orig{1, 2, 3};
-    xpu::hd_buffer<float3_> out0{1};
+    xpu::buffer<float3_> out0{1, xpu::io_buffer};
 
     double orig1 = 42;
-    xpu::hd_buffer<double> out1{1};
+    xpu::buffer<double> out1{1, xpu::io_buffer};
 
     float orig2 = 1337;
-    xpu::hd_buffer<float> out2{1};
+    xpu::buffer<float> out2{1, xpu::io_buffer};
 
     xpu::set_constant<test_constant0>(orig);
     xpu::set_constant<test_constant1>(orig1);
     xpu::set_constant<test_constant2>(orig2);
-    xpu::run_kernel<access_cmem_multiple>(xpu::n_threads(1), out0.d(), out1.d(), out2.d());
+    xpu::run_kernel<access_cmem_multiple>(xpu::n_threads(1), out0.get(), out1.get(), out2.get());
     xpu::copy(out0, xpu::device_to_host);
     xpu::copy(out1, xpu::device_to_host);
     xpu::copy(out2, xpu::device_to_host);
 
     {
-        float3_ result = *out0.h();
+        float3_ result = xpu::h_view(out0)[0];
         EXPECT_EQ(orig.x, result.x);
         EXPECT_EQ(orig.y, result.y);
         EXPECT_EQ(orig.z, result.z);
     }
     {
-        double result = *out1.h();
+        double result = xpu::h_view(out1)[0];
         EXPECT_EQ(orig1, result);
     }
     {
-        float result = *out2.h();
+        float result = xpu::h_view(out2)[0];
         EXPECT_EQ(orig2, result);
     }
 }
@@ -409,21 +414,21 @@ void test_thread_position(xpu::dim gpu_block_size, xpu::dim gpu_grid_dim) {
     };
 
     size_t nthreads_total = nthreads.x * nthreads.y * nthreads.z;
-    xpu::hd_buffer<int> thread_idx{nthreads_total * 3};
-    xpu::hd_buffer<int> block_dim{nthreads_total * 3};
-    xpu::hd_buffer<int> block_idx{nthreads_total * 3};
-    xpu::hd_buffer<int> grid_dim{nthreads_total * 3};
+    xpu::buffer<int> thread_idx{nthreads_total * 3, xpu::io_buffer};
+    xpu::buffer<int> block_dim{nthreads_total * 3, xpu::io_buffer};
+    xpu::buffer<int> block_idx{nthreads_total * 3, xpu::io_buffer};
+    xpu::buffer<int> grid_dim{nthreads_total * 3, xpu::io_buffer};
 
     xpu::grid exec_grid = xpu::n_threads(nthreads);
     switch (gpu_block_size.ndims()) {
     case 1:
-        xpu::run_kernel<get_thread_idx_1d>(exec_grid, thread_idx.d(), block_dim.d(), block_idx.d(), grid_dim.d());
+        xpu::run_kernel<get_thread_idx_1d>(exec_grid, thread_idx.get(), block_dim.get(), block_idx.get(), grid_dim.get());
         break;
     case 2:
-        xpu::run_kernel<get_thread_idx_2d>(exec_grid, thread_idx.d(), block_dim.d(), block_idx.d(), grid_dim.d());
+        xpu::run_kernel<get_thread_idx_2d>(exec_grid, thread_idx.get(), block_dim.get(), block_idx.get(), grid_dim.get());
         break;
     case 3:
-        xpu::run_kernel<get_thread_idx_3d>(exec_grid, thread_idx.d(), block_dim.d(), block_idx.d(), grid_dim.d());
+        xpu::run_kernel<get_thread_idx_3d>(exec_grid, thread_idx.get(), block_dim.get(), block_idx.get(), grid_dim.get());
         break;
     default:
         FAIL();
@@ -460,18 +465,22 @@ void test_thread_position(xpu::dim gpu_block_size, xpu::dim gpu_grid_dim) {
                 int linear_id = blockNumInGrid * threadsPerBlock + threadIdxInBlock;
                 linear_id *= 3;
 
-                EXPECT_EQ(thread_idx.h()[linear_id + 0], exp_thread_idx.x);
-                EXPECT_EQ(thread_idx.h()[linear_id + 1], exp_thread_idx.y);
-                EXPECT_EQ(thread_idx.h()[linear_id + 2], exp_thread_idx.z);
-                EXPECT_EQ(block_dim.h()[linear_id + 0], exp_block_dim.x);
-                EXPECT_EQ(block_dim.h()[linear_id + 1], exp_block_dim.y);
-                EXPECT_EQ(block_dim.h()[linear_id + 2], exp_block_dim.z);
-                EXPECT_EQ(block_idx.h()[linear_id + 0], exp_block_idx.x);
-                EXPECT_EQ(block_idx.h()[linear_id + 1], exp_block_idx.y);
-                EXPECT_EQ(block_idx.h()[linear_id + 2], exp_block_idx.z);
-                EXPECT_EQ(grid_dim.h()[linear_id + 0], exp_grid_dim.x);
-                EXPECT_EQ(grid_dim.h()[linear_id + 1], exp_grid_dim.y);
-                EXPECT_EQ(grid_dim.h()[linear_id + 2], exp_grid_dim.z);
+                xpu::h_view thread_idx_h = xpu::h_view(thread_idx);
+                xpu::h_view block_dim_h = xpu::h_view(block_dim);
+                xpu::h_view block_idx_h = xpu::h_view(block_idx);
+                xpu::h_view grid_dim_h = xpu::h_view(grid_dim);
+                EXPECT_EQ(thread_idx_h[linear_id + 0], exp_thread_idx.x);
+                EXPECT_EQ(thread_idx_h[linear_id + 1], exp_thread_idx.y);
+                EXPECT_EQ(thread_idx_h[linear_id + 2], exp_thread_idx.z);
+                EXPECT_EQ(block_dim_h[linear_id + 0], exp_block_dim.x);
+                EXPECT_EQ(block_dim_h[linear_id + 1], exp_block_dim.y);
+                EXPECT_EQ(block_dim_h[linear_id + 2], exp_block_dim.z);
+                EXPECT_EQ(block_idx_h[linear_id + 0], exp_block_idx.x);
+                EXPECT_EQ(block_idx_h[linear_id + 1], exp_block_idx.y);
+                EXPECT_EQ(block_idx_h[linear_id + 2], exp_block_idx.z);
+                EXPECT_EQ(grid_dim_h[linear_id + 0], exp_grid_dim.x);
+                EXPECT_EQ(grid_dim_h[linear_id + 1], exp_grid_dim.y);
+                EXPECT_EQ(grid_dim_h[linear_id + 2], exp_grid_dim.z);
             }
         }
     }
@@ -491,13 +500,15 @@ TEST(XPUTest, CanStartkernel3D) {
 }
 
 TEST(XPUTest, CanCallDeviceFuncs) {
-    xpu::hd_buffer<variant> buf{NUM_DEVICE_FUNCS};
-    xpu::memset(buf, 0);
+    xpu::buffer<variant> buf{NUM_DEVICE_FUNCS, xpu::io_buffer};
 
-    xpu::run_kernel<test_device_funcs>(xpu::n_blocks(1), buf.d());
-    xpu::copy(buf, xpu::device_to_host);
+    xpu::queue q;
+    q.memset(buf, 0);
+    q.launch<test_device_funcs>(xpu::n_blocks(1), buf.get());
+    q.copy(buf, xpu::device_to_host);
+    q.wait();
 
-    variant *b = buf.h();
+    xpu::h_view b{buf};
 
     EXPECT_FLOAT_EQ(b[ABS].f, 1.f);
     EXPECT_FLOAT_EQ(b[ACOS].f, xpu::pi());
@@ -572,38 +583,40 @@ TEST(XPUTest, CanCallDeviceFuncs) {
 }
 
 TEST(XPUTest, CanRunTemplatedKernels) {
-    xpu::hd_buffer<int> a{1};
+    xpu::buffer<int> a{1, xpu::io_buffer};
 
-    xpu::run_kernel<templated_kernel<0>>(xpu::n_threads(1), a.d());
+    xpu::run_kernel<templated_kernel<0>>(xpu::n_threads(1), a.get());
     xpu::copy(a, xpu::device_to_host);
-    ASSERT_EQ(a[0], 0);
+    ASSERT_EQ(xpu::h_view{a}[0], 0);
 
-    xpu::run_kernel<templated_kernel<1>>(xpu::n_threads(1), a.d());
+    xpu::run_kernel<templated_kernel<1>>(xpu::n_threads(1), a.get());
     xpu::copy(a, xpu::device_to_host);
-    ASSERT_EQ(a[0], 1);
+    ASSERT_EQ(xpu::h_view{a}[0], 1);
 
-    xpu::run_kernel<templated_kernel<42>>(xpu::n_threads(1), a.d());
+    xpu::run_kernel<templated_kernel<42>>(xpu::n_threads(1), a.get());
     xpu::copy(a, xpu::device_to_host);
-    ASSERT_EQ(a[0], 42);
+    ASSERT_EQ(xpu::h_view{a}[0], 42);
 }
 
 TEST(XPUTest, CollectsTimingData) {
     constexpr int NRuns = 10;
     constexpr int NElems = 100000;
 
-    xpu::hd_buffer<float> a{NElems};
-    xpu::hd_buffer<float> b{NElems};
-    xpu::hd_buffer<float> c{NElems};
+    xpu::buffer<float> a{NElems, xpu::io_buffer};
+    xpu::buffer<float> b{NElems, xpu::io_buffer};
+    xpu::buffer<float> c{NElems, xpu::io_buffer};
 
-    std::fill_n(a.h(), a.size(), 24);
-    std::fill_n(b.h(), b.size(), 24);
+    xpu::h_view h_a{a};
+    std::fill(h_a.begin(), h_a.end(), 24.f);
+    xpu::h_view h_b{b};
+    std::fill(h_b.begin(), h_b.end(), 24.f);
 
     xpu::copy(a, xpu::host_to_device);
     xpu::copy(b, xpu::host_to_device);
 
     for (int i = 0; i < NRuns; i++) {
-        xpu::run_kernel<vector_add_timing0>(xpu::n_threads(NElems), a.d(), b.d(), c.d(), NElems);
-        xpu::run_kernel<vector_add_timing1>(xpu::n_threads(NElems), a.d(), b.d(), c.d(), NElems);
+        xpu::run_kernel<vector_add_timing0>(xpu::n_threads(NElems), a.get(), b.get(), c.get(), NElems);
+        xpu::run_kernel<vector_add_timing1>(xpu::n_threads(NElems), a.get(), b.get(), c.get(), NElems);
     }
 
     auto timings0 = xpu::get_timing<vector_add_timing0>();

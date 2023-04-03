@@ -115,7 +115,6 @@ public:
      */
     XPU_H XPU_D ~buffer();
 
-
     XPU_H XPU_D buffer(const buffer &other);
     XPU_H XPU_D buffer(buffer &&other);
     XPU_H XPU_D buffer &operator=(const buffer &other);
@@ -133,6 +132,9 @@ public:
     template<typename U>
     XPU_H XPU_D buffer &operator=(buffer<U> &&other);
 
+    XPU_H XPU_D void reset();
+    void reset(size_t N, buffer_type type, T *data = nullptr);
+
     XPU_H XPU_D T *get() const { return m_data; }
 
     XPU_H XPU_D T &operator*() const { return *m_data; }
@@ -146,25 +148,6 @@ private:
     XPU_H XPU_D void add_ref();
     XPU_H XPU_D void remove_ref();
 };
-
-// DEPRECATED - use buffer instead
-
-enum class side {
-    host,
-    device,
-};
-
-template<typename T, side S>
-struct cmem_io {};
-
-template<typename T, side S>
-using cmem_io_t = typename cmem_io<T, S>::type;
-
-template<typename T, side S>
-struct cmem_device {};
-
-template<typename T, side S>
-using cmem_device_t = typename cmem_device<T, S>::type;
 
 } // namespace xpu
 

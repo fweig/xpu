@@ -21,7 +21,9 @@ public:
     error synchronize_queue(void *) override;
 
     error memcpy(void *, const void *, size_t) override;
+    error memcpy_async(void *, const void *, size_t, void *) override;
     error memset(void *, int, size_t) override;
+    error memset_async(void *, int, size_t, void *) override;
 
     error num_devices(int *) override;
     error set_device(int) override;

@@ -11,6 +11,8 @@
 #include "detail/runtime.h"
 #include "detail/type_info.h"
 
+#include "detail/queue.tpp"
+
 void xpu::initialize(settings settings) {
     detail::runtime::instance().initialize(settings);
 }
@@ -91,11 +93,7 @@ inline xpu::device_prop::device_prop(xpu::device dev) {
     m_prop = detail::runtime::instance().device_properties(dev.id());
 }
 
-inline xpu::queue::queue() : m_handle(std::make_shared<detail::queue_handle>()) {
-}
 
-inline xpu::queue::queue(xpu::device dev) : m_handle(std::make_shared<detail::queue_handle>(dev.m_impl)) {
-}
 
 template<typename Kernel>
 const char *xpu::get_name() {
@@ -109,7 +107,8 @@ std::vector<float> xpu::get_timing() {
 
 template<typename Kernel, typename... Args>
 void xpu::run_kernel(grid params, Args&&... args) {
-    detail::runtime::instance().run_kernel<Kernel>(params, std::forward<Args>(args)...);
+    detail::device dev = detail::runtime::instance().active_device();
+    detail::runtime::instance().run_kernel<Kernel>(params, dev.backend, nullptr, std::forward<Args>(args)...);
 }
 
 template<typename Func, typename... Args>

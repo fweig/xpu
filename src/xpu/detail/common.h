@@ -67,6 +67,12 @@ struct queue_handle {
     queue_handle();
     queue_handle(device dev);
     ~queue_handle();
+
+    queue_handle(const queue_handle &) = delete;
+    queue_handle &operator=(const queue_handle &) = delete;
+    queue_handle(queue_handle &&) = delete;
+    queue_handle &operator=(queue_handle &&) = delete;
+
     void *handle;
     device dev;
 };

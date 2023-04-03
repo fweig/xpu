@@ -27,12 +27,15 @@ int main() {
         yh[i] = i;
     }
 
-    xpu::copy(x, xpu::host_to_device);
-    xpu::copy(y, xpu::host_to_device);
 
-    xpu::run_kernel<VectorAdd>(xpu::n_threads(NElems), x, y, z, NElems);
+    xpu::queue q{};
 
-    xpu::copy(z, xpu::device_to_host);
+    q.copy(x, xpu::host_to_device);
+    q.copy(y, xpu::host_to_device);
+    q.launch<VectorAdd>(xpu::n_threads(NElems), x, y, z, NElems);
+    q.copy(z, xpu::device_to_host);
+    q.wait();
+
 
     xpu::h_view zh{z};
     for (int i = 0; i < NElems; i++) {

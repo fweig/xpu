@@ -553,15 +553,15 @@ struct action_runner<constant_tag, F> {
 template<typename K, typename... Args>
 struct action_runner<kernel_tag, K, void(K::*)(kernel_context<typename K::shared_memory, typename K::constants> &, Args...)> {
 
-    static int call(float *ms, backend_base * /*cuda_driver*/, grid g, Args... args) {
+    static int call(kernel_launch_info launch_info, Args... args) {
         dim block_dim = K::block_size::value;
         dim grid_dim{};
 
-        g.get_compute_grid(block_dim, grid_dim);
+        launch_info.g.get_compute_grid(block_dim, grid_dim);
 
         XPU_LOG("Calling kernel '%s' [block_dim = (%d, %d, %d), grid_dim = (%d, %d, %d)] with CUDA driver.", type_name<K>(), block_dim.x, block_dim.y, block_dim.z, grid_dim.x, grid_dim.y, grid_dim.z);
 
-        bool measure_time = (ms != nullptr);
+        bool measure_time = (launch_info.ms != nullptr);
         cudaEvent_t start, end;
         int err = 0;
 
@@ -574,7 +574,13 @@ struct action_runner<kernel_tag, K, void(K::*)(kernel_context<typename K::shared
             ON_ERROR_GOTO(err, cudaEventRecord(start), cleanup_events);
         }
 
-        kernel_entry_bounded<K, K::block_size::value.linear(), Args...><<<grid_dim.as_cuda_grid(), block_dim.as_cuda_grid()>>>(args...);
+        if (launch_info.queue_handle == nullptr) {
+            kernel_entry_bounded<K, K::block_size::value.linear(), Args...><<<grid_dim.as_cuda_grid(), block_dim.as_cuda_grid()>>>(args...);
+        } else {
+            cudaStream_t stream = static_cast<cudaStream_t>(launch_info.queue_handle);
+            kernel_entry_bounded<K, K::block_size::value.linear(), Args...><<<grid_dim.as_cuda_grid(), block_dim.as_cuda_grid(), 0, stream>>>(args...);
+        }
+
 
         if (measure_time) {
             ON_ERROR_GOTO(err, cudaEventRecord(end), cleanup_events);
@@ -583,8 +589,8 @@ struct action_runner<kernel_tag, K, void(K::*)(kernel_context<typename K::shared
 
         if (measure_time) {
             ON_ERROR_GOTO(err, cudaEventSynchronize(end), cleanup_events);
-            ON_ERROR_GOTO(err, cudaEventElapsedTime(ms, start, end), cleanup_events);
-            XPU_LOG("Kernel '%s' took %f ms", type_name<K>(), *ms);
+            ON_ERROR_GOTO(err, cudaEventElapsedTime(launch_info.ms, start, end), cleanup_events);
+            XPU_LOG("Kernel '%s' took %f ms", type_name<K>(), *launch_info.ms);
         }
 
     cleanup_events:
@@ -614,15 +620,16 @@ struct action_runner<constant_tag, F> {
 template<typename K, typename... Args>
 struct action_runner<kernel_tag, K, void(K::*)(kernel_context<typename K::shared_memory, typename K::constants> &, Args...)> {
 
-    static int call(float *ms, backend_base * /*hip_driver*/, grid g, Args... args) {
+    static int call(kernel_launch_info launch_info, Args... args) {
         dim block_dim = K::block_size::value;
         dim grid_dim{};
 
-        g.get_compute_grid(block_dim, grid_dim);
+        launch_info.g.get_compute_grid(block_dim, grid_dim);
 
         XPU_LOG("Calling kernel '%s' [block_dim = (%d, %d, %d), grid_dim = (%d, %d, %d)] with HIP driver.", type_name<K>(), block_dim.x, block_dim.y, block_dim.z, grid_dim.x, grid_dim.y, grid_dim.z);
 
-        bool measure_time = (ms != nullptr);
+        bool measure_time = (launch_info.ms != nullptr);
+        hipStream_t stream = static_cast<hipStream_t>(launch_info.queue_handle);
         hipEvent_t start, end;
         int err = 0;
 
@@ -634,7 +641,7 @@ struct action_runner<kernel_tag, K, void(K::*)(kernel_context<typename K::shared
         if (measure_time) {
             ON_ERROR_GOTO(err, hipEventRecord(start), cleanup_events);
         }
-        hipLaunchKernelGGL(HIP_KERNEL_NAME(kernel_entry_bounded<K, K::block_size::value.linear(), Args...>), grid_dim.as_cuda_grid(), block_dim.as_cuda_grid(), 0, 0, std::forward<Args>(args)...);
+        hipLaunchKernelGGL(HIP_KERNEL_NAME(kernel_entry_bounded<K, K::block_size::value.linear(), Args...>), grid_dim.as_cuda_grid(), block_dim.as_cuda_grid(), 0, stream, std::forward<Args>(args)...);
         if (measure_time) {
             ON_ERROR_GOTO(err, hipEventRecord(end), cleanup_events);
         }
@@ -642,8 +649,8 @@ struct action_runner<kernel_tag, K, void(K::*)(kernel_context<typename K::shared
 
         if (measure_time) {
             ON_ERROR_GOTO(err, hipEventSynchronize(end), cleanup_events);
-            ON_ERROR_GOTO(err, hipEventElapsedTime(ms, start, end), cleanup_events);
-            XPU_LOG("Kernel '%s' took %f ms", type_name<K>(), *ms);
+            ON_ERROR_GOTO(err, hipEventElapsedTime(launch_info.ms, start, end), cleanup_events);
+            XPU_LOG("Kernel '%s' took %f ms", type_name<K>(), *launch_info.ms);
         }
 
     cleanup_events:

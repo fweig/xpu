@@ -61,10 +61,6 @@ public:
     void *malloc_shared(size_t);
     void free(void *);
 
-    void *create_queue(device);
-    void destroy_queue(queue_handle);
-    void synchronize_queue(queue_handle);
-
     void memcpy(void *, const void *, size_t);
     void memset(void *, int, size_t);
 
@@ -79,11 +75,16 @@ public:
     void get_ptr_prop(const void *, ptr_prop *);
 
     template<typename Kernel, typename... Args>
-    void run_kernel(grid g, Args&&... args) {
+    void run_kernel(grid g, driver_t backend, void *queue_handle, Args&&... args) {
         static_assert(std::is_same_v<typename Kernel::tag, kernel_tag>);
 
         float ms;
-        error err = get_image<Kernel>()->template run_kernel<Kernel>((m_measure_time ? &ms : nullptr), get_active_driver(), g, std::forward<Args>(args)...);
+        kernel_launch_info launch_info {
+            .g = g,
+            .queue_handle = queue_handle,
+            .ms = (m_measure_time ? &ms : nullptr)
+        };
+        error err = get_image<Kernel>(backend)->template run_kernel<Kernel>(launch_info, std::forward<Args>(args)...);
         throw_on_driver_error(m_active_device.backend, err);
 
         if (m_measure_time) {
@@ -100,14 +101,14 @@ public:
     template<typename Func, typename... Args>
     void call(Args&&... args) {
         static_assert(std::is_same_v<typename Func::tag, function_tag>);
-        error err = get_image<Func>()->template call<Func>(std::forward<Args>(args)...);
+        error err = get_image<Func>(m_active_device.backend)->template call<Func>(std::forward<Args>(args)...);
         throw_on_driver_error(m_active_device.backend, err);
     }
 
     template<typename C>
     void set_constant(const typename C::data_t &symbol) {
         static_assert(std::is_same_v<typename C::tag, constant_tag>);
-        error err = get_image<C>()->template set<C>(symbol);
+        error err = get_image<C>(m_active_device.backend)->template set<C>(symbol);
         throw_on_driver_error(m_active_device.backend, err);
     }
 
@@ -136,10 +137,10 @@ private:
     static std::string getenv_str(std::string name, std::string_view fallback);
 
     template<typename A>
-    image<typename A::image> *get_image() {
-        auto *img = m_images.find< image<typename A::image> >(m_active_device.backend);
+    image<typename A::image> *get_image(driver_t backend) {
+        auto *img = m_images.find< image<typename A::image> >(backend);
         if (img == nullptr) {
-            img = load_image<typename A::image>(m_active_device.backend);
+            img = load_image<typename A::image>(backend);
         }
         if (img == nullptr) {
             raise_error(format("Failed to load image for kernel '%s'", type_name<A>()));

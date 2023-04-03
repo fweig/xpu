@@ -14,7 +14,8 @@ class sycl_driver : public backend_base {
 public:
     virtual ~sycl_driver() {}
 
-    sycl::queue &default_queue();
+    sycl::queue default_queue();
+    sycl::queue get_queue(void *);
 
     error setup() override;
     error malloc_device(void **, size_t) override;
@@ -27,7 +28,9 @@ public:
     error synchronize_queue(void *) override;
 
     error memcpy(void *, const void *, size_t) override;
+    error memcpy_async(void *, const void *, size_t, void *) override;
     error memset(void *, int, size_t) override;
+    error memset_async(void *, int, size_t, void *) override;
 
     error num_devices(int *) override;
     error set_device(int) override;

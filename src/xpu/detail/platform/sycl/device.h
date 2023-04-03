@@ -1,6 +1,7 @@
 #ifndef XPU_DRIVER_SYCL_DEVICE_H
 #define XPU_DRIVER_SYCL_DEVICE_H
 
+#include "../../backend.h"
 #include "../../constant_memory.h"
 #include "../../parallel_merge.h"
 #include "cmem_impl.h"
@@ -324,15 +325,15 @@ struct xpu::detail::action_runner<xpu::detail::kernel_tag, K, void(K::*)(xpu::ke
     using constants = typename K::constants;
     using context = kernel_context<shared_memory, constants>;
 
-    static int call(float *ms, backend_base *i_driver, grid g, Args... args) {
+    static int call(kernel_launch_info launch_info, Args... args) {
         dim block_dim = K::block_size::value;
         dim grid_dim{};
-        g.get_compute_grid(block_dim, grid_dim);
+        launch_info.g.get_compute_grid(block_dim, grid_dim);
 
         XPU_LOG("Calling kernel '%s' [block_dim = (%d, %d, %d), grid_dim = (%d, %d, %d)] with SYCL driver.", type_name<K>(), block_dim.x, block_dim.y, block_dim.z, grid_dim.x, grid_dim.y, grid_dim.z);
 
-        sycl_driver *driver = static_cast<sycl_driver*>(i_driver);
-        sycl::queue &queue = driver->default_queue();
+        auto *driver = static_cast<sycl_driver *>(backend::get(sycl));
+        sycl::queue queue = (launch_info.queue_handle == nullptr ? driver->default_queue() : driver->get_queue(launch_info.queue_handle));
 
         sycl::range<3> global_range{size_t(grid_dim.x), size_t(grid_dim.y), size_t(grid_dim.z)};
         sycl::range<3> local_range{size_t(block_dim.x), size_t(block_dim.y), size_t(block_dim.z)};
@@ -360,10 +361,12 @@ struct xpu::detail::action_runner<xpu::detail::kernel_tag, K, void(K::*)(xpu::ke
             });
         });
 
-        ev.wait();
-        if (ms != nullptr) {
+        if (launch_info.ms != nullptr) {
+            ev.wait();
             int64_t nanoseconds = ev.get_profiling_info<sycl::info::event_profiling::command_end>() - ev.get_profiling_info<sycl::info::event_profiling::command_start>();
-            *ms = float(nanoseconds) / 1e6f;
+            *launch_info.ms = float(nanoseconds) / 1e6f;
+        } else if (launch_info.queue_handle != nullptr) {
+            ev.wait();
         }
 
         return 0;

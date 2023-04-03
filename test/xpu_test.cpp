@@ -118,6 +118,35 @@ TEST(XPUTest, CanRunVectorAdd) {
     xpu::free(dz);
 }
 
+TEST(XPUTest, CanRunVectorAddQueue) {
+    constexpr int NElems = 100;
+
+    xpu::buffer<float> xbuf{NElems, xpu::io_buffer};
+    xpu::buffer<float> ybuf{NElems, xpu::io_buffer};
+    xpu::buffer<float> zbuf{NElems, xpu::io_buffer};
+
+    xpu::h_view x{xbuf};
+    xpu::h_view y{ybuf};
+    for (int i = 0; i < NElems; ++i) {
+        x[i] = 8;
+        y[i] = 8;
+    }
+
+    xpu::queue q{};
+
+    q.copy(xbuf, xpu::host_to_device);
+    q.copy(ybuf, xpu::host_to_device);
+    q.launch<vector_add>(xpu::n_threads(NElems), xbuf.get(), ybuf.get(), zbuf.get(), NElems);
+    q.copy(zbuf, xpu::device_to_host);
+    q.wait();
+
+    xpu::h_view z{zbuf};
+    for (int i = 0; i < NElems; ++i) {
+        ASSERT_EQ(16, z[i]);
+    }
+
+}
+
 TEST(XPUTest, CanSortStruct) {
 
     // GTEST_SKIP();

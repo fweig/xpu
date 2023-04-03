@@ -310,7 +310,7 @@ public:
      */
     explicit queue(device);
 
-    void memcpy(void *dst, const void *src, size_t size);
+    void copy(const void *from, void *to, size_t size);
 
     template<typename T>
     void copy(buffer<T>, direction);
@@ -321,7 +321,7 @@ public:
     void memset(buffer<T>, int value);
 
     template<typename Kernel, typename... Args>
-    void run_kernel(grid params, Args&&... args);
+    void launch(grid params, Args&&... args);
 
     void wait();
 

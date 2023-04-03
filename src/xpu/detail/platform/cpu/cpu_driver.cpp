@@ -62,7 +62,18 @@ error cpu_driver::memcpy(void *dst, const void *src, size_t bytes) {
     return SUCCESS;
 }
 
+error cpu_driver::memcpy_async(void *dst, const void *src, size_t bytes, void * /*queue*/) {
+    XPU_LOG("memcpy_async %lu bytes", bytes);
+    std::memcpy(dst, src, bytes);
+    return SUCCESS;
+}
+
 error cpu_driver::memset(void *dst, int ch, size_t bytes) {
+    std::memset(dst, ch, bytes);
+    return SUCCESS;
+}
+
+error cpu_driver::memset_async(void *dst, int ch, size_t bytes, void * /*queue*/) {
     std::memset(dst, ch, bytes);
     return SUCCESS;
 }

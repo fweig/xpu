@@ -27,6 +27,12 @@
 
 namespace xpu::detail {
 
+struct kernel_launch_info {
+    grid g;
+    void *queue_handle;
+    float *ms;
+};
+
 // FIXME: member_fn and action_interface belong into type_info.h
 template<typename...>
 struct member_fn {};
@@ -51,7 +57,7 @@ struct action_interface<function_tag, int(*)(Args...)> {
 
 template<typename S, typename... Args>
 struct action_interface<kernel_tag, void(*)(S, Args...)> {
-    using type = int(*)(float *, backend_base *, grid, Args...);
+    using type = int(*)(kernel_launch_info, Args...);
 };
 
 template<typename Constant>
@@ -158,8 +164,8 @@ public:
     }
 
     template<typename K, typename... Args>
-    typename std::enable_if<is_kernel<I, K>::value, int>::type run_kernel(float *ms, backend_base *driver, grid g, Args&&... args) {
-        return call_action<K>(ms, driver, g, args...);
+    typename std::enable_if<is_kernel<I, K>::value, int>::type run_kernel(kernel_launch_info launch_info, Args&&... args) {
+        return call_action<K>(launch_info, args...);
     }
 
     void dump_symbols() {

@@ -56,8 +56,9 @@ public:
         if (err != 0) {
             return err;
         }
-        CUHIP(Stream_t) *stream = static_cast<CUHIP(Stream_t) *>(*queue);
-        err = CUHIP(StreamCreate)(stream);
+        CUHIP(Stream_t) stream;
+        err = CUHIP(StreamCreate)(&stream);
+        *queue = static_cast<void *>(stream);
         if (err != 0) {
             return err;
         }
@@ -79,8 +80,16 @@ public:
         return err;
     }
 
+    error memcpy_async(void *dst, const void *src, size_t bytes, void *queue) override {
+        return CUHIP(MemcpyAsync)(dst, src, bytes, CUHIP(MemcpyDefault), static_cast<CUHIP(Stream_t)>(queue));
+    }
+
     error memset(void *dst, int ch, size_t bytes) override {
         return CUHIP(Memset)(dst, ch, bytes);
+    }
+
+    error memset_async(void *dst, int ch, size_t bytes, void *queue) override {
+        return CUHIP(MemsetAsync)(dst, ch, bytes, static_cast<CUHIP(Stream_t)>(queue));
     }
 
     error num_devices(int *devices) override {

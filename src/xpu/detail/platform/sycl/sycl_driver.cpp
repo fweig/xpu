@@ -3,7 +3,7 @@
 
 using namespace xpu::detail;
 
-sycl::queue &sycl_driver::default_queue() {
+sycl::queue sycl_driver::default_queue() {
     return m_default_queue;
 }
 
@@ -50,9 +50,9 @@ error sycl_driver::destroy_queue(void *queue) {
     return 0;
 }
 
-error sycl_driver::synchronize_queue(void *queue) {
-    auto q = static_cast<sycl::queue *>(queue);
-    q->wait();
+error sycl_driver::synchronize_queue(void *handle) {
+    auto q = get_queue(handle);
+    q.wait();
     return 0;
 }
 
@@ -61,8 +61,20 @@ error sycl_driver::memcpy(void *dst, const void *src, size_t bytes) {
     return 0;
 }
 
+error sycl_driver::memcpy_async(void *dst, const void *src, size_t bytes, void *handle) {
+    auto q = get_queue(handle);
+    q.memcpy(dst, src, bytes);
+    return 0;
+}
+
 error sycl_driver::memset(void *dst, int ch, size_t bytes) {
     m_default_queue.memset(dst, ch, bytes).wait();
+    return 0;
+}
+
+error sycl_driver::memset_async(void *dst, int ch, size_t bytes, void *handle) {
+    auto q = get_queue(handle);
+    q.memset(dst, ch, bytes);
     return 0;
 }
 
@@ -160,6 +172,15 @@ int sycl_driver::get_device_id(sycl::device dev) {
     std::vector<sycl::device> devices = sycl::device::get_devices();
     auto it = std::find(devices.begin(), devices.end(), dev);
     return std::distance(devices.begin(), it);
+}
+
+sycl::queue sycl_driver::get_queue(void *handle) {
+    // TODO: one could just use a static_cast here to retrieve the queue, but this is more robust
+    auto it = std::find_if(m_queues.begin(), m_queues.end(), [handle](const auto &q_ptr) { return q_ptr.get() == handle; });
+    if (it != m_queues.end()) {
+        return *it->get();
+    }
+    throw std::runtime_error("Queue not found");
 }
 
 extern "C" xpu::detail::backend_base *create() {

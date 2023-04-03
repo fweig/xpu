@@ -326,17 +326,17 @@ struct action_runner<kernel_tag, K, void(K::*)(kernel_context<typename K::shared
     using constants = typename K::constants;
     using context = kernel_context<shared_memory>;
 
-    static int call(float *ms, backend_base * /*cpu_driver*/, grid g, Args... args) {
+    static int call(kernel_launch_info launch_info, Args... args) {
         dim block_dim{1, 1, 1};
         dim grid_dim{};
 
-        g.get_compute_grid(block_dim, grid_dim);
+        launch_info.g.get_compute_grid(block_dim, grid_dim);
         XPU_LOG("Calling kernel '%s' [block_dim = (%d, %d, %d), grid_dim = (%d, %d, %d)] with CPU driver.", type_name<K>(), block_dim.x, block_dim.y, block_dim.z, grid_dim.x, grid_dim.y, grid_dim.z);
 
         using clock = std::chrono::high_resolution_clock;
         using duration = std::chrono::duration<float, std::milli>;
 
-        bool measure_time = (ms != nullptr);
+        bool measure_time = (launch_info.ms != nullptr);
         clock::time_point start;
 
         if (measure_time) {
@@ -362,8 +362,8 @@ struct action_runner<kernel_tag, K, void(K::*)(kernel_context<typename K::shared
 
         if (measure_time) {
             duration elapsed = clock::now() - start;
-            *ms = elapsed.count();
-            XPU_LOG("Kernel '%s' took %f ms", type_name<K>(), *ms);
+            *launch_info.ms = elapsed.count();
+            XPU_LOG("Kernel '%s' took %f ms", type_name<K>(), *launch_info.ms);
         }
 
         return 0;

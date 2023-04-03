@@ -114,20 +114,6 @@ void runtime::free(void *ptr) {
     DRIVER_CALL(free(ptr));
 }
 
-void *runtime::create_queue(device dev) {
-    void *queue = nullptr;
-    DRIVER_CALL_I(dev.backend, create_queue(&queue, dev.device_nr));
-    return queue;
-}
-
-void runtime::destroy_queue(queue_handle queue) {
-    DRIVER_CALL_I(queue.dev.backend, destroy_queue(queue.handle));
-}
-
-void runtime::synchronize_queue(queue_handle queue) {
-    DRIVER_CALL_I(queue.dev.backend, synchronize_queue(queue.handle));
-}
-
 void runtime::memcpy(void *dst, const void *src, size_t bytes) {
     if (logger::instance().active()) {
         xpu::ptr_prop src_prop{src};

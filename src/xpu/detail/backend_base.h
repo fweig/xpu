@@ -23,7 +23,9 @@ public:
     virtual error synchronize_queue(void *) = 0;
 
     virtual error memcpy(void *, const void *, size_t) = 0;
+    virtual error memcpy_async(void *, const void *, size_t, void *) = 0;
     virtual error memset(void *, int, size_t) = 0;
+    virtual error memset_async(void *, int, size_t, void *) = 0;
 
     virtual error num_devices(int *) = 0;
     virtual error set_device(int) = 0;
@@ -37,7 +39,6 @@ public:
     virtual const char *error_to_string(error) = 0;
 
     virtual driver_t get_type() = 0;
-
 };
 
 } // namespace xpu::detail

@@ -160,7 +160,7 @@ error sycl_driver::meminfo(size_t *free, size_t *total) {
     return 0;
 }
 
-const char *sycl_driver::error_to_string(error err) {
+const char *sycl_driver::error_to_string(error /*err*/) {
     return "Unknown error";
 }
 

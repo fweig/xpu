@@ -71,7 +71,7 @@ unsigned int xpu::min(unsigned int x, unsigned int y) { return sycl::min(x, y); 
 long long int xpu::min(long long int x, long long int y) { return sycl::min(x, y); }
 unsigned long long int xpu::min(unsigned long long int x, unsigned long long int y) { return sycl::min(x, y); }
 float xpu::min(float x, float y) { return sycl::fmin(x, y); }
-float xpu::nan(const char* tagp) { return sycl::nan(1u); }
+float xpu::nan(const char* /*tagp*/) { return sycl::nan(1u); }
 float xpu::norm3d(float x, float y, float z) { return sycl::length(sycl::vec<float, 3>{x, y, z}); }
 float xpu::norm4d(float x, float y, float z, float w) { return sycl::length(sycl::vec<float, 4>{x, y, z, w}); }
 float xpu::pow(float x, float y) { return sycl::pow(x, y); }
@@ -351,7 +351,7 @@ struct xpu::detail::action_runner<xpu::detail::kernel_tag, K, void(K::*)(xpu::ke
             cgh.parallel_for<K>(sycl::nd_range<3>{global_range, local_range}, [=](sycl::nd_item<3> item) {
                 // WTF: icpx sometimes optimizes out the kernel call (when using O2)
                 // if we dont add the print statement
-                if (item.get_global_id(0) == -1) {
+                if (item.get_global_id(0) == static_cast<size_t>(-1)) {
                     out << "";
                 }
                 shared_memory &smem = shared_memory_acc;

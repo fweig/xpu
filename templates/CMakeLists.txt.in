@@ -41,14 +41,16 @@ if ("@DriverType@" STREQUAL "Sycl")
     message(STATUS "SYCL HOST CXX: @HostCxx@")
     set(SYCL_FLAGS -fsycl -fsycl-targets=@XPU_SYCL_TARGETS@)
     message(STATUS "SYCL FLAGS: ${SYCL_FLAGS}")
-    add_compile_options(
-        ${SYCL_FLAGS}
-        -O2
-        -g3
-        # -Wall -Wextra
-        # -fsycl-host-compiler=@HostCxx@
-        # -fsycl-host-compiler-options="-fPIC"
-    )
+    add_compile_options(${SYCL_FLAGS})
+    if (@XPU_STANDALONE@)
+        add_compile_options(-Wall -Wextra -Werror)
+    endif()
+    if (@XPU_DEBUG@)
+        add_compile_options(-Og -g3)
+    else()
+        add_compile_options(-O3)
+        add_definitions(-DNDEBUG)
+    endif()
     add_link_options(${SYCL_FLAGS})
 endif()
 

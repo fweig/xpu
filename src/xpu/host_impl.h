@@ -56,6 +56,20 @@ void xpu::memset(void *dst, int ch, size_t bytes) {
     return detail::runtime::instance().memset(dst, ch, bytes);
 }
 
+inline void xpu::stack_alloc(size_t bytes) {
+    detail::buffer_registry::instance().stack_alloc(
+        detail::runtime::instance().active_device(),
+        bytes
+    );
+}
+
+inline void xpu::stack_pop(void *head) {
+    detail::buffer_registry::instance().stack_pop(
+        detail::runtime::instance().active_device(),
+        head
+    );
+}
+
 inline std::vector<xpu::device> xpu::device::all() {
     auto dev_impl = detail::runtime::instance().get_devices();
 

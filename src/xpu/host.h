@@ -147,6 +147,17 @@ inline void memcpy(void *, const void *, size_t);
 inline void memset(void *, int, size_t);
 
 /**
+ * @brief Allocate the stack memory on the device.
+ */
+void stack_alloc(size_t size);
+
+/**
+ * @brief Pop entries from the stack.
+ * @param head Pointer to the stack entry to pop or nullptr to pop the entire stack.
+ */
+void stack_pop(void *head=nullptr);
+
+/**
  * Represents a device found on the system.
  */
 class device {

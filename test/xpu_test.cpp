@@ -91,6 +91,44 @@ TEST(XPUTest, IoBufferCanCopyToHost) {
     ASSERT_EQ(val, 42);
 }
 
+TEST(XPUTest, CanAllocateStackMemory) {
+    xpu::stack_alloc(1024 * 1024);
+    xpu::buffer<int> buf{1, xpu::buf_stack};
+
+    xpu::buffer_prop bprop{buf};
+    ASSERT_EQ(bprop.type(), xpu::buf_stack);
+    ASSERT_EQ(bprop.size(), 1);
+    ASSERT_EQ(bprop.h_ptr(), nullptr);
+    ASSERT_NE(bprop.d_ptr(), nullptr);
+    // Ensure 256 byte alignment
+    ASSERT_EQ(reinterpret_cast<uintptr_t>(bprop.d_ptr()) % 256, 0);
+
+    xpu::run_kernel<buffer_access>(xpu::n_threads(1), buf);
+
+    int result;
+    xpu::copy(&result, buf.get(), 1);
+    ASSERT_EQ(result, 42);
+
+    // Test if we can push / pop on the stack
+    void *head = buf.get();
+
+    xpu::buffer<int> buf2{1, xpu::buf_stack};
+    ASSERT_GT(buf2.get(), head);
+    ASSERT_EQ(reinterpret_cast<uintptr_t>(buf2.get()) % 256, 0);
+
+    xpu::buffer<int> buf3{1, xpu::buf_stack};
+    ASSERT_GT(buf3.get(), buf2.get());
+    ASSERT_EQ(reinterpret_cast<uintptr_t>(buf3.get()) % 256, 0);
+
+    xpu::stack_pop(buf3.get());
+    xpu::buffer<int> buf4{1, xpu::buf_stack};
+    ASSERT_EQ(buf4.get(), buf3.get());
+
+    xpu::stack_pop();
+    xpu::buffer<int> buf5{1, xpu::buf_stack};
+    ASSERT_EQ(buf5.get(), head);
+}
+
 TEST(XPUTest, CanRunVectorAdd) {
     constexpr int NElems = 100;
 

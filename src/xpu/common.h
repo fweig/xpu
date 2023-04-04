@@ -72,6 +72,7 @@ enum buffer_type {
     buf_device = detail::buf_device,
     buf_shared = detail::buf_shared,
     buf_io = detail::buf_io,
+    buf_stack = detail::buf_stack,
 };
 
 template<typename T>
@@ -93,20 +94,27 @@ public:
      *
      * Allocates a buffer of the given size and type.
      * Behavior depends on the type of the buffer:
-     * - host_buffer:
+     * - buf_host:
      *     Allocates a buffer in host memory. The buffer is accessible from the device.
      *     If data is not null, the buffer is initialized with the data.
-     * - device_buffer:
+     * - buf_device:
      *     Allocates a buffer in device memory that is not accessible from the host.
      *     Memory is not initialized and 'data' pointer has no effect
-     * - shared_buffer:
+     * - buf_shared:
      *     Allocates a shared (managed) buffer that is accessible from the host and the device.
      *     If data is not null, the buffer is initialized with the data.
-     * - io_buffer:
+     * - buf_io:
      *     Allocates a buffer in device memory. Excepts that data points to a memory region with at least N elements.
      *     Buffer may be copied to / from the device using xpu::copy from / to 'data'.
      *     Note: If the device is a CPU, the underlying pointer simply points to 'data' and no additional allocation takes place.
      *     xpu::copy calls become no-ops in this case.
+     * - buf_stack:
+     *     Allocates a buffer in the stack on the device. The buffer is not accessible from the host.
+     *     Memory is not initialized and 'data' pointer has no effect.
+     *     The stack memory must be allocated beforehand using xpu::stack_alloc.
+     *     Note that, no additional allocation takes place. The buffer simply points to the stack memory.
+     *     The buffer is not freed automatically when it goes out of scope. Instead use xpu::stack_pop to reset the stack head.
+     *     Note: This also means stack buffers may overlap.
      */
     buffer(size_t N, buffer_type type, T *data = nullptr);
 

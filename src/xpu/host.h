@@ -531,6 +531,6 @@ void copy(buffer<T> &buf, direction dir);
 
 } // namespace xpu
 
-#include "host_impl.h"
+#include "host.tpp"
 
 #endif

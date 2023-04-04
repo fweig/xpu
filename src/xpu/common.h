@@ -159,6 +159,6 @@ private:
 
 } // namespace xpu
 
-#include "common_impl.h"
+#include "common.tpp"
 
 #endif

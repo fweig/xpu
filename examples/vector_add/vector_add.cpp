@@ -15,9 +15,9 @@ int main() {
     std::cout << "Running VectorAdd on Device '" << prop.name() << "' " <<  std::endl;
 
     constexpr int NElems = 1000;
-    xpu::buffer<float> x{NElems, xpu::io_buffer};
-    xpu::buffer<float> y{NElems, xpu::io_buffer};
-    xpu::buffer<float> z{NElems, xpu::io_buffer};
+    xpu::buffer<float> x{NElems, xpu::buf_io};
+    xpu::buffer<float> y{NElems, xpu::buf_io};
+    xpu::buffer<float> z{NElems, xpu::buf_io};
 
     xpu::h_view xh{x};
     xpu::h_view yh{y};

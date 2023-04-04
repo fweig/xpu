@@ -180,7 +180,7 @@ template<typename T>
 void xpu::copy(buffer<T> &buf, direction dir) {
     detail::buffer_data entry = detail::buffer_registry::instance().get(buf.get());
 
-    if (entry.type != detail::io_buffer) {
+    if (entry.type != detail::buf_io) {
         throw std::runtime_error("Buffer is not an IO buffer.");
     }
 

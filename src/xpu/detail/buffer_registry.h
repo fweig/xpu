@@ -9,10 +9,10 @@
 namespace xpu::detail {
 
 enum buffer_type {
-    host_buffer,
-    device_buffer,
-    shared_buffer,
-    io_buffer,
+    buf_host,
+    buf_device,
+    buf_shared,
+    buf_io,
 };
 
 struct buffer_data {

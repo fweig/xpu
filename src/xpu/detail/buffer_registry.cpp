@@ -12,25 +12,25 @@ void *buffer_registry::create(size_t size, buffer_type type, void *host_ptr) {
     void *ptr = nullptr;
     bool owns_host_ptr = false;
     switch (type) {
-    case host_buffer:
+    case buf_host:
         ptr = xpu::malloc_host(size);
         if (host_ptr != nullptr) {
             std::memcpy(ptr, host_ptr, size);
         }
         host_ptr = ptr;
         break;
-    case device_buffer:
+    case buf_device:
         ptr = xpu::malloc_device(size);
         host_ptr = nullptr;
         break;
-    case shared_buffer:
+    case buf_shared:
         ptr = xpu::malloc_shared(size);
         if (host_ptr != nullptr) {
             std::memcpy(ptr, host_ptr, size);
         }
         host_ptr = ptr;
         break;
-    case io_buffer: {
+    case buf_io: {
             if (host_ptr == nullptr) {
                 host_ptr = xpu::malloc_host(size);
                 owns_host_ptr = true;
@@ -86,12 +86,12 @@ void buffer_registry::remove(buffer_map::iterator it) {
     }
     auto &entry = it->second;
     switch (entry.data.type) {
-    case host_buffer:
-    case device_buffer:
-    case shared_buffer:
+    case buf_host:
+    case buf_device:
+    case buf_shared:
         xpu::free(entry.data.ptr);
         break;
-    case io_buffer: {
+    case buf_io: {
             xpu::device active_dev = xpu::device::active();
             if (active_dev.backend() != xpu::cpu) {
                 xpu::free(entry.data.ptr);

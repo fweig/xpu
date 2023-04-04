@@ -8,9 +8,9 @@ int main() {
 
     xpu::initialize();
 
-    xpu::buffer<float> a{N, xpu::io_buffer};
-    xpu::buffer<float> b{N, xpu::io_buffer};
-    xpu::buffer<float> dst{N + N, xpu::io_buffer};
+    xpu::buffer<float> a{N, xpu::buf_io};
+    xpu::buffer<float> b{N, xpu::buf_io};
+    xpu::buffer<float> dst{N + N, xpu::buf_io};
 
     xpu::h_view a_h{a};
     xpu::h_view b_h{b};

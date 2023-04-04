@@ -23,7 +23,7 @@ void xpu::queue::copy(buffer<T> buf, xpu::direction dir) {
     buffer_prop props{buf};
 
     switch (props.type()) {
-    case io_buffer: {
+    case buf_io: {
         T *from = nullptr;
         T *to = nullptr;
 

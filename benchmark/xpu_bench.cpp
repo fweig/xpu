@@ -123,9 +123,9 @@ public:
     std::string name() { return xpu::get_name<Kernel>(); }
 
     void setup() {
-        a.reset(buf_size, xpu::io_buffer);
-        b.reset(buf_size, xpu::io_buffer);
-        c.reset(buf_size * 2, xpu::io_buffer);
+        a.reset(buf_size, xpu::buf_io);
+        b.reset(buf_size, xpu::buf_io);
+        c.reset(buf_size * 2, xpu::buf_io);
 
         std::mt19937 gen{42};
 
@@ -181,9 +181,9 @@ public:
     std::string name() { return xpu::get_name<Kernel>(); }
 
     void setup() {
-        a.reset(buf_size, xpu::io_buffer);
-        b.reset(buf_size, xpu::device_buffer);
-        dst.reset(n_blocks, xpu::io_buffer);
+        a.reset(buf_size, xpu::buf_io);
+        b.reset(buf_size, xpu::buf_device);
+        dst.reset(n_blocks, xpu::buf_io);
 
         std::mt19937 gen{1337};
 

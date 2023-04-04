@@ -68,10 +68,10 @@ inline grid n_blocks(dim nblocks);
 inline grid n_threads(dim nthreads);
 
 enum buffer_type {
-    host_buffer = detail::host_buffer,
-    device_buffer = detail::device_buffer,
-    shared_buffer = detail::shared_buffer,
-    io_buffer   = detail::io_buffer,
+    buf_host = detail::buf_host,
+    buf_device = detail::buf_device,
+    buf_shared = detail::buf_shared,
+    buf_io = detail::buf_io,
 };
 
 template<typename T>

@@ -10,8 +10,8 @@ TEST(XPUTest, CanCreatePointerBuffer) {
     // Test for regression with ambigious free
     // This only has to compile
     xpu::buffer<int *> buf{};
-    xpu::buffer<key_value_t *> buf1{100, xpu::host_buffer};
-    xpu::buffer<key_value_t *> buf2{100, xpu::device_buffer};
+    xpu::buffer<key_value_t *> buf1{100, xpu::buf_host};
+    xpu::buffer<key_value_t *> buf2{100, xpu::buf_device};
 }
 
 TEST(XPUTest, CanGetDeviceFromPointer) {
@@ -26,7 +26,7 @@ TEST(XPUTest, CanGetDeviceFromPointer) {
     ASSERT_EQ(prop.type(), xpu::mem_type::unknown);
 
     {
-        xpu::buffer<int> hdbuf{1, xpu::io_buffer};
+        xpu::buffer<int> hdbuf{1, xpu::buf_io};
         xpu::buffer_prop<int> bprop{hdbuf};
         prop = xpu::ptr_prop{bprop.h_ptr()};
         ASSERT_NE(prop.ptr(), nullptr);
@@ -39,7 +39,7 @@ TEST(XPUTest, CanGetDeviceFromPointer) {
     }
 
     {
-        xpu::buffer<int> dbuf{1, xpu::device_buffer};
+        xpu::buffer<int> dbuf{1, xpu::buf_device};
         xpu::buffer_prop<int> bprop{dbuf};
         prop = xpu::ptr_prop{bprop.d_ptr()};
         ASSERT_NE(prop.ptr(), nullptr);
@@ -49,7 +49,7 @@ TEST(XPUTest, CanGetDeviceFromPointer) {
     }
 
     {
-        xpu::buffer<int> hbuf{1, xpu::host_buffer};
+        xpu::buffer<int> hbuf{1, xpu::buf_host};
         xpu::buffer_prop<int> bprop{hbuf};
         prop = xpu::ptr_prop{bprop.h_ptr()};
         ASSERT_NE(prop.ptr(), nullptr);
@@ -64,14 +64,14 @@ TEST(XPUTest, CanConvertTypenamesToString) {
 }
 
 TEST(XPUTest, HostBufferIsAccessibleFromDevice) {
-    xpu::buffer<int> buf{1, xpu::host_buffer};
+    xpu::buffer<int> buf{1, xpu::buf_host};
     *buf = 69;
     xpu::run_kernel<buffer_access>(xpu::n_threads(1), buf);
     ASSERT_EQ(*buf, 42);
 }
 
 TEST(XPUTest, IoBufferIsAccessibleFromDevice) {
-    xpu::buffer<int> buf{1, xpu::io_buffer};
+    xpu::buffer<int> buf{1, xpu::buf_io};
     xpu::run_kernel<buffer_access>(xpu::n_threads(1), buf);
 
     xpu::copy(buf, xpu::device_to_host);
@@ -84,7 +84,7 @@ TEST(XPUTest, IoBufferIsAccessibleFromDevice) {
 
 TEST(XPUTest, IoBufferCanCopyToHost) {
     int val = 69;
-    xpu::buffer<int> buf{1, xpu::io_buffer, &val};
+    xpu::buffer<int> buf{1, xpu::buf_io, &val};
     xpu::run_kernel<buffer_access>(xpu::n_threads(1), buf);
 
     xpu::copy(buf, xpu::device_to_host);
@@ -121,9 +121,9 @@ TEST(XPUTest, CanRunVectorAdd) {
 TEST(XPUTest, CanRunVectorAddQueue) {
     constexpr int NElems = 100;
 
-    xpu::buffer<float> xbuf{NElems, xpu::io_buffer};
-    xpu::buffer<float> ybuf{NElems, xpu::io_buffer};
-    xpu::buffer<float> zbuf{NElems, xpu::io_buffer};
+    xpu::buffer<float> xbuf{NElems, xpu::buf_io};
+    xpu::buffer<float> ybuf{NElems, xpu::buf_io};
+    xpu::buffer<float> zbuf{NElems, xpu::buf_io};
 
     xpu::h_view x{xbuf};
     xpu::h_view y{ybuf};
@@ -261,9 +261,9 @@ TEST(XPUTest, CanSortFloatsShort) {
 
 template<typename K>
 void testMergeKernel(size_t M, size_t N) {
-    xpu::buffer<float> a{M, xpu::io_buffer};
-    xpu::buffer<float> b{N, xpu::io_buffer};
-    xpu::buffer<float> dst{M + N, xpu::io_buffer};
+    xpu::buffer<float> a{M, xpu::buf_io};
+    xpu::buffer<float> b{N, xpu::buf_io};
+    xpu::buffer<float> dst{M + N, xpu::buf_io};
 
     std::mt19937 gen{1337};
     std::uniform_real_distribution<float> dist{0, 100000};
@@ -335,8 +335,8 @@ TEST(XPUTest, CanRunBlockScan) {
 
     size_t blockSize = xpu::device::active().backend() == xpu::cpu ? 1 : 64;
 
-    xpu::buffer<int> incl{blockSize, xpu::io_buffer};
-    xpu::buffer<int> excl{blockSize, xpu::io_buffer};
+    xpu::buffer<int> incl{blockSize, xpu::buf_io};
+    xpu::buffer<int> excl{blockSize, xpu::buf_io};
 
     xpu::run_kernel<block_scan>(xpu::n_blocks(1), incl.get(), excl.get());
 
@@ -358,7 +358,7 @@ TEST(XPUTest, CanRunBlockScan) {
 
 TEST(XPUTest, CanSetAndReadCMem) {
     float3_ orig{1, 2, 3};
-    xpu::buffer<float3_> out{1, xpu::io_buffer};
+    xpu::buffer<float3_> out{1, xpu::buf_io};
 
     xpu::set_constant<test_constant0>(orig);
 
@@ -373,13 +373,13 @@ TEST(XPUTest, CanSetAndReadCMem) {
 
 TEST(XPUTest, CanSetAndReadCMemMultiple) {
     float3_ orig{1, 2, 3};
-    xpu::buffer<float3_> out0{1, xpu::io_buffer};
+    xpu::buffer<float3_> out0{1, xpu::buf_io};
 
     double orig1 = 42;
-    xpu::buffer<double> out1{1, xpu::io_buffer};
+    xpu::buffer<double> out1{1, xpu::buf_io};
 
     float orig2 = 1337;
-    xpu::buffer<float> out2{1, xpu::io_buffer};
+    xpu::buffer<float> out2{1, xpu::buf_io};
 
     xpu::set_constant<test_constant0>(orig);
     xpu::set_constant<test_constant1>(orig1);
@@ -414,10 +414,10 @@ void test_thread_position(xpu::dim gpu_block_size, xpu::dim gpu_grid_dim) {
     };
 
     size_t nthreads_total = nthreads.x * nthreads.y * nthreads.z;
-    xpu::buffer<int> thread_idx{nthreads_total * 3, xpu::io_buffer};
-    xpu::buffer<int> block_dim{nthreads_total * 3, xpu::io_buffer};
-    xpu::buffer<int> block_idx{nthreads_total * 3, xpu::io_buffer};
-    xpu::buffer<int> grid_dim{nthreads_total * 3, xpu::io_buffer};
+    xpu::buffer<int> thread_idx{nthreads_total * 3, xpu::buf_io};
+    xpu::buffer<int> block_dim{nthreads_total * 3, xpu::buf_io};
+    xpu::buffer<int> block_idx{nthreads_total * 3, xpu::buf_io};
+    xpu::buffer<int> grid_dim{nthreads_total * 3, xpu::buf_io};
 
     xpu::grid exec_grid = xpu::n_threads(nthreads);
     switch (gpu_block_size.ndims()) {
@@ -500,7 +500,7 @@ TEST(XPUTest, CanStartkernel3D) {
 }
 
 TEST(XPUTest, CanCallDeviceFuncs) {
-    xpu::buffer<variant> buf{NUM_DEVICE_FUNCS, xpu::io_buffer};
+    xpu::buffer<variant> buf{NUM_DEVICE_FUNCS, xpu::buf_io};
 
     xpu::queue q;
     q.memset(buf, 0);
@@ -583,7 +583,7 @@ TEST(XPUTest, CanCallDeviceFuncs) {
 }
 
 TEST(XPUTest, CanRunTemplatedKernels) {
-    xpu::buffer<int> a{1, xpu::io_buffer};
+    xpu::buffer<int> a{1, xpu::buf_io};
 
     xpu::run_kernel<templated_kernel<0>>(xpu::n_threads(1), a.get());
     xpu::copy(a, xpu::device_to_host);
@@ -602,9 +602,9 @@ TEST(XPUTest, CollectsTimingData) {
     constexpr int NRuns = 10;
     constexpr int NElems = 100000;
 
-    xpu::buffer<float> a{NElems, xpu::io_buffer};
-    xpu::buffer<float> b{NElems, xpu::io_buffer};
-    xpu::buffer<float> c{NElems, xpu::io_buffer};
+    xpu::buffer<float> a{NElems, xpu::buf_io};
+    xpu::buffer<float> b{NElems, xpu::buf_io};
+    xpu::buffer<float> c{NElems, xpu::buf_io};
 
     xpu::h_view h_a{a};
     std::fill(h_a.begin(), h_a.end(), 24.f);

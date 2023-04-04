@@ -216,15 +216,15 @@ void buffer_registry::remove(buffer_map::iterator it) {
         xpu::free(entry.data.ptr);
         break;
     case buf_io: {
-            xpu::device active_dev = xpu::device::active();
-            if (active_dev.backend() != xpu::cpu) {
-                xpu::free(entry.data.ptr);
-            }
-            if (entry.data.owns_host_ptr) {
-                xpu::free(entry.data.host_ptr);
-            }
-            break;
+        xpu::device active_dev = xpu::device::active();
+        if (active_dev.backend() != xpu::cpu) {
+            xpu::free(entry.data.ptr);
         }
+        if (entry.data.owns_host_ptr) {
+            xpu::free(entry.data.host_ptr);
+        }
+        break;
+    }
     case buf_stack:
         // stack buffer shouldn't be added to m_entries...
         throw std::runtime_error("Internal error: Tried to free a stack buffer. This should never happen.");

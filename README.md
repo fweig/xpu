@@ -103,6 +103,25 @@ Enable the desired backends by passing `-DXPU_ENABLE_<BACKEND>=ON` to cmake. (e.
 
 See the [wiki](https://github.com/fweig/xpu/wiki/CMake-Options) for all available CMake options.
 
+# Documentation
+
+The documentation is based on [doxygen](https://www.doxygen.nl/). To build it:
+```bash
+$ cd build
+$ cmake .. -DXPU_BUILD_DOCS=ON
+$ make docs
+```
+
+The API reference is generated in HTML under `docs/html`. You can view it with your favorite browser:
+```bash
+cd docs
+firefox docs/html/index.html
+```
+
+Additionally, there's the [wiki](https://github.com/fweig/xpu/wiki) that contains more detailed guides and examples about the library.
+
+*Note*: Both wiki and doxygen are still incomplete and under construction. If you have any questions, feel free to ask them in the [issues](https://github.com/fweig/xpu/issues/new).
+
 # Tests
 
 To build the tests, pass `-DXPU_ENABLE_TESTS=ON` to cmake.  To compile and run the tests, `googletest` is required.

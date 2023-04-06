@@ -11,10 +11,13 @@
 #include "../../parallel_merge.h"
 
 #if XPU_IS_CUDA
-#include <cub/cub.cuh>
+#include <cub/block/block_scan.cuh>
+#include <cub/block/block_radix_sort.cuh>
 #elif XPU_IS_HIP
 #include <hip/hip_runtime.h>
-#include <hipcub/hipcub.hpp>
+// #include <hipcub/hipcub.hpp> // FIXME: including hibcub main header sometimes crashes HIP clang...
+#include <hipcub/block/block_scan.hpp>
+#include <hipcub/block/block_radix_sort.hpp>
 #else
 #error "Internal XPU error: This should never happen."
 #endif

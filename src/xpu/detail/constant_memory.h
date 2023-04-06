@@ -6,7 +6,7 @@
 namespace xpu::detail {
 
 template<typename A>
-static XPU_DETAIL_CONSTANT_SPEC typename A::data_t constant_memory;
+XPU_DETAIL_CONSTANT_SPEC typename A::data_t constant_memory;
 
 } // namespace xpu::detail
 

@@ -27,16 +27,25 @@ inline void xpu::grid::get_compute_grid(dim &block_dim, dim &grid_dim) const {
     block_dim.z = (grid_dim.z == 1 ? 1 : block_dim.z);
 }
 
+// template<typename T>
+// XPU_H XPU_D xpu::buffer<T>::buffer() {
+//     // #if !XPU_IS_DEVICE_CODE
+//     // m_data = nullptr;
+//     // #endif
+// }
+
 template<typename T>
 xpu::buffer<T>::buffer(size_t N, xpu::buffer_type type, T *data) {
     auto &registry = detail::buffer_registry::instance();
     m_data = static_cast<T *>(registry.create(N * sizeof(T), static_cast<detail::buffer_type>(type), data));
 }
 
-template<typename T>
-XPU_H XPU_D xpu::buffer<T>::~buffer() {
-    remove_ref();
-}
+// template<typename T>
+// XPU_H XPU_D xpu::buffer<T>::~buffer() {
+//     #if !XPU_IS_DEVICE_CODE
+//     remove_ref();
+//     #endif
+// }
 
 template<typename T>
 XPU_H XPU_D xpu::buffer<T>::buffer(const xpu::buffer<T> &other) {
@@ -100,8 +109,8 @@ XPU_H XPU_D xpu::buffer<T> &xpu::buffer<T>::operator=(xpu::buffer<U> &&other) {
 
 template<typename T>
 XPU_H XPU_D void xpu::buffer<T>::reset() {
-    m_data = nullptr;
     remove_ref();
+    m_data = nullptr;
 }
 
 template<typename T>
@@ -113,7 +122,7 @@ void xpu::buffer<T>::reset(size_t N, xpu::buffer_type type, T *data) {
 
 template<typename T>
 XPU_H XPU_D void xpu::buffer<T>::add_ref() {
-#if !XPU_IS_DEVICE_CODE
+#if !XPU_IS_HIP && !XPU_IS_CUDA && !XPU_IS_DEVICE_CODE
     if (m_data != nullptr) {
         detail::buffer_registry::instance().add_ref(m_data);
     }
@@ -122,7 +131,7 @@ XPU_H XPU_D void xpu::buffer<T>::add_ref() {
 
 template<typename T>
 XPU_H XPU_D void xpu::buffer<T>::remove_ref() {
-#if !XPU_IS_DEVICE_CODE
+#if !XPU_IS_HIP && !XPU_IS_CUDA && !XPU_IS_DEVICE_CODE
     if (m_data != nullptr) {
         detail::buffer_registry::instance().remove_ref(m_data);
     }

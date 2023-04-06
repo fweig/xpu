@@ -124,6 +124,9 @@ struct test_constant0 : xpu::constant<TestKernels, float3_> {};
 struct test_constant1 : xpu::constant<TestKernels, double> {};
 struct test_constant2 : xpu::constant<TestKernels, float> {};
 
+// Ensure buffer can be placed in constant memory, only has to compile
+struct cmem_buffer : xpu::constant<TestKernels, xpu::buffer<int>> {};
+
 struct get_driver_type : xpu::function<TestKernels> {
     int operator()(xpu::driver_t *);
 };

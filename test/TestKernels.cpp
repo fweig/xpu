@@ -5,6 +5,7 @@ XPU_IMAGE(TestKernels);
 XPU_EXPORT(test_constant0);
 XPU_EXPORT(test_constant1);
 XPU_EXPORT(test_constant2);
+XPU_EXPORT(cmem_buffer);
 
 XPU_EXPORT(get_driver_type);
 int get_driver_type::operator()(xpu::driver_t *driver) {

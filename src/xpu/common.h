@@ -84,7 +84,8 @@ public:
     /**
      * @brief Create an emtpy buffer.
      */
-    buffer() = default;
+    XPU_H XPU_D buffer() {}
+    // XPU_H XPU_D buffer();
 
     /**
      * @brief Create a buffer with the given size.
@@ -121,7 +122,16 @@ public:
     /**
      * @brief Free the buffer.
      */
-    XPU_H XPU_D ~buffer();
+    #if XPU_IS_CUDA || XPU_IS_HIP
+    // Hack to allow putting buffers into constant memory
+    XPU_H XPU_D ~buffer() {}
+    #else
+    XPU_H XPU_D ~buffer() {
+        #if !XPU_IS_DEVICE_CODE
+        remove_ref();
+        #endif
+    }
+    #endif
 
     XPU_H XPU_D buffer(const buffer &other);
     XPU_H XPU_D buffer(buffer &&other);
@@ -151,7 +161,12 @@ public:
     XPU_H XPU_D T &operator[](size_t i) const { return m_data[i]; }
 
 private:
-    T *m_data = nullptr;
+    // Don't initialize buffer in cuda & hip, so it can be used in constant and shared memory
+    T *m_data
+        #if !XPU_IS_CUDA && !XPU_IS_HIP
+            = nullptr
+        #endif
+    ;
 
     XPU_H XPU_D void add_ref();
     XPU_H XPU_D void remove_ref();

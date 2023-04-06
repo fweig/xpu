@@ -63,6 +63,11 @@ TEST(XPUTest, CanConvertTypenamesToString) {
     ASSERT_STREQ(xpu::detail::type_name<xpu::device_prop>(), "xpu::device_prop");
 }
 
+TEST(XPUTest, CanWriteBufferToCMem) {
+    xpu::buffer<int> buf{1, xpu::buf_device};
+    xpu::set_constant<cmem_buffer>(buf);
+}
+
 TEST(XPUTest, HostBufferIsAccessibleFromDevice) {
     xpu::buffer<int> buf{1, xpu::buf_host};
     *buf = 69;

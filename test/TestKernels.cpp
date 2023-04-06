@@ -44,7 +44,7 @@ XPU_D void buffer_access::operator()(context &ctx, xpu::buffer<int> buf) {
     if (iThread > 0) {
         return;
     }
-    printf("buf = %p\n", buf.get());
+    // printf("buf = %p\n", buf.get());
     *buf = 42;
 }
 

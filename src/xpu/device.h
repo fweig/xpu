@@ -113,8 +113,88 @@ public:
     XPU_D       shared_memory &smem()       { return m_smem; }
     XPU_D const shared_memory &smem() const { return m_smem; }
 
-    // XPU_D       constants &cmem()       { return m_cmem; }
+    /**
+     * Shortcut to access a constant from constant memory.
+     */
+    template<typename C>
+    XPU_D const typename C::data_t &cmem() const { return m_cmem.template get<C>(); }
+
+    /**
+     * Access the constant memory.
+     */
     XPU_D const constants &cmem() const { return m_cmem; }
+
+    /**
+     * Shortcut to access thread position in x dimension.
+     * Identical to pos().thread_idx_x().
+     */
+    XPU_D int thread_idx_x() const { return m_pos.thread_idx_x(); }
+
+    /**
+     * Shortcut to access thread position in y dimension.
+     * Identical to pos().thread_idx_y().
+     */
+    XPU_D int thread_idx_y() const { return m_pos.thread_idx_y(); }
+
+    /**
+     * Shortcut to access thread position in z dimension.
+     * Identical to pos().thread_idx_z().
+     */
+    XPU_D int thread_idx_z() const { return m_pos.thread_idx_z(); }
+
+    /**
+     * Shortcut to access block size in x dimension.
+     * Identical to pos().block_dim_x().
+     */
+    XPU_D int block_dim_x() const { return m_pos.block_dim_x(); }
+
+    /**
+     * Shortcut to access block size in y dimension.
+     * Identical to pos().block_dim_y().
+     */
+    XPU_D int block_dim_y() const { return m_pos.block_dim_y(); }
+
+    /**
+     * Shortcut to access block size in z dimension.
+     * Identical to pos().block_dim_z().
+     */
+    XPU_D int block_dim_z() const { return m_pos.block_dim_z(); }
+
+    /**
+     * Shortcut to access block position in x dimension.
+     * Identical to pos().block_idx_x().
+     */
+    XPU_D int block_idx_x() const { return m_pos.block_idx_x(); }
+
+    /**
+     * Shortcut to access block position in y dimension.
+     * Identical to pos().block_idx_y().
+     */
+    XPU_D int block_idx_y() const { return m_pos.block_idx_y(); }
+
+    /**
+     * Shortcut to access block position in z dimension.
+     * Identical to pos().block_idx_z().
+     */
+    XPU_D int block_idx_z() const { return m_pos.block_idx_z(); }
+
+    /**
+     * Shortcut to access grid size in x dimension.
+     * Identical to pos().grid_dim_x().
+     */
+    XPU_D int grid_dim_x() const { return m_pos.grid_dim_x(); }
+
+    /**
+     * Shortcut to access grid size in y dimension.
+     * Identical to pos().grid_dim_y().
+     */
+    XPU_D int grid_dim_y() const { return m_pos.grid_dim_y(); }
+
+    /**
+     * Shortcut to access grid size in z dimension.
+     * Identical to pos().grid_dim_z().
+     */
+    XPU_D int grid_dim_z() const { return m_pos.grid_dim_z(); }
 
     XPU_D       tpos &pos()       { return m_pos; }
     XPU_D const tpos &pos() const { return m_pos; }
@@ -122,7 +202,7 @@ public:
 private:
     tpos          &m_pos;
     shared_memory &m_smem;
-    const constants     &m_cmem;
+    const constants &m_cmem;
 
 public:
     XPU_D kernel_context(detail::internal_ctor_t, tpos &pos, shared_memory &smem, const constants &cmem)

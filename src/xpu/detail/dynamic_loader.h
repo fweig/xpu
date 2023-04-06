@@ -156,7 +156,7 @@ public:
 
     template<typename F, typename... Args>
     typename std::enable_if<is_function<I, F>::value, int>::type call(Args&&... args) {
-        return call_action<F>(args...);
+        return call_action<F>(std::forward<Args>(args)...);
     }
 
     template<typename F>
@@ -166,7 +166,7 @@ public:
 
     template<typename K, typename... Args>
     typename std::enable_if<is_kernel<I, K>::value, int>::type run_kernel(kernel_launch_info launch_info, Args&&... args) {
-        return call_action<K>(launch_info, args...);
+        return call_action<K>(launch_info, std::forward<Args>(args)...);
     }
 
     void dump_symbols() {
@@ -177,7 +177,7 @@ public:
 
 private:
     template<typename F, typename... Args>
-    int call_action(Args... args) {
+    int call_action(Args&&... args) {
         auto *symbols = &context->get_symbols();
         size_t id = grouped_type_id<F, typename F::image>::get();
         if (id >= symbols->size()) {
@@ -187,7 +187,7 @@ private:
         auto symbol = symbols->at(id);
         assert(symbol.first == type_name<F>());
         auto *fn = reinterpret_cast<action_interface_t<F>>(symbol.second);
-        return fn(args...);
+        return fn(std::forward<Args>(args)...);
     }
 
 };
@@ -197,8 +197,8 @@ struct action_runner {};
 
 template<typename F, typename... Args>
 struct action_runner<function_tag, F, int(F::*)(Args...)> {
-    static int call(Args... args) {
-        return F{}(args...);
+    static int call(Args&&... args) {
+        return F{}(std::forward<Args>(args)...);
     }
 };
 

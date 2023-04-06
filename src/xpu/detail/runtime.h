@@ -108,6 +108,7 @@ public:
     template<typename C>
     void set_constant(const typename C::data_t &symbol) {
         static_assert(std::is_same_v<typename C::tag, constant_tag>);
+        XPU_LOG("Updating constant '%s'.", type_name<C>());
         error err = get_image<C>(m_active_device.backend)->template set<C>(symbol);
         throw_on_driver_error(m_active_device.backend, err);
     }
@@ -140,6 +141,7 @@ private:
     image<typename A::image> *get_image(driver_t backend) {
         auto *img = m_images.find< image<typename A::image> >(backend);
         if (img == nullptr) {
+            XPU_LOG("Loading image '%s'.", type_name<typename A::image>());
             img = load_image<typename A::image>(backend);
         }
         if (img == nullptr) {

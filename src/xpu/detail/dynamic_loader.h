@@ -125,6 +125,7 @@ public:
     }
 
     image(const char *name) {
+        XPU_LOG("Loading '%s'", name);
 #if defined __APPLE__
   handle = dlopen(name, RTLD_LAZY);
 #elif defined __linux__

@@ -188,7 +188,7 @@ bool buffer_registry::stack_contains(const void *ptr) {
 }
 
 buffer_registry::stack_entry::~stack_entry() {
-    printf("Freeing stack: %p\n", start);
+    XPU_LOG("Freeing stack: %p\n", start);
     xpu::free(start);
 }
 

@@ -36,6 +36,9 @@ public:
 
     template<typename I>
     void add(I *i, driver_t driver) {
+        if (find<I>(driver) != nullptr) {
+            throw std::runtime_error(format("Image '%s' for driver '%s' already exists", type_name<I>(), driver_to_str(driver)));
+        }
         entries.push_back(basic_entry{driver, grouped_type_id<I, image_pool>::get(), i});
     }
 
@@ -111,6 +114,19 @@ public:
         XPU_LOG("Updating constant '%s'.", type_name<C>());
         error err = get_image<C>(m_active_device.backend)->template set<C>(symbol);
         throw_on_driver_error(m_active_device.backend, err);
+    }
+
+    template<typename I>
+    void preload_image() {
+        XPU_LOG("Preloading image '%s'.", type_name<I>());
+
+        auto *img = m_images.find< image<I> >(m_active_device.backend);
+        if (img != nullptr) {
+            XPU_LOG("Image '%s' already loaded. Skipping...", type_name<I>());
+            return;
+        }
+
+        load_image<I>(m_active_device.backend);
     }
 
     template<typename Kernel>

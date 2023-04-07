@@ -93,6 +93,15 @@ struct settings {
 inline void initialize(settings = {});
 
 /**
+ * @brief Preload the given device image.
+ * @tparam I Device image type.
+ * This call is optional. If not preloaded, the device image will be loaded
+ * automatically when the first kernel is launched.
+ */
+template<typename I>
+void preload();
+
+/**
  * @brief Allocate memory on the device.
  * @param size Size of the memory to allocate in bytes.
  */

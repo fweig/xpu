@@ -17,6 +17,11 @@ void xpu::initialize(settings settings) {
     detail::runtime::instance().initialize(settings);
 }
 
+template<typename I>
+inline void xpu::preload() {
+    detail::runtime::instance().preload_image<I>();
+}
+
 inline void *xpu::malloc_host(size_t bytes) {
     return detail::runtime::instance().malloc_host(bytes);
 }

@@ -197,8 +197,8 @@ struct action_runner {};
 
 template<typename F, typename... Args>
 struct action_runner<function_tag, F, int(F::*)(Args...)> {
-    static int call(Args&&... args) {
-        return F{}(std::forward<Args>(args)...);
+    static int call(Args... args) {
+        return F{}(args...);
     }
 };
 

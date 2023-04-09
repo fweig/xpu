@@ -695,5 +695,10 @@ int main(int argc, char **argv) {
     xpu::settings settings{};
     settings.profile = true; // Always enable profiling for tests
     xpu::initialize(settings);
-    return RUN_ALL_TESTS();
+    int ret = RUN_ALL_TESTS();
+
+    xpu::buffer<int> a{};
+    xpu::set_constant<cmem_buffer>(a);
+
+    return ret;
 }

@@ -697,6 +697,9 @@ int main(int argc, char **argv) {
     xpu::initialize(settings);
     int ret = RUN_ALL_TESTS();
 
+    // Clean up buffer in constant memory.
+    // The xpu runtime might not be available anymore
+    // when cpu constant memory is destructed.
     xpu::buffer<int> a{};
     xpu::set_constant<cmem_buffer>(a);
 

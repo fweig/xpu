@@ -84,7 +84,7 @@ public:
     /**
      * @brief Create an emtpy buffer.
      */
-    XPU_H XPU_D buffer() = default;
+    buffer() = default;
 
     /**
      * @brief Create a buffer with the given size.
@@ -123,7 +123,7 @@ public:
      */
     #if XPU_IS_CUDA || XPU_IS_HIP
     // Hack to allow putting buffers into constant memory
-    XPU_H XPU_D ~buffer() = default;
+    ~buffer() = default;
     #else
     XPU_H XPU_D ~buffer() {
         #if !XPU_IS_DEVICE_CODE

@@ -96,6 +96,17 @@ TEST(XPUTest, IoBufferCanCopyToHost) {
     ASSERT_EQ(val, 42);
 }
 
+TEST(XPUTest, CanCopyAsyncDeviceToHost) {
+    int val = 69;
+    xpu::buffer<int> buf{1, xpu::buf_io, &val};
+
+    xpu::queue q;
+    q.launch<buffer_access>(xpu::n_threads(1), buf);
+    q.copy(buf, xpu::device_to_host);
+    q.wait();
+    ASSERT_EQ(val, 42);
+}
+
 TEST(XPUTest, CanAllocateStackMemory) {
     xpu::stack_alloc(1024 * 1024);
     xpu::buffer<int> buf{1, xpu::buf_stack};

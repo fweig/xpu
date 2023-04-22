@@ -39,13 +39,18 @@ XPU_EXPORT(empty_kernel);
 XPU_D void empty_kernel::operator()(context &) {}
 
 XPU_EXPORT(buffer_access);
-XPU_D void buffer_access::operator()(context &ctx, xpu::buffer<int> buf) {
+XPU_D void buffer_access::operator()(context &ctx, xpu::buffer<int> in, xpu::buffer<int> out) {
     int iThread = ctx.pos().block_idx_x() * ctx.pos().block_dim_x() + ctx.pos().thread_idx_x();
     if (iThread > 0) {
         return;
     }
     // printf("buf = %p\n", buf.get());
-    *buf = 42;
+
+    if (in.get() == nullptr) {
+        *buf = 42;
+    } else {
+        *out = *in;
+    }
 }
 
 XPU_EXPORT(vector_add);

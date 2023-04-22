@@ -40,7 +40,7 @@
 #define XPU_DETAIL_FORCE_INLINE inline __attribute__((always_inline))
 #define XPU_DETAIL_DEVICE_SPEC
 #define XPU_DETAIL_HOST_SPEC
-#define XPU_DETAIL_CONSTANT_SPEC static
+#define XPU_DETAIL_CONSTANT_SPEC
 #endif
 
 #if XPU_IS_CUDA

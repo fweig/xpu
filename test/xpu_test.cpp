@@ -70,14 +70,16 @@ TEST(XPUTest, CanWriteBufferToCMem) {
 
 TEST(XPUTest, HostBufferIsAccessibleFromDevice) {
     xpu::buffer<int> buf{1, xpu::buf_host};
+    xpu::buffer<int> x{};
     *buf = 69;
-    xpu::run_kernel<buffer_access>(xpu::n_threads(1), buf);
+    xpu::run_kernel<buffer_access>(xpu::n_threads(1), x, buf);
     ASSERT_EQ(*buf, 42);
 }
 
 TEST(XPUTest, IoBufferIsAccessibleFromDevice) {
     xpu::buffer<int> buf{1, xpu::buf_io};
-    xpu::run_kernel<buffer_access>(xpu::n_threads(1), buf);
+    xpu::buffer<int> x{};
+    xpu::run_kernel<buffer_access>(xpu::n_threads(1), x, buf);
 
     xpu::copy(buf, xpu::device_to_host);
     xpu::buffer_prop<int> bprop{buf};
@@ -90,7 +92,8 @@ TEST(XPUTest, IoBufferIsAccessibleFromDevice) {
 TEST(XPUTest, IoBufferCanCopyToHost) {
     int val = 69;
     xpu::buffer<int> buf{1, xpu::buf_io, &val};
-    xpu::run_kernel<buffer_access>(xpu::n_threads(1), buf);
+    xpu::buffer<int> x{};
+    xpu::run_kernel<buffer_access>(xpu::n_threads(1), x, buf);
 
     xpu::copy(buf, xpu::device_to_host);
     ASSERT_EQ(val, 42);
@@ -99,9 +102,10 @@ TEST(XPUTest, IoBufferCanCopyToHost) {
 TEST(XPUTest, CanCopyAsyncDeviceToHost) {
     int val = 69;
     xpu::buffer<int> buf{1, xpu::buf_io, &val};
+    xpu::buffer<int> x{};
 
     xpu::queue q;
-    q.launch<buffer_access>(xpu::n_threads(1), buf);
+    q.launch<buffer_access>(xpu::n_threads(1), x, buf);
     q.copy(buf, xpu::device_to_host);
     q.wait();
     ASSERT_EQ(val, 42);
@@ -110,6 +114,7 @@ TEST(XPUTest, CanCopyAsyncDeviceToHost) {
 TEST(XPUTest, CanAllocateStackMemory) {
     xpu::stack_alloc(1024 * 1024);
     xpu::buffer<int> buf{1, xpu::buf_stack};
+    xpu::buffer<int> x{};
 
     xpu::buffer_prop bprop{buf};
     ASSERT_EQ(bprop.type(), xpu::buf_stack);
@@ -119,7 +124,7 @@ TEST(XPUTest, CanAllocateStackMemory) {
     // Ensure 256 byte alignment
     ASSERT_EQ(reinterpret_cast<uintptr_t>(bprop.d_ptr()) % 256, 0);
 
-    xpu::run_kernel<buffer_access>(xpu::n_threads(1), buf);
+    xpu::run_kernel<buffer_access>(xpu::n_threads(1), x, buf);
 
     int result;
     xpu::copy(&result, buf.get(), 1);

@@ -47,7 +47,7 @@ XPU_D void buffer_access::operator()(context &ctx, xpu::buffer<int> in, xpu::buf
     // printf("buf = %p\n", buf.get());
 
     if (in.get() == nullptr) {
-        *buf = 42;
+        *out = 42;
     } else {
         *out = *in;
     }

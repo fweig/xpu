@@ -688,7 +688,9 @@ TEST(XPUTest, CollectsTimingData) {
     ASSERT_TRUE(ts.has_details());
     ASSERT_EQ(ts.memset(), 0);
     ASSERT_EQ(ts.copy(xpu::d2h), 0);
-    ASSERT_GT(ts.copy(xpu::h2d), 0);
+    if (xpu::device::active().backend() != xpu::cpu) {
+        ASSERT_GT(ts.copy(xpu::h2d), 0);
+    }
     ASSERT_GT(ts.wall(), 0);
 
     xpu::kernel_timings timings0 = ts.kernel<vector_add_timing0>();

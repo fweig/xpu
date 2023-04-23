@@ -19,12 +19,12 @@ int main() {
         b_h[i] = 2*i+1;
     }
 
-    xpu::copy(a, xpu::host_to_device);
-    xpu::copy(b, xpu::host_to_device);
+    xpu::copy(a, xpu::h2d);
+    xpu::copy(b, xpu::h2d);
 
     xpu::run_kernel<GpuMerge>(xpu::n_blocks(1), a.get(), N, b.get(), N, dst.get());
 
-    xpu::copy(dst, xpu::device_to_host);
+    xpu::copy(dst, xpu::d2h);
 
     xpu::h_view h{dst};
     bool isSorted = true;

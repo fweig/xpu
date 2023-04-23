@@ -30,10 +30,10 @@ int main() {
 
     xpu::queue q{};
 
-    q.copy(x, xpu::host_to_device);
-    q.copy(y, xpu::host_to_device);
+    q.copy(x, xpu::h2d);
+    q.copy(y, xpu::h2d);
     q.launch<VectorAdd>(xpu::n_threads(NElems), x, y, z, NElems);
-    q.copy(z, xpu::device_to_host);
+    q.copy(z, xpu::d2h);
     q.wait();
 
 

@@ -153,12 +153,12 @@ public:
 
     void run() {
         xpu::push_timer(name());
-        xpu::copy(a, xpu::host_to_device);
-        xpu::copy(b, xpu::host_to_device);
+        xpu::copy(a, xpu::h2d);
+        xpu::copy(b, xpu::h2d);
 
         xpu::run_kernel<Kernel>(xpu::n_blocks(n_blocks), a.get(), b.get(), elems_per_block, c.get());
 
-        xpu::copy(c, xpu::device_to_host);
+        xpu::copy(c, xpu::d2h);
         m_timings = xpu::pop_timer();
     }
 
@@ -207,9 +207,9 @@ public:
 
     void run() {
         xpu::push_timer(name());
-        xpu::copy(a, xpu::host_to_device);
+        xpu::copy(a, xpu::h2d);
         xpu::run_kernel<Kernel>(xpu::n_blocks(n_blocks), a.get(), elems_per_block, b.get(), dst.get());
-        xpu::copy(dst, xpu::device_to_host);
+        xpu::copy(dst, xpu::d2h);
         m_timings = xpu::pop_timer();
     }
 

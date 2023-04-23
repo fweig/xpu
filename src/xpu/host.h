@@ -25,9 +25,19 @@ class queue;
 class ptr_prop;
 namespace detail { class runtime; }
 
+/**
+ * Enum to specify the direction of a memory transfer.
+ */
 enum direction {
-    host_to_device = detail::dir_h2d,
-    device_to_host = detail::dir_d2h,
+    /**
+     * @brief Host to device transfer.
+     */
+    h2d = detail::dir_h2d,
+
+    /**
+     * @brief Device to host transfer.
+     */
+    d2h = detail::dir_d2h,
 };
 
 class exception : public std::exception {
@@ -590,7 +600,7 @@ public:
      * @note Requires profiling to enabled when calling xpu::initialize.
      */
     double copy(direction dir) const {
-        return dir == host_to_device ? m_t.copy_h2d : m_t.copy_d2h;
+        return dir == h2d ? m_t.copy_h2d : m_t.copy_d2h;
     }
 
     /**

@@ -245,11 +245,11 @@ void xpu::copy(buffer<T> &buf, direction dir) {
     void *src = nullptr;
 
     switch (dir) {
-        case host_to_device:
+        case h2d:
             dst = entry.ptr;
             src = entry.host_ptr;
             break;
-        case device_to_host:
+        case d2h:
             dst = entry.host_ptr;
             src = entry.ptr;
             break;

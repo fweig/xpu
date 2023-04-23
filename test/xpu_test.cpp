@@ -81,7 +81,7 @@ TEST(XPUTest, IoBufferIsAccessibleFromDevice) {
     xpu::buffer<int> x{};
     xpu::run_kernel<buffer_access>(xpu::n_threads(1), x, buf);
 
-    xpu::copy(buf, xpu::device_to_host);
+    xpu::copy(buf, xpu::d2h);
     xpu::buffer_prop<int> bprop{buf};
     ASSERT_EQ(bprop.h_ptr()[0], 42);
 
@@ -95,7 +95,7 @@ TEST(XPUTest, IoBufferCanCopyToHost) {
     xpu::buffer<int> x{};
     xpu::run_kernel<buffer_access>(xpu::n_threads(1), x, buf);
 
-    xpu::copy(buf, xpu::device_to_host);
+    xpu::copy(buf, xpu::d2h);
     ASSERT_EQ(val, 42);
 }
 
@@ -106,7 +106,7 @@ TEST(XPUTest, CanCopyAsyncDeviceToHost) {
 
     xpu::queue q;
     q.launch<buffer_access>(xpu::n_threads(1), x, buf);
-    q.copy(buf, xpu::device_to_host);
+    q.copy(buf, xpu::d2h);
     q.wait();
     ASSERT_EQ(val, 42);
 }
@@ -193,10 +193,10 @@ TEST(XPUTest, CanRunVectorAddQueue) {
 
     xpu::queue q{};
 
-    q.copy(xbuf, xpu::host_to_device);
-    q.copy(ybuf, xpu::host_to_device);
+    q.copy(xbuf, xpu::h2d);
+    q.copy(ybuf, xpu::h2d);
     q.launch<vector_add>(xpu::n_threads(NElems), xbuf.get(), ybuf.get(), zbuf.get(), NElems);
-    q.copy(zbuf, xpu::device_to_host);
+    q.copy(zbuf, xpu::d2h);
     q.wait();
 
     xpu::h_view z{zbuf};
@@ -339,12 +339,12 @@ void testMergeKernel(size_t M, size_t N) {
     }
     std::sort(&b_h[0], &b_h[0] + b_h.size());
 
-    xpu::copy(a, xpu::host_to_device);
-    xpu::copy(b, xpu::host_to_device);
+    xpu::copy(a, xpu::h2d);
+    xpu::copy(b, xpu::h2d);
 
     xpu::run_kernel<K>(xpu::n_blocks(1), a.get(), a_h.size(), b.get(), b_h.size(), dst.get());
 
-    xpu::copy(dst, xpu::device_to_host);
+    xpu::copy(dst, xpu::d2h);
 
     xpu::h_view h{dst};
     ASSERT_EQ(h.size(), a_h.size() + b_h.size());
@@ -399,8 +399,8 @@ TEST(XPUTest, CanRunBlockScan) {
 
     xpu::run_kernel<block_scan>(xpu::n_blocks(1), incl.get(), excl.get());
 
-    xpu::copy(incl, xpu::device_to_host);
-    xpu::copy(excl, xpu::device_to_host);
+    xpu::copy(incl, xpu::d2h);
+    xpu::copy(excl, xpu::d2h);
 
     int inclSum = 1;
     int exclSum = 0;
@@ -422,7 +422,7 @@ TEST(XPUTest, CanSetAndReadCMem) {
     xpu::set_constant<test_constant0>(orig);
 
     xpu::run_kernel<access_cmem_single>(xpu::n_threads(1), out.get());
-    xpu::copy(out, xpu::device_to_host);
+    xpu::copy(out, xpu::d2h);
 
     float3_ result = xpu::h_view(out)[0];
     EXPECT_EQ(orig.x, result.x);
@@ -444,9 +444,9 @@ TEST(XPUTest, CanSetAndReadCMemMultiple) {
     xpu::set_constant<test_constant1>(orig1);
     xpu::set_constant<test_constant2>(orig2);
     xpu::run_kernel<access_cmem_multiple>(xpu::n_threads(1), out0.get(), out1.get(), out2.get());
-    xpu::copy(out0, xpu::device_to_host);
-    xpu::copy(out1, xpu::device_to_host);
-    xpu::copy(out2, xpu::device_to_host);
+    xpu::copy(out0, xpu::d2h);
+    xpu::copy(out1, xpu::d2h);
+    xpu::copy(out2, xpu::d2h);
 
     {
         float3_ result = xpu::h_view(out0)[0];
@@ -493,10 +493,10 @@ void test_thread_position(xpu::dim gpu_block_size, xpu::dim gpu_grid_dim) {
         FAIL();
         break;
     }
-    xpu::copy(thread_idx, xpu::device_to_host);
-    xpu::copy(block_dim, xpu::device_to_host);
-    xpu::copy(block_idx, xpu::device_to_host);
-    xpu::copy(grid_dim, xpu::device_to_host);
+    xpu::copy(thread_idx, xpu::d2h);
+    xpu::copy(block_dim, xpu::d2h);
+    xpu::copy(block_idx, xpu::d2h);
+    xpu::copy(grid_dim, xpu::d2h);
 
     xpu::dim exp_block_dim = (xpu::device::active().backend() == xpu::cpu ? xpu::dim{1, 1, 1} : gpu_block_size);
     xpu::dim exp_grid_dim;
@@ -564,7 +564,7 @@ TEST(XPUTest, CanCallDeviceFuncs) {
     xpu::queue q;
     q.memset(buf, 0);
     q.launch<test_device_funcs>(xpu::n_blocks(1), buf.get());
-    q.copy(buf, xpu::device_to_host);
+    q.copy(buf, xpu::d2h);
     q.wait();
 
     xpu::h_view b{buf};
@@ -645,15 +645,15 @@ TEST(XPUTest, CanRunTemplatedKernels) {
     xpu::buffer<int> a{1, xpu::buf_io};
 
     xpu::run_kernel<templated_kernel<0>>(xpu::n_threads(1), a.get());
-    xpu::copy(a, xpu::device_to_host);
+    xpu::copy(a, xpu::d2h);
     ASSERT_EQ(xpu::h_view{a}[0], 0);
 
     xpu::run_kernel<templated_kernel<1>>(xpu::n_threads(1), a.get());
-    xpu::copy(a, xpu::device_to_host);
+    xpu::copy(a, xpu::d2h);
     ASSERT_EQ(xpu::h_view{a}[0], 1);
 
     xpu::run_kernel<templated_kernel<42>>(xpu::n_threads(1), a.get());
-    xpu::copy(a, xpu::device_to_host);
+    xpu::copy(a, xpu::d2h);
     ASSERT_EQ(xpu::h_view{a}[0], 42);
 }
 
@@ -674,8 +674,8 @@ TEST(XPUTest, CollectsTimingData) {
     xpu::h_view h_b{b};
     std::fill(h_b.begin(), h_b.end(), 24.f);
 
-    q.copy(a, xpu::host_to_device);
-    q.copy(b, xpu::host_to_device);
+    q.copy(a, xpu::h2d);
+    q.copy(b, xpu::h2d);
 
     for (int i = 0; i < NRuns; i++) {
         q.launch<vector_add_timing0>(xpu::n_threads(NElems), a.get(), b.get(), c.get(), NElems);
@@ -687,8 +687,8 @@ TEST(XPUTest, CollectsTimingData) {
     ASSERT_EQ(ts.name(), "test");
     ASSERT_TRUE(ts.has_details());
     ASSERT_EQ(ts.memset(), 0);
-    ASSERT_EQ(ts.copy(xpu::device_to_host), 0);
-    ASSERT_GT(ts.copy(xpu::host_to_device), 0);
+    ASSERT_EQ(ts.copy(xpu::d2h), 0);
+    ASSERT_GT(ts.copy(xpu::h2d), 0);
     ASSERT_GT(ts.wall(), 0);
 
     xpu::kernel_timings timings0 = ts.kernel<vector_add_timing0>();

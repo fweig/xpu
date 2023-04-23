@@ -40,11 +40,11 @@ void xpu::queue::copy(buffer<T> buf, xpu::direction dir) {
         T *to = nullptr;
 
         switch (dir) {
-        case host_to_device:
+        case h2d:
             from = props.h_ptr();
             to = props.d_ptr();
             break;
-        case device_to_host:
+        case d2h:
             from = props.d_ptr();
             to = props.h_ptr();
             break;

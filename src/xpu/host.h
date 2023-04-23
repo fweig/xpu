@@ -5,6 +5,7 @@
 #include "common.h"
 #include "detail/common.h"
 
+#include <numeric>
 #include <cstddef>
 #include <cstdio>
 #include <cstring>
@@ -25,8 +26,8 @@ class ptr_prop;
 namespace detail { class runtime; }
 
 enum direction {
-    host_to_device,
-    device_to_host,
+    host_to_device = detail::dir_h2d,
+    device_to_host = detail::dir_d2h,
 };
 
 class exception : public std::exception {
@@ -75,8 +76,8 @@ struct settings {
 
     /**
      * @brief Enable profiling of kernels.
-     * Use get_timing<KernelName>() to retrieve the timing information.
      * Value may be overwritten by setting environment variable XPU_PROFILE.
+     * @see xpu::timings
      */
     bool profile = false;
 };
@@ -348,13 +349,12 @@ public:
 private:
     std::shared_ptr<detail::queue_handle> m_handle;
 
+    void do_copy(const void *from, void *to, size_t size, double *ms);
+    void log_copy(const void *from, const void *to, size_t size);
 };
 
 template<typename Kernel>
 const char *get_name();
-
-template<typename Kernel>
-std::vector<float> get_timing();
 
 template<typename Kernel, typename... Args>
 void run_kernel(grid params, Args&&... args);
@@ -531,6 +531,121 @@ private:
     T *m_device;
     buffer_type m_type;
 };
+
+/**
+ * @brief Execution times collected for a kernel.
+ */
+class kernel_timings {
+
+public:
+    /**
+     * Name of the associated kernel.
+     */
+    std::string_view name() const { return m_t.name; }
+
+    /**
+     * Total time spent in this kernel.
+     */
+    double total() const { return std::accumulate(m_t.times.begin(), m_t.times.end(), 0.0); }
+
+    /**
+     * Times of each invocation of this kernel.
+     */
+    std::vector<double> times() const { return m_t.times; }
+
+private:
+    detail::kernel_timings m_t;
+
+public:
+    /**
+     * @internal
+     */
+    explicit kernel_timings(detail::kernel_timings t) : m_t(std::move(t)) {}
+
+};
+
+/**
+ * @brief Timing information collected via xpu::push_timer and xpu::pop_timer.
+ * @see xpu::push_timer, xpu::pop_timer, xpu::kernel_timings
+ */
+class timings {
+
+public:
+    timings() = default;
+
+    /**
+     * Name of this timer.
+     */
+    std::string_view name() const { return m_t.name; }
+
+    /**
+     * Total (wall) time spent in this timer.
+     * @note This time is always collected, regardless of profiling being enabled or not.
+     */
+    double wall() const { return m_t.wall; }
+
+    /**
+     * Time spent in memcpy operations.
+     * @param dir Direction of the copy.
+     * @note Requires profiling to enabled when calling xpu::initialize.
+     */
+    double copy(direction dir) const {
+        return dir == host_to_device ? m_t.copy_h2d : m_t.copy_d2h;
+    }
+
+    /**
+     * Time spent in memset operations.
+     * @note Requires profiling to enabled when calling xpu::initialize.
+     */
+    double memset() const { return m_t.memset; }
+
+    /**
+     * Time spent in kernel executions.
+     * @note Requires profiling to enabled when calling xpu::initialize.
+     */
+    template<typename K>
+    kernel_timings kernel() const { return kernel(get_name<K>()); }
+
+    /**
+     * Returns all kernel timings for this timer.
+     * @note Requires profiling to enabled when calling xpu::initialize.
+     */
+    std::vector<kernel_timings> kernels() const;
+
+    /**
+     * Returns all child timers.
+     */
+    std::vector<timings> children() const;
+
+    /**
+     * Returns true if copy, memset and kernel timings were collected.
+    */
+    bool has_details() const { return m_t.has_details; }
+
+private:
+    detail::timings m_t;
+    kernel_timings kernel(std::string_view name) const;
+
+public:
+    /**
+     * @internal
+     */
+    explicit timings(detail::timings t) : m_t(std::move(t)) {}
+
+};
+
+/**
+ * Create a new timer.
+ * @see xpu::pop_timer, xpu::timings
+ */
+void push_timer(std::string_view name);
+
+/**
+ * Stops the last timer started with xpu::push_timer.
+ * @returns Collected timings.
+ * @see xpu::push_timer, xpu::timings
+ */
+timings pop_timer();
 
 template<typename T>
 void copy(T *dst, const T *src, size_t entries);

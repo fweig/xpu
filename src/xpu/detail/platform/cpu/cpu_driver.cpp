@@ -7,6 +7,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
+#include <chrono>
 
 using namespace xpu::detail;
 
@@ -57,14 +58,19 @@ error cpu_driver::synchronize_queue(void * /*queue*/) {
 }
 
 error cpu_driver::memcpy(void *dst, const void *src, size_t bytes) {
-    XPU_LOG("memcpy %lu bytes", bytes);
     std::memcpy(dst, src, bytes);
     return SUCCESS;
 }
 
-error cpu_driver::memcpy_async(void *dst, const void *src, size_t bytes, void * /*queue*/) {
-    XPU_LOG("memcpy_async %lu bytes", bytes);
-    std::memcpy(dst, src, bytes);
+error cpu_driver::memcpy_async(void *dst, const void *src, size_t bytes, void * /*queue*/, double *ms) {
+    if (ms == nullptr) {
+        std::memcpy(dst, src, bytes);
+    } else {
+        auto start = std::chrono::high_resolution_clock::now();
+        std::memcpy(dst, src, bytes);
+        auto end = std::chrono::high_resolution_clock::now();
+        *ms = std::chrono::duration<double, std::milli>(end - start).count();
+    }
     return SUCCESS;
 }
 
@@ -73,8 +79,15 @@ error cpu_driver::memset(void *dst, int ch, size_t bytes) {
     return SUCCESS;
 }
 
-error cpu_driver::memset_async(void *dst, int ch, size_t bytes, void * /*queue*/) {
-    std::memset(dst, ch, bytes);
+error cpu_driver::memset_async(void *dst, int ch, size_t bytes, void * /*queue*/, double *ms) {
+    if (ms == nullptr) {
+        std::memset(dst, ch, bytes);
+    } else {
+        auto start = std::chrono::high_resolution_clock::now();
+        std::memset(dst, ch, bytes);
+        auto end = std::chrono::high_resolution_clock::now();
+        *ms = std::chrono::duration<double, std::milli>(end - start).count();
+    }
     return SUCCESS;
 }
 

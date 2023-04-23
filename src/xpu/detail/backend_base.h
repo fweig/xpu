@@ -23,9 +23,9 @@ public:
     virtual error synchronize_queue(void *) = 0;
 
     virtual error memcpy(void *, const void *, size_t) = 0;
-    virtual error memcpy_async(void *, const void *, size_t, void *) = 0;
+    virtual error memcpy_async(void *, const void *, size_t, void *, double *) = 0;
     virtual error memset(void *, int, size_t) = 0;
-    virtual error memset_async(void *, int, size_t, void *) = 0;
+    virtual error memset_async(void *, int, size_t, void *, double *) = 0;
 
     virtual error num_devices(int *) = 0;
     virtual error set_device(int) = 0;

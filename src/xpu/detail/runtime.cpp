@@ -1,5 +1,6 @@
-#include "runtime.h"
 #include "backend.h"
+#include "config.h"
+#include "runtime.h"
 #include "../host.h"
 
 #include <cstdlib>
@@ -31,11 +32,12 @@ runtime &runtime::instance() {
 void runtime::initialize(const settings &settings) {
 
     bool verbose = getenv_bool("XPU_VERBOSE", settings.verbose);
+    config::logging = verbose;
     if (verbose) {
         logger::instance().initialize(settings.logging_sink);
     }
 
-    m_measure_time = getenv_bool("XPU_PROFILE", settings.profile);
+    config::profile = getenv_bool("XPU_PROFILE", settings.profile);
 
     backend::load();
 

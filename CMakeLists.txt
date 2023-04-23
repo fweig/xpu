@@ -195,11 +195,13 @@ add_library(xpu SHARED
     src/xpu/detail/backend.cpp
     src/xpu/detail/buffer_registry.cpp
     src/xpu/detail/common.cpp
+    src/xpu/detail/config.cpp
     src/xpu/detail/dl_utils.cpp
     src/xpu/detail/exceptions.cpp
     src/xpu/detail/log.cpp
     src/xpu/detail/queue_handle.cpp
     src/xpu/detail/runtime.cpp
+    src/xpu/detail/timers.cpp
     src/xpu/detail/platform/cpu/cpu_driver.cpp
     src/xpu/detail/platform/cpu/this_thread.cpp
 )

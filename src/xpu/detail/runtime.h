@@ -3,8 +3,10 @@
 
 #include "backend.h"
 #include "common.h"
+#include "config.h"
 #include "dl_utils.h"
 #include "dynamic_loader.h"
+#include "timers.h"
 #include "log.h"
 
 #include <array>
@@ -81,23 +83,17 @@ public:
     void run_kernel(grid g, driver_t backend, void *queue_handle, Args&&... args) {
         static_assert(std::is_same_v<typename Kernel::tag, kernel_tag>);
 
-        float ms;
+        double ms;
         kernel_launch_info launch_info {
             .g = g,
             .queue_handle = queue_handle,
-            .ms = (m_measure_time ? &ms : nullptr)
+            .ms = (config::profile ? &ms : nullptr)
         };
         error err = get_image<Kernel>(backend)->template run_kernel<Kernel>(launch_info, std::forward<Args>(args)...);
         throw_on_driver_error(m_active_device.backend, err);
 
-        if (m_measure_time) {
-            size_t id = linear_type_id<Kernel>::get();
-
-            if (m_profiling.size() <= id) {
-                m_profiling.resize(id+1);
-            }
-
-            m_profiling.at(id).push_back(ms);
+        if (config::profile) {
+            add_kernel_time(type_name<Kernel>(), ms);
         }
     }
 
@@ -129,23 +125,8 @@ public:
         load_image<I>(m_active_device.backend);
     }
 
-    template<typename Kernel>
-    std::vector<float> get_timing() {
-        size_t id = linear_type_id<Kernel>::get();
-
-        // Profiling not enabled or kernel hasn't run yet.
-        if (m_profiling.size() <= id) {
-            return {};
-        }
-
-        return m_profiling.at(id);
-    }
-
 private:
     image_pool m_images;
-
-    bool m_measure_time = false;
-    std::vector<std::vector<float>> m_profiling;
 
     detail::device m_active_device;
     std::vector<detail::device> m_devices;

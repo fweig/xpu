@@ -20,7 +20,10 @@ public:
     virtual void teardown() = 0;
     virtual void run() = 0;
     virtual size_t bytes() { return 0; }
-    virtual std::vector<float> timings() = 0;
+    virtual std::vector<double> timings() = 0;
+
+protected:
+    xpu::timings m_timings;
 
 };
 
@@ -59,7 +62,7 @@ private:
     }
 
     void print_results(benchmark *b) {
-        std::vector<float> timings = b->timings();
+        std::vector<double> timings = b->timings();
         size_t bytes = b->bytes();
 
         timings.erase(timings.begin()); // discard warmup run
@@ -149,16 +152,18 @@ public:
     }
 
     void run() {
+        xpu::push_timer(name());
         xpu::copy(a, xpu::host_to_device);
         xpu::copy(b, xpu::host_to_device);
 
         xpu::run_kernel<Kernel>(xpu::n_blocks(n_blocks), a.get(), b.get(), elems_per_block, c.get());
 
         xpu::copy(c, xpu::device_to_host);
+        m_timings = xpu::pop_timer();
     }
 
     size_t bytes() { return elems_per_block * n_blocks * 2 * sizeof(float); }
-    std::vector<float> timings() { return xpu::get_timing<Kernel>(); }
+    std::vector<double> timings() { return m_timings.kernel<Kernel>().times(); }
 
 };
 
@@ -201,13 +206,15 @@ public:
     }
 
     void run() {
+        xpu::push_timer(name());
         xpu::copy(a, xpu::host_to_device);
         xpu::run_kernel<Kernel>(xpu::n_blocks(n_blocks), a.get(), elems_per_block, b.get(), dst.get());
         xpu::copy(dst, xpu::device_to_host);
+        m_timings = xpu::pop_timer();
     }
 
     size_t bytes() { return elems_per_block * n_blocks * sizeof(float); }
-    std::vector<float> timings() { return xpu::get_timing<Kernel>(); }
+    std::vector<double> timings() { return m_timings.kernel<Kernel>().times(); }
 
 };
 

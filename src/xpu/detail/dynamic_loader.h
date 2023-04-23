@@ -30,7 +30,7 @@ namespace xpu::detail {
 struct kernel_launch_info {
     grid g;
     void *queue_handle;
-    float *ms;
+    double *ms;
 };
 
 // FIXME: member_fn and action_interface belong into type_info.h

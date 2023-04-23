@@ -1,5 +1,6 @@
 #include "sycl_driver.h"
 #include "../../log.h"
+#include "../../config.h"
 
 using namespace xpu::detail;
 
@@ -8,8 +9,11 @@ sycl::queue sycl_driver::default_queue() {
 }
 
 error sycl_driver::setup() {
-    // TODO: check if profiling was enabled by user
-    m_prop_list = sycl::property_list{sycl::property::queue::enable_profiling(), sycl::property::queue::in_order()};
+    if (config::profile) {
+        m_prop_list = sycl::property_list{sycl::property::queue::enable_profiling(), sycl::property::queue::in_order()};
+    } else {
+        m_prop_list = sycl::property_list{sycl::property::queue::in_order()};
+    }
     m_default_queue = sycl::queue(sycl::default_selector_v, m_prop_list);
     return 0;
 }
@@ -61,9 +65,17 @@ error sycl_driver::memcpy(void *dst, const void *src, size_t bytes) {
     return 0;
 }
 
-error sycl_driver::memcpy_async(void *dst, const void *src, size_t bytes, void *handle) {
+error sycl_driver::memcpy_async(void *dst, const void *src, size_t bytes, void *handle, double *ms) {
     auto q = get_queue(handle);
-    q.memcpy(dst, src, bytes);
+    if (ms == nullptr) {
+        q.memcpy(dst, src, bytes);
+    } else {
+        sycl::event ev = q.memcpy(dst, src, bytes);
+        ev.wait();
+        double ns = ev.get_profiling_info<sycl::info::event_profiling::command_end>() -
+                    ev.get_profiling_info<sycl::info::event_profiling::command_start>();
+        *ms = ns / 1000000.0;
+    }
     return 0;
 }
 
@@ -72,9 +84,17 @@ error sycl_driver::memset(void *dst, int ch, size_t bytes) {
     return 0;
 }
 
-error sycl_driver::memset_async(void *dst, int ch, size_t bytes, void *handle) {
+error sycl_driver::memset_async(void *dst, int ch, size_t bytes, void *handle, double *ms) {
     auto q = get_queue(handle);
-    q.memset(dst, ch, bytes);
+    if (ms == nullptr) {
+        q.memset(dst, ch, bytes);
+    } else {
+        sycl::event ev = q.memset(dst, ch, bytes);
+        ev.wait();
+        double ns = ev.get_profiling_info<sycl::info::event_profiling::command_end>() -
+                    ev.get_profiling_info<sycl::info::event_profiling::command_start>();
+        *ms = ns / 1000000.0;
+    }
     return 0;
 }
 

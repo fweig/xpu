@@ -665,36 +665,51 @@ TEST(XPUTest, CollectsTimingData) {
     xpu::buffer<float> b{NElems, xpu::buf_io};
     xpu::buffer<float> c{NElems, xpu::buf_io};
 
+    xpu::queue q;
+
+    xpu::push_timer("test");
+
     xpu::h_view h_a{a};
     std::fill(h_a.begin(), h_a.end(), 24.f);
     xpu::h_view h_b{b};
     std::fill(h_b.begin(), h_b.end(), 24.f);
 
-    xpu::copy(a, xpu::host_to_device);
-    xpu::copy(b, xpu::host_to_device);
+    q.copy(a, xpu::host_to_device);
+    q.copy(b, xpu::host_to_device);
 
     for (int i = 0; i < NRuns; i++) {
-        xpu::run_kernel<vector_add_timing0>(xpu::n_threads(NElems), a.get(), b.get(), c.get(), NElems);
-        xpu::run_kernel<vector_add_timing1>(xpu::n_threads(NElems), a.get(), b.get(), c.get(), NElems);
+        q.launch<vector_add_timing0>(xpu::n_threads(NElems), a.get(), b.get(), c.get(), NElems);
+        q.launch<vector_add_timing1>(xpu::n_threads(NElems), a.get(), b.get(), c.get(), NElems);
     }
 
-    auto timings0 = xpu::get_timing<vector_add_timing0>();
+    xpu::timings ts = xpu::pop_timer();
 
-    ASSERT_EQ(timings0.size(), NRuns);
+    ASSERT_EQ(ts.name(), "test");
+    ASSERT_TRUE(ts.has_details());
+    ASSERT_EQ(ts.memset(), 0);
+    ASSERT_EQ(ts.copy(xpu::device_to_host), 0);
+    ASSERT_GT(ts.copy(xpu::host_to_device), 0);
+    ASSERT_GT(ts.wall(), 0);
 
-    for (auto &t : timings0) {
+    xpu::kernel_timings timings0 = ts.kernel<vector_add_timing0>();
+    ASSERT_EQ(timings0.name(), "vector_add_timing0");
+    ASSERT_EQ(timings0.times().size(), NRuns);
+
+    double total = 0;
+    for (auto &t : timings0.times()) {
+        ASSERT_GT(t, 0.f);
+        total += t;
+    }
+    ASSERT_FLOAT_EQ(timings0.total(), total);
+
+    auto timings1 = ts.kernel<vector_add_timing1>();
+    ASSERT_EQ(timings1.name(), "vector_add_timing1");
+    ASSERT_EQ(timings1.times().size(), NRuns);
+
+    for (auto &t : timings1.times()) {
         ASSERT_GT(t, 0.f);
     }
 
-    auto timings1 = xpu::get_timing<vector_add_timing1>();
-
-    ASSERT_EQ(timings1.size(), NRuns);
-
-    for (auto &t : timings1) {
-        ASSERT_GT(t, 0.f);
-    }
-
-    ASSERT_NE(timings0, timings1);
 }
 
 TEST(XPUTest, CanCallImageFunction) {

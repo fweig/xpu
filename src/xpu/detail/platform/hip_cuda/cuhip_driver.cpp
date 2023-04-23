@@ -1,18 +1,8 @@
+#include "prelude.h"
+#include "event.h"
 #include "../../backend_base.h"
 #include "../../log.h"
-#include "../../macros.h"
-#include "../../../defines.h"
 
-#if XPU_IS_CUDA
-#define CUHIP(expr) XPU_CONCAT(cuda, expr)
-using cuhip_device_prop = cudaDeviceProp;
-using cuhip_pointer_attributes = cudaPointerAttributes;
-#else
-#include <hip/hip_runtime_api.h>
-#define CUHIP(expr) XPU_CONCAT(hip, expr)
-using cuhip_device_prop = hipDeviceProp_t;
-using cuhip_pointer_attributes = hipPointerAttribute_t;
-#endif
 
 namespace xpu::detail {
 
@@ -99,16 +89,36 @@ public:
         return err;
     }
 
-    error memcpy_async(void *dst, const void *src, size_t bytes, void *queue) override {
-        return CUHIP(MemcpyAsync)(dst, src, bytes, CUHIP(MemcpyDefault), static_cast<CUHIP(Stream_t)>(queue));
+    error memcpy_async(void *dst, const void *src, size_t bytes, void *queue_handle, double *ms) override {
+        CUHIP(Stream_t) queue = static_cast<CUHIP(Stream_t)>(queue_handle);
+        if (ms == nullptr) {
+            return CUHIP(MemcpyAsync)(dst, src, bytes, CUHIP(MemcpyDefault), queue);
+        } else {
+            gpu_timer timer;
+            timer.start(queue);
+            [[maybe_unused]] int err = CUHIP(MemcpyAsync)(dst, src, bytes, CUHIP(MemcpyDefault), queue);
+            timer.stop(queue);
+            *ms = timer.elapsed();
+            return CUHIP(GetLastError)();
+        }
     }
 
     error memset(void *dst, int ch, size_t bytes) override {
         return CUHIP(Memset)(dst, ch, bytes);
     }
 
-    error memset_async(void *dst, int ch, size_t bytes, void *queue) override {
-        return CUHIP(MemsetAsync)(dst, ch, bytes, static_cast<CUHIP(Stream_t)>(queue));
+    error memset_async(void *dst, int ch, size_t bytes, void *queue_handle, double *ms) override {
+        CUHIP(Stream_t) queue = static_cast<CUHIP(Stream_t)>(queue_handle);
+        if (ms == nullptr) {
+            return CUHIP(MemsetAsync)(dst, ch, bytes, queue);
+        } else {
+            gpu_timer timer;
+            timer.start(queue);
+            [[maybe_unused]] int err = CUHIP(MemsetAsync)(dst, ch, bytes, queue);
+            timer.stop(queue);
+            *ms = timer.elapsed();
+            return CUHIP(GetLastError)();
+        }
     }
 
     error num_devices(int *devices) override {

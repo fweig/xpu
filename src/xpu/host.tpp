@@ -9,6 +9,7 @@
 
 #include "detail/exceptions.h"
 #include "detail/runtime.h"
+#include "detail/timers.h"
 #include "detail/type_info.h"
 
 #include "detail/queue.tpp"
@@ -119,11 +120,6 @@ const char *xpu::get_name() {
     return detail::type_name<Kernel>();
 }
 
-template<typename Kernel>
-std::vector<float> xpu::get_timing() {
-    return detail::runtime::instance().get_timing<Kernel>();
-}
-
 template<typename Kernel, typename... Args>
 void xpu::run_kernel(grid params, Args&&... args) {
     detail::device dev = detail::runtime::instance().active_device();
@@ -188,6 +184,44 @@ template<typename T>
 const T &xpu::h_view<T>::at(size_t i) const {
     XPU_CHECK_RANGE("h_view::at", i, m_size);
     return m_data[i];
+}
+
+inline void xpu::push_timer(std::string_view name) {
+    detail::push_timer(name);
+}
+
+inline xpu::timings xpu::pop_timer() {
+    return timings{detail::pop_timer()};
+}
+
+inline std::vector<xpu::kernel_timings> xpu::timings::kernels() const {
+    std::vector<kernel_timings> kernels;
+    kernels.reserve(m_t.kernels.size());
+    for (auto &k : m_t.kernels) {
+        kernels.emplace_back(k);
+    }
+    return kernels;
+}
+
+inline std::vector<xpu::timings> xpu::timings::children() const {
+    std::vector<timings> children;
+    children.reserve(m_t.children.size());
+    for (auto &c : m_t.children) {
+        children.emplace_back(c);
+    }
+    return children;
+}
+
+inline xpu::kernel_timings xpu::timings::kernel(std::string_view name) const {
+    auto it = std::find_if(m_t.kernels.begin(), m_t.kernels.end(), [&](const auto &k) {
+        return k.name == name;
+    });
+    if (it == m_t.kernels.end()) {
+        detail::kernel_timings kt;
+        kt.name = name;
+        return kernel_timings{kt};
+    }
+    return kernel_timings{*it};
 }
 
 template<typename T>

@@ -593,7 +593,9 @@ struct action_runner<kernel_tag, K, void(K::*)(kernel_context<typename K::shared
 
         if (measure_time) {
             ON_ERROR_GOTO(err, cudaEventSynchronize(end), cleanup_events);
-            ON_ERROR_GOTO(err, cudaEventElapsedTime(launch_info.ms, start, end), cleanup_events);
+            float ms;
+            ON_ERROR_GOTO(err, cudaEventElapsedTime(&ms, start, end), cleanup_events);
+            *launch_info.ms = ms;
             XPU_LOG("Kernel '%s' took %f ms", type_name<K>(), *launch_info.ms);
         }
 
@@ -653,7 +655,9 @@ struct action_runner<kernel_tag, K, void(K::*)(kernel_context<typename K::shared
 
         if (measure_time) {
             ON_ERROR_GOTO(err, hipEventSynchronize(end), cleanup_events);
-            ON_ERROR_GOTO(err, hipEventElapsedTime(launch_info.ms, start, end), cleanup_events);
+            float ms;
+            ON_ERROR_GOTO(err, hipEventElapsedTime(&ms, start, end), cleanup_events);
+            *launch_info.ms = ms;
             XPU_LOG("Kernel '%s' took %f ms", type_name<K>(), *launch_info.ms);
         }
 

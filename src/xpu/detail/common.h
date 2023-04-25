@@ -112,6 +112,8 @@ struct timings {
 
     timings() = default;
     timings(std::string_view name) : name(name) {}
+
+    void merge(const timings &other);
 };
 
 using error = int;

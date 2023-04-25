@@ -667,6 +667,11 @@ public:
     */
     double throughput_memset() const;
 
+    /**
+     * Merges the given timings into this one.
+     */
+    void merge(const timings &other) { m_t.merge(other.m_t); }
+
 private:
     detail::timings m_t;
     kernel_timings kernel(std::string_view name) const;

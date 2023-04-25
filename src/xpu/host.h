@@ -693,6 +693,36 @@ void push_timer(std::string_view name);
 timings pop_timer();
 
 /**
+ * @brief RAII wrapper for timing functions.
+ * @see xpu::push_timer, xpu::pop_timer, xpu::timings
+ */
+class scoped_timer {
+
+public:
+    /**
+     * Create a new timer.
+     * @param name Name of the timer.
+     * @param t If not null, the collected timings are stored here.
+     */
+    scoped_timer(std::string_view name, xpu::timings *t=nullptr) : m_t(t) { push_timer(name); }
+    ~scoped_timer() {
+        if (m_t != nullptr) {
+            *m_t = pop_timer();
+        } else {
+            pop_timer();
+        }
+    }
+
+    scoped_timer(const scoped_timer&) = delete;
+    scoped_timer& operator=(const scoped_timer&) = delete;
+    scoped_timer(scoped_timer&&) = delete;
+    scoped_timer& operator=(scoped_timer&&) = delete;
+
+private:
+    xpu::timings* m_t = nullptr;
+};
+
+/**
  * Add bytes of input to the current timer. This is used to calculate the throughput.
  */
 void t_add_bytes(size_t bytes);

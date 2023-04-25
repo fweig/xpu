@@ -194,6 +194,48 @@ inline xpu::timings xpu::pop_timer() {
     return timings{detail::pop_timer()};
 }
 
+inline void xpu::t_add_bytes(size_t bytes) {
+    detail::add_bytes_timer(bytes);
+}
+
+template<typename Kernel>
+inline void xpu::k_add_bytes(size_t bytes) {
+    detail::add_bytes_kernel(detail::type_name<Kernel>(), bytes);
+}
+
+namespace xpu::detail {
+inline double bytes_per_ms_to_gb_per_sec(size_t bytes, double ms) {
+    return bytes / (ms * 1e6);
+}
+}
+
+inline double xpu::kernel_timings::throughput() const {
+    return detail::bytes_per_ms_to_gb_per_sec(m_t.bytes_input, total());
+}
+
+inline double xpu::timings::throughput() const {
+    return detail::bytes_per_ms_to_gb_per_sec(m_t.bytes_input, wall());
+}
+
+inline double xpu::timings::throughput_kernels() const {
+    return detail::bytes_per_ms_to_gb_per_sec(m_t.bytes_input, kernel_time());
+}
+
+inline double xpu::timings::throughput_copy(xpu::direction dir) const {
+    switch (dir) {
+    case h2d:
+        return detail::bytes_per_ms_to_gb_per_sec(m_t.bytes_h2d, m_t.copy_h2d);
+    case d2h:
+        return detail::bytes_per_ms_to_gb_per_sec(m_t.bytes_d2h, m_t.copy_d2h);
+    }
+
+    throw std::runtime_error("invalid direction"); // unreachable
+}
+
+inline double xpu::timings::throughput_memset() const {
+    return detail::bytes_per_ms_to_gb_per_sec(m_t.bytes_memset, m_t.memset);
+}
+
 inline std::vector<xpu::kernel_timings> xpu::timings::kernels() const {
     std::vector<kernel_timings> kernels;
     kernels.reserve(m_t.kernels.size());

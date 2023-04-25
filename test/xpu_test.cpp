@@ -684,7 +684,7 @@ TEST(XPUTest, CollectsTimingData) {
 
     xpu::timings ts = xpu::pop_timer();
 
-    ASSERT_EQ(ts.name(), "test");
+    ASSERT_EQ(std::string{ts.name()}, "test");
     ASSERT_TRUE(ts.has_details());
     ASSERT_EQ(ts.memset(), 0);
     ASSERT_EQ(ts.copy(xpu::d2h), 0);
@@ -712,6 +712,7 @@ TEST(XPUTest, CollectsTimingData) {
         ASSERT_GT(t, 0.f);
     }
 
+    ASSERT_FLOAT_EQ(ts.kernel_time(), timings0.total() + timings1.total());
 }
 
 TEST(XPUTest, CanCallImageFunction) {

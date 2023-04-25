@@ -26,7 +26,7 @@ inline void xpu::queue::copy(const void *from, void *to, size_t size_bytes) {
 
         ptr_prop src_prop{from};
         detail::direction_t dir = src_prop.type() == xpu::mem_type::host ? detail::dir_h2d : detail::dir_d2h;
-        detail::add_memcpy_time(ms, dir);
+        detail::add_memcpy_time(ms, dir, size_bytes);
     }
 }
 
@@ -54,6 +54,10 @@ void xpu::queue::copy(buffer<T> buf, xpu::direction dir) {
             throw std::runtime_error("xpu::queue::copy: invalid buffer");
         }
 
+        if (from == to) {
+            return;
+        }
+
         log_copy(from, to, props.size_bytes());
 
         if (!detail::config::profile) {
@@ -61,7 +65,7 @@ void xpu::queue::copy(buffer<T> buf, xpu::direction dir) {
         } else {
             double ms;
             do_copy(from, to, props.size_bytes(), &ms);
-            detail::add_memcpy_time(ms, static_cast<detail::direction_t>(dir));
+            detail::add_memcpy_time(ms, static_cast<detail::direction_t>(dir), props.size_bytes());
         }
     }
     break;
@@ -81,7 +85,7 @@ inline void xpu::queue::memset(void *dst, int value, size_t size) {
     } else {
         double ms;
         detail::backend::call(m_handle->dev.backend, &detail::backend_base::memset_async, dst, value, size, m_handle->handle, &ms);
-        detail::add_memset_time(ms);
+        detail::add_memset_time(ms, size);
     }
 }
 

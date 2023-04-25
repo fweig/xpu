@@ -554,7 +554,7 @@ public:
     std::string_view name() const { return m_t.name; }
 
     /**
-     * Total time spent in this kernel.
+     * Total time spent in this kernel. [ms]
      */
     double total() const { return std::accumulate(m_t.times.begin(), m_t.times.end(), 0.0); }
 
@@ -562,6 +562,12 @@ public:
      * Times of each invocation of this kernel.
      */
     std::vector<double> times() const { return m_t.times; }
+
+    /**
+     * Throughput of this kernel in gigabytes per second.
+     * Input size in bytes is set via k_add_bytes .
+     */
+    double throughput() const;
 
 private:
     detail::kernel_timings m_t;
@@ -623,6 +629,14 @@ public:
     std::vector<kernel_timings> kernels() const;
 
     /**
+     * @returns The total time spent in kernels. [ms]
+    */
+    double kernel_time() const {
+        return std::accumulate(m_t.kernels.begin(), m_t.kernels.end(), 0.0,
+            [](double a, const auto &b) { return a + std::accumulate(b.times.begin(), b.times.end(), 0.0); });
+    }
+
+    /**
      * Returns all child timers.
      */
     std::vector<timings> children() const;
@@ -631,6 +645,27 @@ public:
      * Returns true if copy, memset and kernel timings were collected.
     */
     bool has_details() const { return m_t.has_details; }
+
+    /**
+     * Returns the total throughput. [GB/s]
+     * Input size is calculated via xpu::t_add_bytes .
+     */
+    double throughput() const;
+
+    /**
+     * Returns the throughput of kernel executions. [GB/s]
+     */
+    double throughput_kernels() const;
+
+    /**
+     * Returns the throughput of copy operations in the given direction, [GB/s]
+    */
+    double throughput_copy(direction dir) const;
+
+    /**
+     * Returns the throughput of memset operations. [GB/s]
+    */
+    double throughput_memset() const;
 
 private:
     detail::timings m_t;
@@ -656,6 +691,17 @@ void push_timer(std::string_view name);
  * @see xpu::push_timer, xpu::timings
  */
 timings pop_timer();
+
+/**
+ * Add bytes of input to the current timer. This is used to calculate the throughput.
+ */
+void t_add_bytes(size_t bytes);
+
+/**
+ * Add bytes of input to the given kernel. This is used to calculate the throughput.
+ */
+template<typename Kernel>
+void k_add_bytes(size_t bytes);
 
 template<typename T>
 void copy(T *dst, const T *src, size_t entries);

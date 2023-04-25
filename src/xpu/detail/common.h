@@ -85,19 +85,33 @@ struct queue_handle {
 struct kernel_timings {
     std::string_view name; // Fine to make string_view, since kernel names are static
     std::vector<double> times;
+    size_t bytes_input = 0;
+
+    kernel_timings() = default;
+    kernel_timings(std::string_view name) : name(name) {}
+    kernel_timings(std::string_view name, double ms) : name(name) { times.emplace_back(ms); }
 };
 
 struct timings {
+    std::string name;
+
     double wall = 0;
 
     bool has_details = false;
     std::vector<kernel_timings> kernels;
     double copy_h2d = 0;
+    size_t bytes_h2d = 0;
     double copy_d2h = 0;
+    size_t bytes_d2h = 0;
     double memset = 0;
+    size_t bytes_memset = 0;
 
-    std::string name;
+    size_t bytes_input = 0;
+
     std::vector<timings> children;
+
+    timings() = default;
+    timings(std::string_view name) : name(name) {}
 };
 
 using error = int;

@@ -14,16 +14,17 @@
 
 # Introduction
 
-xpu is a tiny (< 5000 LOC) and lightweight C++ library designed to simplify GPU programming by providing a unified interface for various GPU architectures, including CPU, CUDA, HIP, and SYCL. This allows developers to write a single codebase that can be easily compiled and run on different hardware, while using modern C++ and the flexibility to use native CUDA, HIP, or SYCL code when needed.
+xpu is a tiny (< 5000 LOC) and lightweight C++ library designed to simplify GPU programming by providing a unified interface for various GPU architectures CUDA, HIP, and SYCL. While also providing the option to run GPU code on CPU. This allows developers to write a single codebase that can be easily compiled and run on different hardware, while using modern C++ and the flexibility to use native CUDA, HIP, or SYCL code where needed.
 
 Features include:
 - Unified interface to write GPU code for CUDA, HIP, SYCL.
 - Zero overhead for device code compared to native CUDA/HIP/SYCL.
-- Run on CPU as fallback or for debugging
-- Compile for device code for CPU with regular C++ compiler without any additional requirements
+- Run on CPU as fallback or for debugging.
+- Compile device code for CPU with a regular C++ compiler without any additional requirements.
 - RAII based memory management while maintaining control over how, when and where memory is allocated.
 - Support for native CUDA/HIP/SYCL host code via `xpu::function` (e.g. for usage with `cub` device-wide functions).
 - Common abstraction for constant memory.
+- Profiling API to collect timings and throughput on kernel executions, host <-> device transfers, memset and wall time.
 - Seperate compilation of device code. Host code may call kernels from any library it's linked against.
 
 ## Example
@@ -39,7 +40,7 @@ struct DeviceLib {}; // Dummy type to match kernels to a library.
 struct VectorAdd : xpu::kernel<DeviceLib> {
     using context = xpu::kernel_context<xpu::no_smem>; // optional shorthand
     XPU_D void operator()(context &,
-       xpu::bufer<const float>, xpu::buffer<const float>, xpu::buffer<float>, size_t);
+       xpu::buffer<const float>, xpu::buffer<const float>, xpu::buffer<float>, size_t);
 };
 ```
 
@@ -88,7 +89,7 @@ Adding `xpu` to your project is as simple as adding the following to your `CMake
 include(FetchContent)
 FetchContent_Declare(xpu
     GIT_REPOSITORY https://github.com/fweig/xpu
-    GIT_TAG        v0.8.0
+    GIT_TAG        v0.9.1
 )
 FetchContent_MakeAvailable(xpu)
 ```

@@ -194,6 +194,18 @@ inline xpu::timings xpu::pop_timer() {
     return timings{detail::pop_timer()};
 }
 
+inline xpu::scoped_timer::scoped_timer(std::string_view name, xpu::timings *t) : m_t(t) {
+    detail::push_timer(name);
+}
+
+inline xpu::scoped_timer::~scoped_timer() {
+    if (m_t == nullptr) {
+        detail::pop_timer();
+    } else {
+        *m_t = timings{detail::pop_timer()};
+    }
+}
+
 inline void xpu::t_add_bytes(size_t bytes) {
     detail::add_bytes_timer(bytes);
 }

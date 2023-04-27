@@ -366,6 +366,9 @@ private:
 template<typename Kernel>
 const char *get_name();
 
+/**
+ * Deprecated. Use xpu::queue::launch instead.
+ */
 template<typename Kernel, typename... Args>
 void run_kernel(grid params, Args&&... args);
 
@@ -573,9 +576,7 @@ private:
     detail::kernel_timings m_t;
 
 public:
-    /**
-     * @internal
-     */
+    /** @internal */
     explicit kernel_timings(detail::kernel_timings t) : m_t(std::move(t)) {}
 
 };
@@ -677,9 +678,7 @@ private:
     kernel_timings kernel(std::string_view name) const;
 
 public:
-    /**
-     * @internal
-     */
+    /** @internal */
     explicit timings(detail::timings t) : m_t(std::move(t)) {}
 
 };
@@ -709,14 +708,8 @@ public:
      * @param name Name of the timer.
      * @param t If not null, the collected timings are stored here.
      */
-    scoped_timer(std::string_view name, xpu::timings *t=nullptr) : m_t(t) { push_timer(name); }
-    ~scoped_timer() {
-        if (m_t != nullptr) {
-            *m_t = pop_timer();
-        } else {
-            pop_timer();
-        }
-    }
+    scoped_timer(std::string_view name, xpu::timings *t=nullptr);
+    ~scoped_timer();
 
     scoped_timer(const scoped_timer&) = delete;
     scoped_timer& operator=(const scoped_timer&) = delete;

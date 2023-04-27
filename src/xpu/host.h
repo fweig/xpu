@@ -14,16 +14,9 @@
 #include <string>
 #include <string_view>
 #include <type_traits>
-// #include <variant>
 #include <vector>
 
 namespace xpu {
-
-// Forward declarations
-template<typename T> class buffer_prop;
-class queue;
-class ptr_prop;
-namespace detail { class runtime; }
 
 /**
  * Enum to specify the direction of a memory transfer.
@@ -238,11 +231,14 @@ public:
     int device_nr() const { return m_impl.device_nr; }
 
 private:
-    friend class queue;
-    friend class ptr_prop;
-    explicit device(detail::device impl) : m_impl(std::move(impl)) {}
     detail::device m_impl;
 
+public:
+    /** @internal */
+    explicit device(detail::device impl) : m_impl(std::move(impl)) {}
+
+    /** @internal */
+    detail::device &impl() { return m_impl; }
 };
 
 /**
@@ -392,17 +388,12 @@ public:
     /**
      * @brief Create an empty view.
      */
-    h_view() = default;
+    h_view() : m_data(nullptr), m_size(0) {}
 
     /**
      * @brief Create a view from a buffer.
      */
     explicit h_view(buffer<T> &);
-
-    /**
-     * @brief Create a view from buffer properties.
-     */
-    explicit h_view(const buffer_prop<T> &);
 
     /**
      * @returns Pointer to the underlying data.
@@ -448,8 +439,12 @@ public:
     const T &unsafe_at(size_t i) const { return m_data[i]; }
 
 private:
-    T *m_data = nullptr;
-    size_t m_size = 0;
+    T *m_data;
+    size_t m_size;
+
+public:
+    /** @internal */
+    h_view(T *data, size_t size) : m_data(data), m_size(size) {}
 };
 
 /**
@@ -523,25 +518,31 @@ private:
     detail::ptr_prop m_prop;
 };
 
-template<typename T>
 class buffer_prop {
 
 public:
     buffer_prop() = delete;
+    template<typename T>
     explicit buffer_prop(const buffer<T> &);
 
-    size_t size() const { return m_size_bytes / sizeof(T); }
+    size_t size() const { return m_size; }
     size_t size_bytes() const { return m_size_bytes; }
     buffer_type type() const { return m_type; }
-    T *h_ptr() const { return m_host; }
-    T *d_ptr() const { return m_device; }
+    void *h_ptr() const { return m_host; }
+    template<typename T>
+    T *h_ptr() const { return static_cast<T *>(m_host); }
+    void *d_ptr() const { return m_device; }
+    template<typename T>
+    T *d_ptr() const { return static_cast<T *>(m_device); }
 
-    h_view<T> view() const { return h_view<T>{*this}; }
+    template<typename T>
+    h_view<T> view() const { return h_view<T>{m_host, m_size}; }
 
 private:
     size_t m_size_bytes;
-    T *m_host;
-    T *m_device;
+    size_t m_size;
+    void *m_host;
+    void *m_device;
     buffer_type m_type;
 };
 
@@ -739,6 +740,6 @@ void copy(buffer<T> &buf, direction dir);
 
 } // namespace xpu
 
-#include "host.tpp"
+#include "impl/host.tpp"
 
 #endif

@@ -2,15 +2,15 @@
 #define XPU_DETAIL_QUEUE_TPP
 
 #include "../host.h"
-#include "log.h"
-#include "backend.h"
-#include "config.h"
-#include "timers.h"
+#include "../detail/log.h"
+#include "../detail/backend.h"
+#include "../detail/config.h"
+#include "../detail/timers.h"
 
 inline xpu::queue::queue() : m_handle(std::make_shared<detail::queue_handle>()) {
 }
 
-inline xpu::queue::queue(xpu::device dev) : m_handle(std::make_shared<detail::queue_handle>(dev.m_impl)) {
+inline xpu::queue::queue(xpu::device dev) : m_handle(std::make_shared<detail::queue_handle>(dev.impl())) {
 }
 
 inline void xpu::queue::copy(const void *from, void *to, size_t size_bytes) {
@@ -41,12 +41,12 @@ void xpu::queue::copy(buffer<T> buf, xpu::direction dir) {
 
         switch (dir) {
         case h2d:
-            from = props.h_ptr();
-            to = props.d_ptr();
+            from = props.h_ptr<T>();
+            to = props.d_ptr<T>();
             break;
         case d2h:
-            from = props.d_ptr();
-            to = props.h_ptr();
+            from = props.d_ptr<T>();
+            to = props.h_ptr<T>();
             break;
         }
 
@@ -92,7 +92,7 @@ inline void xpu::queue::memset(void *dst, int value, size_t size) {
 template<typename T>
 void xpu::queue::memset(buffer<T> buf, int value) {
     buffer_prop props{buf};
-    T *ptr = props.d_ptr();
+    T *ptr = props.d_ptr<T>();
 
     if (ptr == nullptr) {
         throw std::runtime_error("xpu::queue::memset: invalid buffer");

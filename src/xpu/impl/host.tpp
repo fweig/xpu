@@ -1,18 +1,11 @@
-#ifndef XPU_HOST_IMPL_H
-#define XPU_HOST_IMPL_H
+#include "../host.h"
 
-#ifndef XPU_HOST_H
-#error "xpu/host_impl.h should not be included directly. Include xpu/host.h instead."
-#endif
+#include "../detail/exceptions.h"
+#include "../detail/runtime.h"
+#include "../detail/timers.h"
+#include "../detail/type_info.h"
 
-#include "host.h"
-
-#include "detail/exceptions.h"
-#include "detail/runtime.h"
-#include "detail/timers.h"
-#include "detail/type_info.h"
-
-#include "detail/queue.tpp"
+#include "queue.tpp"
 
 void xpu::initialize(settings settings) {
     detail::runtime::instance().initialize(settings);
@@ -141,25 +134,20 @@ inline xpu::ptr_prop::ptr_prop(const void *ptr) {
 }
 
 template<typename T>
-xpu::buffer_prop<T>::buffer_prop(const buffer<T> &buf) {
+xpu::buffer_prop::buffer_prop(const buffer<T> &buf) {
     detail::buffer_data entry = detail::buffer_registry::instance().get(buf.get());
     m_size_bytes = entry.size;
-    m_device = static_cast<T *>(entry.ptr);
-    m_host = static_cast<T *>(entry.host_ptr);
+    m_size = entry.size / sizeof(T);
+    m_device = entry.ptr;
+    m_host = entry.host_ptr;
     m_type = static_cast<xpu::buffer_type>(entry.type);
 }
 
 template<typename T>
-xpu::h_view<T>::h_view(buffer<T> &buf) : h_view(buffer_prop{buf}) {}
-
-template<typename T>
-xpu::h_view<T>::h_view(const buffer_prop<T> &buf) {
-    if (buf.h_ptr() == nullptr) {
-        throw std::runtime_error("h_view: buffer not accessible on host");
-    }
-
-    m_size = buf.size();
-    m_data = buf.h_ptr();
+xpu::h_view<T>::h_view(buffer<T> &buf) {
+    detail::buffer_data entry = detail::buffer_registry::instance().get(buf.get());
+    m_data = static_cast<T *>(entry.host_ptr);
+    m_size = entry.size / sizeof(T);
 }
 
 template<typename T>
@@ -311,5 +299,3 @@ void xpu::copy(buffer<T> &buf, direction dir) {
 
     xpu::memcpy(dst, src, entry.size);
 }
-
-#endif

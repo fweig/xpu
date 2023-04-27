@@ -1,8 +1,5 @@
-#ifndef XPU_COMMON_IMPL_H
-#define XPU_COMMON_IMPL_H
-
-#include "common.h"
-#include "detail/buffer_registry.h"
+#include "../common.h"
+#include "../detail/buffer_registry.h"
 
 #include <utility>
 
@@ -27,25 +24,11 @@ inline void xpu::grid::get_compute_grid(dim &block_dim, dim &grid_dim) const {
     block_dim.z = (grid_dim.z == 1 ? 1 : block_dim.z);
 }
 
-// template<typename T>
-// XPU_H XPU_D xpu::buffer<T>::buffer() {
-//     // #if !XPU_IS_DEVICE_CODE
-//     // m_data = nullptr;
-//     // #endif
-// }
-
 template<typename T>
 xpu::buffer<T>::buffer(size_t N, xpu::buffer_type type, T *data) {
     auto &registry = detail::buffer_registry::instance();
     m_data = static_cast<T *>(registry.create(N * sizeof(T), static_cast<detail::buffer_type>(type), data));
 }
-
-// template<typename T>
-// XPU_H XPU_D xpu::buffer<T>::~buffer() {
-//     #if !XPU_IS_DEVICE_CODE
-//     remove_ref();
-//     #endif
-// }
 
 template<typename T>
 XPU_H XPU_D xpu::buffer<T>::buffer(const xpu::buffer<T> &other) {
@@ -137,5 +120,3 @@ XPU_H XPU_D void xpu::buffer<T>::remove_ref() {
     }
 #endif
 }
-
-#endif

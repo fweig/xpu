@@ -27,7 +27,7 @@ TEST(XPUTest, CanGetDeviceFromPointer) {
 
     {
         xpu::buffer<int> hdbuf{1, xpu::buf_io};
-        xpu::buffer_prop<int> bprop{hdbuf};
+        xpu::buffer_prop bprop{hdbuf};
         prop = xpu::ptr_prop{bprop.h_ptr()};
         ASSERT_NE(prop.ptr(), nullptr);
         ASSERT_EQ(prop.backend(), active_device.backend());
@@ -40,7 +40,7 @@ TEST(XPUTest, CanGetDeviceFromPointer) {
 
     {
         xpu::buffer<int> dbuf{1, xpu::buf_device};
-        xpu::buffer_prop<int> bprop{dbuf};
+        xpu::buffer_prop bprop{dbuf};
         prop = xpu::ptr_prop{bprop.d_ptr()};
         ASSERT_NE(prop.ptr(), nullptr);
         ASSERT_EQ(prop.backend(), active_device.backend());
@@ -50,7 +50,7 @@ TEST(XPUTest, CanGetDeviceFromPointer) {
 
     {
         xpu::buffer<int> hbuf{1, xpu::buf_host};
-        xpu::buffer_prop<int> bprop{hbuf};
+        xpu::buffer_prop bprop{hbuf};
         prop = xpu::ptr_prop{bprop.h_ptr()};
         ASSERT_NE(prop.ptr(), nullptr);
         ASSERT_EQ(prop.backend(), active_device.backend());
@@ -82,11 +82,10 @@ TEST(XPUTest, IoBufferIsAccessibleFromDevice) {
     xpu::run_kernel<buffer_access>(xpu::n_threads(1), x, buf);
 
     xpu::copy(buf, xpu::d2h);
-    xpu::buffer_prop<int> bprop{buf};
-    ASSERT_EQ(bprop.h_ptr()[0], 42);
-
     auto bview = xpu::h_view{buf};
     ASSERT_EQ(bview[0], 42);
+    xpu::buffer_prop bprop{buf};
+    ASSERT_EQ(bprop.h_ptr(), bview.begin());
 }
 
 TEST(XPUTest, IoBufferCanCopyToHost) {

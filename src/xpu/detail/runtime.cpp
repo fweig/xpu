@@ -1,5 +1,4 @@
 #include "backend.h"
-#include "config.h"
 #include "runtime.h"
 #include "../host.h"
 

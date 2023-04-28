@@ -36,7 +36,6 @@ int main() {
     q.copy(z, xpu::d2h);
     q.wait();
 
-
     xpu::h_view zh{z};
     for (int i = 0; i < NElems; i++) {
         if (zh[i] != 2 * i) {

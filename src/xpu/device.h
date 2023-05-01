@@ -31,6 +31,8 @@ namespace xpu {
 
 constexpr inline driver_t compilation_target = XPU_DETAIL_COMPILATION_TARGET;
 
+struct device_image : detail::device_image {};
+
 template<int X, int Y = -1, int Z = -1>
 struct block_size {
     static inline constexpr xpu::dim value{X, Y, Z};
@@ -94,9 +96,16 @@ struct kernel : detail::action<Image, detail::kernel_tag> {
     using shared_memory = no_smem;
 };
 
+template<typename Kernel>
+struct is_kernel : std::integral_constant<bool,
+    detail::is_action_v<Kernel> &&
+> {};
+
 template<typename Image>
 struct function : detail::action<Image, detail::function_tag> {
 };
+
+
 
 template<typename Image, typename Data>
 struct constant : detail::action<Image, detail::constant_tag> {

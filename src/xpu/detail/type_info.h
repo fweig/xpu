@@ -57,32 +57,6 @@ struct linear_type_id {
     }
 };
 
-
-struct constant_tag {};
-struct function_tag {};
-struct kernel_tag {};
-
-template<typename I, typename F>
-struct is_function {
-    static constexpr bool value =
-        std::is_same<typename F::image, I>::value
-        && std::is_same<typename F::tag, function_tag>::value;
-};
-
-template<typename M, typename F>
-struct is_constant {
-    static constexpr bool value =
-        std::is_same<typename F::image, M>::value
-        && std::is_same<typename F::tag, constant_tag>::value;
-};
-
-template<typename I, typename F>
-struct is_kernel {
-    static constexpr bool value =
-        std::is_same<typename F::image, I>::value
-        && std::is_same<typename F::tag, kernel_tag>::value;
-};
-
 struct internal_ctor_t {};
 constexpr inline internal_ctor_t internal_ctor{};
 

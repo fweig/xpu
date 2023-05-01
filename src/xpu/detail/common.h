@@ -4,15 +4,43 @@
 #include <array>
 #include <memory>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 namespace xpu::detail {
 
+struct device_image {};
+template<typename T> struct is_device_image : std::is_base_of<device_image, T> {};
+template<typename T> inline constexpr bool is_device_image_v = is_device_image<T>::value;
+
+struct constant_tag {};
+struct function_tag {};
+struct kernel_tag {};
+
+struct action_base {};
+
 template<typename I, typename T>
-struct action {
+struct action : action_base {
+    static_assert(std::is_same_v<T, constant_tag> || std::is_same_v<T, function_tag> || std::is_same_v<T, kernel_tag>, "Invalid tag");
+    static_assert(is_device_image_v<I>, "Invalid image");
     using image = I;
     using tag = T;
 };
+
+template<typename T> struct is_action : std::is_base_of<action_base, T> {};
+template<typename T> inline constexpr bool is_action_v = is_action<T>::value;
+
+template<typename T, typename Tag> struct has_tag : std::is_same<typename T::tag, Tag> {};
+template<typename T, typename Tag> inline constexpr bool has_tag_v = has_tag<T, Tag>::value;
+
+template<typename T> struct is_constant : std::bool_constant<is_action_v<T> && has_tag_v<T, constant_tag>> {};
+template<typename T> inline constexpr bool is_constant_v = is_constant<T>::value;
+
+template<typename T> struct is_function : std::bool_constant<is_action_v<T> && has_tag_v<T, function_tag>> {};
+template<typename T> inline constexpr bool is_function_v = is_function<T>::value;
+
+template<typename T> struct is_kernel : std::bool_constant<is_action_v<T> && has_tag_v<T, kernel_tag>> {};
+template<typename T> inline constexpr bool is_kernel_v = is_kernel<T>::value;
 
 enum mem_type {
     mem_host,

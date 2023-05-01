@@ -137,11 +137,16 @@ public:
 
     image(const char *name) {
         XPU_LOG("Loading '%s'", name);
-#if defined __APPLE__
-  handle = dlopen(name, RTLD_LAZY);
-#elif defined __linux__
-  handle = dlopen(name, RTLD_LAZY | RTLD_DEEPBIND);
-#endif
+        handle =
+            #if defined __APPLE__
+                dlopen(name, RTLD_LAZY)
+            #elif defined __linux__
+                dlopen(name, RTLD_LAZY | RTLD_DEEPBIND)
+            #else
+                #error "Unsupported platform"
+            #endif
+        ;
+
         if (handle == nullptr) {
             XPU_LOG("Error opening '%s: %s", name, dlerror());
         }
@@ -171,12 +176,12 @@ public:
     }
 
     template<typename C>
-    typename std::enable_if<is_image_constant_v<I, C>, int>::type set(const typename C::data_t &val) {
+    typename std::enable_if_t<is_image_constant_v<I, C>, int> set(const typename C::data_t &val) {
         return call_action<C>(val);
     }
 
     template<typename K, typename... Args>
-    typename std::enable_if<is_image_kernel<I, K>::value, int>::type run_kernel(kernel_launch_info launch_info, Args&&... args) {
+    typename std::enable_if_t<is_image_kernel_v<I, K>, int> run_kernel(kernel_launch_info launch_info, Args&&... args) {
         return call_action<K>(launch_info, std::forward<Args>(args)...);
     }
 

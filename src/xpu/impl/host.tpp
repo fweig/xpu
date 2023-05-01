@@ -125,7 +125,7 @@ void xpu::call(Args&&... args) {
 }
 
 template<typename C>
-void xpu::set_constant(const typename C::data_t &symbol) {
+void xpu::set(const typename C::data_t &symbol) {
     detail::runtime::instance().set_constant<C>(symbol);
 }
 

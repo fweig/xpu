@@ -65,7 +65,7 @@ TEST(XPUTest, CanConvertTypenamesToString) {
 
 TEST(XPUTest, CanWriteBufferToCMem) {
     xpu::buffer<int> buf{1, xpu::buf_device};
-    xpu::set_constant<cmem_buffer>(buf);
+    xpu::set<cmem_buffer>(buf);
 }
 
 TEST(XPUTest, HostBufferIsAccessibleFromDevice) {
@@ -418,7 +418,7 @@ TEST(XPUTest, CanSetAndReadCMem) {
     float3_ orig{1, 2, 3};
     xpu::buffer<float3_> out{1, xpu::buf_io};
 
-    xpu::set_constant<test_constant0>(orig);
+    xpu::set<test_constant0>(orig);
 
     xpu::run_kernel<access_cmem_single>(xpu::n_threads(1), out.get());
     xpu::copy(out, xpu::d2h);
@@ -439,9 +439,9 @@ TEST(XPUTest, CanSetAndReadCMemMultiple) {
     float orig2 = 1337;
     xpu::buffer<float> out2{1, xpu::buf_io};
 
-    xpu::set_constant<test_constant0>(orig);
-    xpu::set_constant<test_constant1>(orig1);
-    xpu::set_constant<test_constant2>(orig2);
+    xpu::set<test_constant0>(orig);
+    xpu::set<test_constant1>(orig1);
+    xpu::set<test_constant2>(orig2);
     xpu::run_kernel<access_cmem_multiple>(xpu::n_threads(1), out0.get(), out1.get(), out2.get());
     xpu::copy(out0, xpu::d2h);
     xpu::copy(out1, xpu::d2h);
@@ -734,7 +734,7 @@ int main(int argc, char **argv) {
     // The xpu runtime might not be available anymore
     // when cpu constant memory is destructed.
     xpu::buffer<int> a{};
-    xpu::set_constant<cmem_buffer>(a);
+    xpu::set<cmem_buffer>(a);
 
     return ret;
 }

@@ -372,7 +372,7 @@ template<typename Func, typename... Args>
 void call(Args&&... args);
 
 template<typename C>
-void set_constant(const typename C::data_t &symbol);
+void set(const typename C::data_t &symbol);
 
 /**
  * @brief Create a view from a buffer.

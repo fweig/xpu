@@ -385,6 +385,8 @@ template<typename T>
 class h_view {
 
 public:
+    using value_type = T;
+
     /**
      * @brief Create an empty view.
      */
@@ -398,7 +400,8 @@ public:
     /**
      * @returns Pointer to the underlying data.
      */
-    T *data() const { return m_data; }
+          T *data()       { return m_data; }
+    const T *data() const { return m_data; }
 
     /**
      * @returns Size of the view in number of elements.
@@ -406,14 +409,26 @@ public:
     size_t size() const { return m_size; }
 
     /**
+     * @returns Size of the view in bytes.
+     */
+    size_t size_bytes() const { return m_size * sizeof(T); }
+
+    /**
      * Check if the view is empty.
      */
     bool empty() const { return m_size == 0; }
 
-          T *begin() { return m_data; }
+          T *begin()       { return m_data; }
     const T *begin() const { return m_data; }
-          T *end() { return m_data + m_size; }
+
+          T *end()       { return m_data + m_size; }
     const T *end() const { return m_data + m_size; }
+
+          T &front()       { return at(0); }
+    const T &front() const { return at(0); }
+
+          T &back()       { return at(m_size - 1); }
+    const T &back() const { return at(m_size - 1); }
 
     /**
      * @returns Reference to the element at index i.
@@ -425,7 +440,7 @@ public:
 
     /**
      * @returns Reference to the element at index i.
-     * @note This call is always bounds checked. Use instead unsafe_at() if no bounds check are needed.
+     * @note This call is always bounds checked. Use unsafe_at() instead if no bounds checking is needed.
      * Equivalent to []-operator.
      */
           T &at(size_t i);
@@ -433,7 +448,7 @@ public:
 
     /**
      * @returns Reference to the element at index i.
-     * @note No bounds checking is performed. Usually you want to use at() instead.
+     * @note No bounds checking is performed. Usually you will want to use at() instead.
      */
           T &unsafe_at(size_t i) { return m_data[i]; }
     const T &unsafe_at(size_t i) const { return m_data[i]; }

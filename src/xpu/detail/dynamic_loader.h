@@ -166,17 +166,17 @@ public:
     }
 
     template<typename F, typename... Args>
-    typename std::enable_if<is_function<I, F>::value, int>::type call(Args&&... args) {
+    typename std::enable_if_t<is_image_function_v<I, F>, int> call(Args&&... args) {
         return call_action<F>(std::forward<Args>(args)...);
     }
 
-    template<typename F>
-    typename std::enable_if<is_constant<I, F>::value, int>::type set(const typename F::data_t &val) {
-        return call_action<F>(val);
+    template<typename C>
+    typename std::enable_if<is_image_constant_v<I, C>, int>::type set(const typename C::data_t &val) {
+        return call_action<C>(val);
     }
 
     template<typename K, typename... Args>
-    typename std::enable_if<is_kernel<I, K>::value, int>::type run_kernel(kernel_launch_info launch_info, Args&&... args) {
+    typename std::enable_if<is_image_kernel<I, K>::value, int>::type run_kernel(kernel_launch_info launch_info, Args&&... args) {
         return call_action<K>(launch_info, std::forward<Args>(args)...);
     }
 
@@ -224,6 +224,8 @@ struct action_runner<function_tag, F, int(F::*)(Args...)> {
 template<typename A, xpu::driver_t D = XPU_COMPILATION_TARGET>
 struct register_action {
 
+    static_assert(is_action_v<A>, "Type A is not a xpu::kernel, xpu::function or xpu::constant");
+
     using image = typename A::image;
     using tag = typename A::tag;
 
@@ -262,6 +264,7 @@ xpu::detail::register_action<A, D> xpu::detail::register_action<A, D>::instance{
 #endif
 
 #define XPU_DETAIL_IMAGE(image) \
+    static_assert(xpu::detail::is_device_image_v<image>, "Type passed to XPU_IMAGE is not derived from xpu::device_image..."); \
     XPU_DETAIL_TYPE_ID_MAP(image); \
     template<> \
     xpu::detail::image_context<image> *xpu::detail::image_context<image>::instance() { \

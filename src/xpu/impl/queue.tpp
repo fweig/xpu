@@ -103,6 +103,7 @@ void xpu::queue::memset(buffer<T> buf, int value) {
 
 template<typename Kernel, typename... Args>
 void xpu::queue::launch(grid params, Args&&... args) {
+    static_assert(detail::is_kernel_v<Kernel>, "xpu::queue::launch: invalid kernel type");
     detail::runtime::instance().run_kernel<Kernel>(params, m_handle->dev.backend, m_handle->handle, std::forward<Args>(args)...);
 }
 

@@ -107,7 +107,7 @@ union variant {
     double d;
 };
 
-struct TestKernels {};
+struct TestKernels : xpu::device_image {};
 
 struct float3_ {
     float x;

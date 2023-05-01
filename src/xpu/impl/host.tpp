@@ -13,6 +13,7 @@ void xpu::initialize(settings settings) {
 
 template<typename I>
 inline void xpu::preload() {
+    static_assert(detail::is_device_image_v<I>, "Invalid image");
     detail::runtime::instance().preload_image<I>();
 }
 
@@ -106,8 +107,6 @@ inline xpu::device_prop::device_prop(xpu::device dev) {
     m_prop = detail::runtime::instance().device_properties(dev.id());
 }
 
-
-
 template<typename Kernel>
 const char *xpu::get_name() {
     return detail::type_name<Kernel>();
@@ -121,11 +120,13 @@ void xpu::run_kernel(grid params, Args&&... args) {
 
 template<typename Func, typename... Args>
 void xpu::call(Args&&... args) {
+    static_assert(detail::is_function_v<Func>, "Invalid function");
     detail::runtime::instance().call<Func>(std::forward<Args>(args)...);
 }
 
 template<typename C>
 void xpu::set(const typename C::data_t &symbol) {
+    static_assert(detail::is_constant_v<C>, "Invalid constant");
     detail::runtime::instance().set_constant<C>(symbol);
 }
 

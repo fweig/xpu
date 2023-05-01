@@ -36,11 +36,20 @@ template<typename T, typename Tag> inline constexpr bool has_tag_v = has_tag<T, 
 template<typename T> struct is_constant : std::bool_constant<is_action_v<T> && has_tag_v<T, constant_tag>> {};
 template<typename T> inline constexpr bool is_constant_v = is_constant<T>::value;
 
+template<typename I, typename T> struct is_image_constant : std::bool_constant<is_constant_v<T> && std::is_same_v<typename T::image, I>> {};
+template<typename I, typename T> inline constexpr bool is_image_constant_v = is_image_constant<I, T>::value;
+
 template<typename T> struct is_function : std::bool_constant<is_action_v<T> && has_tag_v<T, function_tag>> {};
 template<typename T> inline constexpr bool is_function_v = is_function<T>::value;
 
+template<typename I, typename T> struct is_image_function : std::bool_constant<is_function_v<T> && std::is_same_v<typename T::image, I>> {};
+template<typename I, typename T> inline constexpr bool is_image_function_v = is_image_function<I, T>::value;
+
 template<typename T> struct is_kernel : std::bool_constant<is_action_v<T> && has_tag_v<T, kernel_tag>> {};
 template<typename T> inline constexpr bool is_kernel_v = is_kernel<T>::value;
+
+template<typename I, typename T> struct is_image_kernel : std::bool_constant<is_kernel_v<T> && std::is_same_v<typename T::image, I>> {};
+template<typename I, typename T> inline constexpr bool is_image_kernel_v = is_image_kernel<I, T>::value;
 
 enum mem_type {
     mem_host,

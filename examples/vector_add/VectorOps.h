@@ -2,7 +2,7 @@
 
 #include <xpu/device.h>
 
-struct VectorOps {};
+struct VectorOps : xpu::device_image {};
 
 struct VectorAdd : xpu::kernel<VectorOps> {
     using context = xpu::kernel_context<xpu::no_smem>;

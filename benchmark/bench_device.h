@@ -3,7 +3,7 @@
 
 #include <xpu/device.h>
 
-struct bench_device {};
+struct bench_device : xpu::device_image {};
 
 template<int elems_per_thread>
 struct merge : xpu::kernel<bench_device> {

@@ -96,16 +96,9 @@ struct kernel : detail::action<Image, detail::kernel_tag> {
     using shared_memory = no_smem;
 };
 
-template<typename Kernel>
-struct is_kernel : std::integral_constant<bool,
-    detail::is_action_v<Kernel> &&
-> {};
-
 template<typename Image>
 struct function : detail::action<Image, detail::function_tag> {
 };
-
-
 
 template<typename Image, typename Data>
 struct constant : detail::action<Image, detail::constant_tag> {

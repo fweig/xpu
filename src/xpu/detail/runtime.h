@@ -169,7 +169,7 @@ private:
             m_images.add(cpu_image, cpu);
         }
 
-        ensure_symbols(d, i->get_symbols(), m_images.find< image<I> >(cpu)->get_symbols());
+        ensure_symbols(d, i->symbols(), m_images.find< image<I> >(cpu)->symbols());
 
         return i;
     }

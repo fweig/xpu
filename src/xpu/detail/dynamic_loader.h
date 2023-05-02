@@ -88,40 +88,66 @@ struct image_file_name {
 class symbol_table {
 
 public:
-    template<typename I>
+    template<typename I, xpu::driver_t D>
     static symbol_table &instance() {
-        static symbol_table _instance{type_name<I>()};
+        static symbol_table _instance{type_name<I>(), D};
         return _instance;
     }
 
-    symbol_table(const char *name) : m_name(name) {}
+    symbol_table(const char *name, xpu::driver_t driver) : m_name(name), m_driver(driver) {}
 
-    std::vector<symbol> &get_symbols() { return symbols; }
-    std::string get_name() const { return m_name; }
+    std::string name() const { return m_name; }
+    xpu::driver_t driver() const { return m_driver; }
 
     template<typename A>
-    void add_symbol(void *symbol) {
-        auto it = ids.find(type_name<A>());
-        if (it == ids.end()) {
-            ids[type_name<A>()] = grouped_type_id<A, typename A::image>::get();
+    void add(void *symbol) {
+
+        auto it = m_symbols.find(type_name<A>());
+        if (it != m_symbols.end()) {
+            XPU_LOG("Symbol '%s' already exists in '%s'", type_name<A>(), m_name.c_str());
+            return;
         }
-        size_t id = ids[type_name<A>()];
-        if (symbols.size() <= id) {
-            symbols.resize(id+1);
-        }
-        symbols.at(id) = {
+
+        size_t id = grouped_type_id<A, typename A::image>::get();
+        const char *name = type_name<A>();
+
+        m_symbols[name] = {
                 .handle = symbol,
-                .name = type_name<A>(),
+                .name = name,
                 .image = m_name,
                 .id = id
         };
     }
 
-private:
-    std::unordered_map<std::string, size_t> ids;
-    std::vector<symbol> symbols;
+    std::vector<symbol> linearize() const {
+        std::vector<symbol> result;
+        result.reserve(m_symbols.size());
+        for (const auto &pair : m_symbols) {
+            result.push_back(pair.second);
+        }
+        std::sort(result.begin(), result.end(), [](const symbol &a, const symbol &b) {
+            return a.id < b.id;
+        });
+        return result;
+    }
 
+    std::vector<symbol> linearize_with(const std::vector<symbol> &gt) const {
+        std::vector<symbol> result;
+        for (size_t i = 0; i < gt.size(); ++i) {
+            assert(gt[i].id == i);
+            assert(gt[i].image == m_name);
+            auto it = m_symbols.find(gt[i].name);
+            assert(it != m_symbols.end());
+            result.push_back(it->second);
+            result.back().id = i;
+        }
+        return result;
+    }
+
+private:
+    std::unordered_map<std::string, symbol> m_symbols;
     std::string m_name;
+    xpu::driver_t m_driver;
 
 };
 
@@ -129,17 +155,19 @@ template<typename I>
 class image {
 
 private:
-    void *handle = nullptr;
-    symbol_table *context = nullptr;
+    void *m_handle = nullptr;
+    symbol_table *m_context = nullptr;
+    std::vector<symbol> m_symbols;
 
 public:
     image() {
-        context = &symbol_table::instance<I>();
+        m_context = &symbol_table::instance<I, xpu::cpu>();
+        m_symbols = m_context->linearize();
     }
 
     image(const char *name) {
         XPU_LOG("Loading '%s'", name);
-        handle =
+        m_handle =
             #if defined __APPLE__
                 dlopen(name, RTLD_LAZY)
             #elif defined __linux__
@@ -149,27 +177,24 @@ public:
             #endif
         ;
 
-        if (handle == nullptr) {
+        if (m_handle == nullptr) {
             XPU_LOG("Error opening '%s: %s", name, dlerror());
         }
-        assert(handle != nullptr);
-        auto *get_context = reinterpret_cast<symbol_table *(*)()>(dlsym(handle, "xpu_detail_get_context"));
+        assert(m_handle != nullptr);
+        auto *get_context = reinterpret_cast<symbol_table *(*)()>(dlsym(m_handle, "xpu_detail_get_context"));
         assert(get_context != nullptr);
-        context = get_context();
-        assert(context->get_name() == type_name<I>());
+        m_context = get_context();
+        assert(m_context->name() == type_name<I>());
+
+        auto &cpu_context = symbol_table::instance<I, xpu::cpu>();
+        auto cpu_symbols = cpu_context.linearize();
+        m_symbols = m_context->linearize_with(cpu_symbols);
     }
 
     ~image() {
-        if (handle != nullptr) {
-            dlclose(handle);
+        if (m_handle != nullptr) {
+            dlclose(m_handle);
         }
-    }
-
-    image(const image<I> &) = delete;
-
-    image(image<I> &&other) {
-        handle = std::exchange(other.handle, nullptr);
-        context = std::exchange(other.context, nullptr);
     }
 
     template<typename F, typename... Args>
@@ -191,26 +216,25 @@ public:
         if (not logger::instance().active()) {
             return;
         }
-        XPU_LOG("Symbols for '%s'", context->get_name().c_str());
-        for (const auto &it : context->get_symbols()) {
+        XPU_LOG("Symbols for '%s'", m_context->name().c_str());
+        for (const auto &it : m_symbols) {
             XPU_LOG("%zu: %s@%p [%s]", it.id, it.name.c_str(), it.handle, it.image.c_str());
         }
     }
 
-    const std::vector<symbol> &get_symbols() const {
-        return context->get_symbols();
+    const std::vector<symbol> &symbols() const {
+        return m_symbols;
     }
 
 private:
     template<typename F, typename... Args>
     int call_action(Args&&... args) {
-        auto *symbols = &context->get_symbols();
         size_t id = grouped_type_id<F, typename F::image>::get();
-        if (id >= symbols->size()) {
+        if (id >= m_symbols.size()) {
             dump_symbols();
         }
-        assert(id < symbols->size());
-        auto symbol = symbols->at(id);
+        assert(id < m_symbols.size());
+        const auto &symbol = m_symbols.at(id);
         assert(symbol.name == type_name<F>());
         auto *fn = reinterpret_cast<action_interface_t<F>>(symbol.handle);
         return fn(std::forward<Args>(args)...);
@@ -239,9 +263,9 @@ struct register_action {
     register_action() {
         // printf("Registering action '%s'...\n", type_name<A>());
         if constexpr (std::is_same_v<tag, kernel_tag> || std::is_same_v<tag, function_tag>) {
-            symbol_table::instance<image>().template add_symbol<A>((void *)&action_runner<tag, A, decltype(&A::operator())>::call);
+            symbol_table::instance<image, D>().template add<A>((void *)&action_runner<tag, A, decltype(&A::operator())>::call);
         } else if constexpr (std::is_same_v<tag, constant_tag>) {
-            symbol_table::instance<image>().template add_symbol<A>((void *)&action_runner<tag, A>::call);
+            symbol_table::instance<image, D>().template add<A>((void *)&action_runner<tag, A>::call);
         }
     }
 
@@ -265,7 +289,7 @@ xpu::detail::register_action<A, D> xpu::detail::register_action<A, D>::instance{
 #define XPU_DETAIL_TYPE_ID_MAP(image)
 #define XPU_DETAIL_symbol_table_GETTER(image) \
     extern "C" xpu::detail::symbol_table *xpu_detail_get_context() { \
-        return &xpu::detail::symbol_table::instance<image>(); \
+        return &xpu::detail::symbol_table::instance<image, XPU_COMPILATION_TARGET>(); \
     }
 
 #endif // XPU_IS_CPU

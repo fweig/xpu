@@ -186,6 +186,8 @@ void runtime::ensure_symbols(driver_t driver, const std::vector<symbol> &cpu_sym
             raise_error(format("Symbol id mismatch: '%zu' != '%zu'.", symbols[i].id, cpu_symbols[i].id));
         }
     }
+
+    XPU_LOG("Symbols match.");
 }
 
 

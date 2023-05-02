@@ -564,7 +564,7 @@ public:
     /**
      * Times of each invocation of this kernel.
      */
-    std::vector<double> times() const { return m_t.times; }
+    const std::vector<double> &times() const { return m_t.times; }
 
     /**
      * Throughput of this kernel in gigabytes per second.
@@ -631,7 +631,7 @@ public:
 
     /**
      * @returns The total time spent in kernels. [ms]
-    */
+     */
     double kernel_time() const {
         return std::accumulate(m_t.kernels.begin(), m_t.kernels.end(), 0.0,
             [](double a, const auto &b) { return a + std::accumulate(b.times.begin(), b.times.end(), 0.0); });
@@ -644,7 +644,7 @@ public:
 
     /**
      * Returns true if copy, memset and kernel timings were collected.
-    */
+     */
     bool has_details() const { return m_t.has_details; }
 
     /**
@@ -660,12 +660,12 @@ public:
 
     /**
      * Returns the throughput of copy operations in the given direction, [GB/s]
-    */
+     */
     double throughput_copy(direction dir) const;
 
     /**
      * Returns the throughput of memset operations. [GB/s]
-    */
+     */
     double throughput_memset() const;
 
     /**

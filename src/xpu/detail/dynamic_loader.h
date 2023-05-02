@@ -85,16 +85,19 @@ struct image_file_name {
     const char *operator()() const;
 };
 
-template <typename I>
-class image_context {
+class symbol_table {
 
 public:
-    static image_context<I> *instance();
+    template<typename I>
+    static symbol_table &instance() {
+        static symbol_table _instance{type_name<I>()};
+        return _instance;
+    }
 
-    image_context() { name = type_name<I>(); }
+    symbol_table(const char *name) : m_name(name) {}
 
     std::vector<symbol> &get_symbols() { return symbols; }
-    std::string get_name() const { return name; }
+    std::string get_name() const { return m_name; }
 
     template<typename A>
     void add_symbol(void *symbol) {
@@ -109,7 +112,7 @@ public:
         symbols.at(id) = {
                 .handle = symbol,
                 .name = type_name<A>(),
-                .image = name,
+                .image = m_name,
                 .id = id
         };
     }
@@ -118,7 +121,7 @@ private:
     std::unordered_map<std::string, size_t> ids;
     std::vector<symbol> symbols;
 
-    std::string name;
+    std::string m_name;
 
 };
 
@@ -127,12 +130,11 @@ class image {
 
 private:
     void *handle = nullptr;
-
-    image_context<I> *context = nullptr;
+    symbol_table *context = nullptr;
 
 public:
     image() {
-        context = image_context<I>::instance();
+        context = &symbol_table::instance<I>();
     }
 
     image(const char *name) {
@@ -151,7 +153,7 @@ public:
             XPU_LOG("Error opening '%s: %s", name, dlerror());
         }
         assert(handle != nullptr);
-        auto *get_context = reinterpret_cast<image_context<I> *(*)()>(dlsym(handle, "xpu_detail_get_context"));
+        auto *get_context = reinterpret_cast<symbol_table *(*)()>(dlsym(handle, "xpu_detail_get_context"));
         assert(get_context != nullptr);
         context = get_context();
         assert(context->get_name() == type_name<I>());
@@ -237,9 +239,9 @@ struct register_action {
     register_action() {
         // printf("Registering action '%s'...\n", type_name<A>());
         if constexpr (std::is_same_v<tag, kernel_tag> || std::is_same_v<tag, function_tag>) {
-            image_context<image>::instance()->template add_symbol<A>((void *)&action_runner<tag, A, decltype(&A::operator())>::call);
+            symbol_table::instance<image>().template add_symbol<A>((void *)&action_runner<tag, A, decltype(&A::operator())>::call);
         } else if constexpr (std::is_same_v<tag, constant_tag>) {
-            image_context<image>::instance()->template add_symbol<A>((void *)&action_runner<tag, A>::call);
+            symbol_table::instance<image>().template add_symbol<A>((void *)&action_runner<tag, A>::call);
         }
     }
 
@@ -256,27 +258,22 @@ xpu::detail::register_action<A, D> xpu::detail::register_action<A, D>::instance{
 #define XPU_DETAIL_TYPE_ID_MAP(image) \
     template<> \
     const char *xpu::detail::image_file_name<image>::operator()() const { return XPU_IMAGE_FILE; }
-#define XPU_DETAIL_IMAGE_CONTEXT_GETTER(image)
+#define XPU_DETAIL_symbol_table_GETTER(image)
 
 #else // HIP OR CUDA
 
 #define XPU_DETAIL_TYPE_ID_MAP(image)
-#define XPU_DETAIL_IMAGE_CONTEXT_GETTER(image) \
-    extern "C" xpu::detail::image_context<image> *xpu_detail_get_context() { \
-        return xpu::detail::image_context<image>::instance(); \
+#define XPU_DETAIL_symbol_table_GETTER(image) \
+    extern "C" xpu::detail::symbol_table *xpu_detail_get_context() { \
+        return &xpu::detail::symbol_table::instance<image>(); \
     }
 
-#endif
+#endif // XPU_IS_CPU
 
 #define XPU_DETAIL_IMAGE(image) \
     static_assert(xpu::detail::is_device_image_v<image>, "Type passed to XPU_IMAGE is not derived from xpu::device_image..."); \
     XPU_DETAIL_TYPE_ID_MAP(image); \
-    template<> \
-    xpu::detail::image_context<image> *xpu::detail::image_context<image>::instance() { \
-        static image_context<image> ctx; \
-        return &ctx; \
-    } \
-    XPU_DETAIL_IMAGE_CONTEXT_GETTER(image) \
+    XPU_DETAIL_symbol_table_GETTER(image) \
     void xpu_detail_dummy_func() // Force semicolon at the end of macro
 
 #define XPU_DETAIL_EXPORT(name) \

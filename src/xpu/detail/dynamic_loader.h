@@ -72,7 +72,13 @@ struct action_interface<T, A> : action_interface<T, typename member_fn<decltype(
 template<typename A>
 using action_interface_t = typename action_interface<typename A::tag, A>::type;
 
-using symbol_table = std::vector<std::pair<std::string, void *>>;
+
+struct symbol {
+    void *handle;
+    std::string name;
+    std::string image;
+    size_t id;
+};
 
 template<typename I>
 struct image_file_name {
@@ -87,7 +93,7 @@ public:
 
     image_context() { name = type_name<I>(); }
 
-    symbol_table &get_symbols() { return symbols; }
+    std::vector<symbol> &get_symbols() { return symbols; }
     std::string get_name() const { return name; }
 
     template<typename A>
@@ -100,12 +106,17 @@ public:
         if (symbols.size() <= id) {
             symbols.resize(id+1);
         }
-        symbols.at(id) = {type_name<A>(), symbol};
+        symbols.at(id) = {
+                .handle = symbol,
+                .name = type_name<A>(),
+                .image = name,
+                .id = id
+        };
     }
 
 private:
     std::unordered_map<std::string, size_t> ids;
-    symbol_table symbols;
+    std::vector<symbol> symbols;
 
     std::string name;
 
@@ -170,9 +181,17 @@ public:
     }
 
     void dump_symbols() {
-        for (auto it : context->get_symbols()) {
-            XPU_LOG("%s: %p", it.first.c_str(), it.second);
+        if (not logger::instance().active()) {
+            return;
         }
+        XPU_LOG("Symbols for '%s'", context->get_name().c_str());
+        for (const auto &it : context->get_symbols()) {
+            XPU_LOG("%zu: %s@%p [%s]", it.id, it.name.c_str(), it.handle, it.image.c_str());
+        }
+    }
+
+    const std::vector<symbol> &get_symbols() const {
+        return context->get_symbols();
     }
 
 private:
@@ -185,8 +204,8 @@ private:
         }
         assert(id < symbols->size());
         auto symbol = symbols->at(id);
-        assert(symbol.first == type_name<F>());
-        auto *fn = reinterpret_cast<action_interface_t<F>>(symbol.second);
+        assert(symbol.name == type_name<F>());
+        auto *fn = reinterpret_cast<action_interface_t<F>>(symbol.handle);
         return fn(std::forward<Args>(args)...);
     }
 

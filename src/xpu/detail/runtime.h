@@ -161,8 +161,20 @@ private:
             break;
         }
         m_images.add(i, d);
+
+        if (d != cpu && m_images.find<I>(cpu) == nullptr) {
+            XPU_LOG("Loading image '%s' for CPU.", type_name<I>());
+            image<I> *cpu_image = new image<I>{};
+            cpu_image->dump_symbols();
+            m_images.add(cpu_image, cpu);
+        }
+
+        ensure_symbols(d, i->get_symbols(), m_images.find< image<I> >(cpu)->get_symbols());
+
         return i;
     }
+
+    void ensure_symbols(driver_t, const std::vector<symbol> &cpu_symbols, const std::vector<symbol> &symbols);
 
     backend_base *get_active_driver() const {
         return backend::get(m_active_device.backend);

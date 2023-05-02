@@ -155,6 +155,41 @@ xpu::detail::device_prop runtime::device_properties(int id) {
     return props;
 }
 
+void runtime::ensure_symbols(driver_t driver, const std::vector<symbol> &cpu_symbols, const std::vector<symbol> &symbols) {
+    for (auto &sym : symbols) {
+        if (sym.name.empty()) {
+            raise_error("Symbol name is empty.");
+        }
+        if (sym.handle == nullptr) {
+            raise_error(format("Symbol '%s' is not initialized.", sym.name.c_str()));
+        }
+    }
+
+    if (driver == cpu) {
+        return;
+    }
+
+    if (cpu_symbols.size() != symbols.size()) {
+        raise_error(format("Number of symbols (%lu) does not match number of CPU symbols (%lu).", symbols.size(), cpu_symbols.size()));
+    }
+
+    for (size_t i = 0; i < symbols.size(); i++) {
+        if (symbols[i].name != cpu_symbols[i].name) {
+            raise_error(format("Symbol name mismatch: '%s' != '%s'.", symbols[i].name.c_str(), cpu_symbols[i].name.c_str()));
+        }
+        if (symbols[i].image != cpu_symbols[i].image) {
+            raise_error(format("Symbol image mismatch: '%s' != '%s'.", symbols[i].image.c_str(), cpu_symbols[i].image.c_str()));
+        }
+        if (symbols[i].id != i) {
+            raise_error(format("Symbol at wrong position: '%zu' != '%zu'.", symbols[i].id, i));
+        }
+        if (symbols[i].id != cpu_symbols[i].id) {
+            raise_error(format("Symbol id mismatch: '%zu' != '%zu'.", symbols[i].id, cpu_symbols[i].id));
+        }
+    }
+}
+
+
 std::optional<std::pair<xpu::detail::driver_t, int>> runtime::try_parse_device(std::string_view device_name) const {
     std::vector<std::pair<std::string, driver_t>> str_to_driver {
         {"cpu", cpu},

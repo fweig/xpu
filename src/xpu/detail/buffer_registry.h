@@ -12,9 +12,9 @@
 namespace xpu::detail {
 
 enum buffer_type {
-    buf_host,
+    buf_pinned,
     buf_device,
-    buf_shared,
+    buf_managed,
     buf_io,
     buf_stack,
 };

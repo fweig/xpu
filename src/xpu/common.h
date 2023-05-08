@@ -77,9 +77,9 @@ inline grid n_blocks(dim nblocks);
 inline grid n_threads(dim nthreads);
 
 enum buffer_type {
-    buf_host = detail::buf_host,
+    buf_pinned = detail::buf_pinned,
     buf_device = detail::buf_device,
-    buf_shared = detail::buf_shared,
+    buf_managed = detail::buf_managed,
     buf_io = detail::buf_io,
     buf_stack = detail::buf_stack,
 };
@@ -103,20 +103,21 @@ public:
      *
      * Allocates a buffer of the given size and type.
      * Behavior depends on the type of the buffer:
-     * - buf_host:
+     * - buf_pinned:
      *     Allocates a buffer in host memory. The buffer is accessible from the device.
      *     If data is not null, the buffer is initialized with the data.
      * - buf_device:
      *     Allocates a buffer in device memory that is not accessible from the host.
      *     Memory is not initialized and 'data' pointer has no effect
-     * - buf_shared:
+     * - buf_managed:
      *     Allocates a shared (managed) buffer that is accessible from the host and the device.
+     *     GPU driver synchronizes memory between host and device.
      *     If data is not null, the buffer is initialized with the data.
      * - buf_io:
      *     Allocates a buffer in device memory. Excepts that data points to a memory region with at least N elements.
-     *     Buffer may be copied to / from the device using xpu::copy from / to 'data'.
+     *     Buffer may be copied to / from the device using queue::copy from / to 'data'.
      *     Note: If the device is a CPU, the underlying pointer simply points to 'data' and no additional allocation takes place.
-     *     xpu::copy calls become no-ops in this case.
+     *     queue::copy calls become no-ops in this case.
      * - buf_stack:
      *     Allocates a buffer in the stack on the device. The buffer is not accessible from the host.
      *     Memory is not initialized and 'data' pointer has no effect.

@@ -10,7 +10,7 @@ TEST(XPUTest, CanCreatePointerBuffer) {
     // Test for regression with ambigious free
     // This only has to compile
     xpu::buffer<int *> buf{};
-    xpu::buffer<key_value_t *> buf1{100, xpu::buf_host};
+    xpu::buffer<key_value_t *> buf1{100, xpu::buf_pinned};
     xpu::buffer<key_value_t *> buf2{100, xpu::buf_device};
 }
 
@@ -52,7 +52,7 @@ TEST(XPUTest, CanGetDeviceFromPointer) {
     }
 
     {
-        xpu::buffer<int> hbuf{1, xpu::buf_host};
+        xpu::buffer<int> hbuf{1, xpu::buf_pinned};
         xpu::buffer_prop bprop{hbuf};
         prop = xpu::ptr_prop{bprop.h_ptr()};
         ASSERT_NE(prop.ptr(), nullptr);
@@ -73,7 +73,7 @@ TEST(XPUTest, CanWriteBufferToCMem) {
 }
 
 TEST(XPUTest, HostBufferIsAccessibleFromDevice) {
-    xpu::buffer<int> buf{1, xpu::buf_host};
+    xpu::buffer<int> buf{1, xpu::buf_pinned};
     xpu::buffer<int> x{};
     *buf = 69;
     xpu::run_kernel<buffer_access>(xpu::n_threads(1), x, buf);

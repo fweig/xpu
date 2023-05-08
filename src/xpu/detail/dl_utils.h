@@ -30,7 +30,7 @@ public:
 
     T *obj = nullptr;
 
-    lib_obj(const std::string &libname) : lib(libname) {
+    lib_obj(const std::string &libname, bool teardown=true) : m_teardown(teardown), lib(libname) {
         if (not lib.ok()) {
             return;
         }
@@ -40,7 +40,7 @@ public:
     }
 
     ~lib_obj() {
-        if (obj != nullptr) {
+        if (obj != nullptr && m_teardown) {
             destroy(obj);
         }
     }
@@ -48,6 +48,7 @@ public:
     bool ok() const { return lib.ok(); }
 
 private:
+    bool m_teardown;
     library_loader lib;
     create_f *create = nullptr;
     destroy_f *destroy = nullptr;

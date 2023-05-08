@@ -56,7 +56,7 @@ void backend::load(std::vector<driver_t> exclude) {
         XPU_LOG("Sycl driver not active: Requested to skip driver.");
     } else {
         XPU_LOG("Loading sycl driver.");
-        the_sycl_driver = std::make_unique<lib_obj<backend_base>>("libxpu_Sycl.so");
+        the_sycl_driver = std::make_unique<lib_obj<backend_base>>("libxpu_Sycl.so", false);
         if (the_sycl_driver->ok()) {
             call(sycl, &backend_base::setup);
             XPU_LOG("Finished loading sycl driver.");

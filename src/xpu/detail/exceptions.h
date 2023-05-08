@@ -16,6 +16,7 @@
 namespace xpu::detail {
 
 [[noreturn]] void throw_out_of_range(std::string_view where, size_t i, size_t size);
+[[noreturn]] void throw_invalid_argument(std::string_view where, std::string_view what);
 
 } // namespace xpu::detail
 

@@ -14,8 +14,14 @@ inline xpu::queue::queue(xpu::device dev) : m_handle(std::make_shared<detail::qu
 }
 
 inline void xpu::queue::memcpy(void *dst, const void *src,  size_t size_bytes) {
-    if (dst == nullptr || src == nullptr) {
-        throw std::runtime_error("xpu::queue::memcpy: invalid pointer");
+    if (size_bytes == 0) {
+        return;
+    }
+    if (dst == nullptr) {
+        detail::throw_invalid_argument("xpu::queue::memcpy", "dst is null");
+    }
+    if (src == nullptr) {
+        detail::throw_invalid_argument("xpu::queue::memcpy", "src is null");
     }
 
     if (!detail::config::profile) {

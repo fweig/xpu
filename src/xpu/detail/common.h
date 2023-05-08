@@ -52,10 +52,10 @@ template<typename I, typename T> struct is_image_kernel : std::bool_constant<is_
 template<typename I, typename T> inline constexpr bool is_image_kernel_v = is_image_kernel<I, T>::value;
 
 enum mem_type {
-    mem_host,
+    mem_pinned,
     mem_device,
-    mem_shared,
-    mem_unknown,
+    mem_managed,
+    mem_host,
 };
 
 enum driver_t {

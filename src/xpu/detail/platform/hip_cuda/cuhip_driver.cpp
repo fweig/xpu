@@ -178,14 +178,14 @@ public:
 
         #if XPU_IS_CUDA
             if (err != 0) {
-                *type = mem_unknown;
+                *type = mem_host;
                 *device = -1;
                 return err;
             }
 
             switch (ptrattrs.type) {
             case cudaMemoryTypeHost:
-                *type = mem_host;
+                *type = mem_pinned;
                 *device = ptrattrs.device;
                 break;
             case cudaMemoryTypeDevice:
@@ -193,12 +193,12 @@ public:
                 *device = ptrattrs.device;
                 break;
             case cudaMemoryTypeManaged:
-                *type = mem_shared;
+                *type = mem_managed;
                 *device = ptrattrs.device;
                 break;
             case cudaMemoryTypeUnregistered:
             default:
-                *type = mem_unknown;
+                *type = mem_host;
                 *device = -1;
                 break;
             }
@@ -206,13 +206,13 @@ public:
         #else // HIP
 
             if (err == hipErrorInvalidValue) {
-                *type = mem_unknown;
+                *type = mem_host;
                 *device = -1;
                 return 0;
             }
 
             if (err != 0) {
-                *type = mem_unknown;
+                *type = mem_host;
                 *device = -1;
                 return err;
             }
@@ -225,7 +225,7 @@ public:
                     break;
             #endif
             case hipMemoryTypeHost:
-                *type = mem_host;
+                *type = mem_pinned;
                 *device = ptrattrs.device;
                 break;
             case hipMemoryTypeArray:
@@ -235,7 +235,7 @@ public:
                 break;
             case hipMemoryTypeManaged:
             case hipMemoryTypeUnified:
-                *type = mem_shared;
+                *type = mem_managed;
                 *device = ptrattrs.device;
                 break;
             }

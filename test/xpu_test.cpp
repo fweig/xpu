@@ -23,7 +23,8 @@ TEST(XPUTest, CanGetDeviceFromPointer) {
     ASSERT_EQ(prop.ptr(), &h);
     ASSERT_EQ(prop.backend(), xpu::cpu);
     ASSERT_EQ(prop.device().device_nr(), 0);
-    ASSERT_EQ(prop.type(), xpu::mem_type::unknown);
+    ASSERT_EQ(prop.type(), xpu::mem_type::host);
+    ASSERT_TRUE(prop.is_host());
 
     {
         xpu::buffer<int> hdbuf{1, xpu::buf_io};
@@ -31,11 +32,13 @@ TEST(XPUTest, CanGetDeviceFromPointer) {
         prop = xpu::ptr_prop{bprop.h_ptr()};
         ASSERT_NE(prop.ptr(), nullptr);
         ASSERT_EQ(prop.backend(), active_device.backend());
-        ASSERT_EQ(prop.type(), (is_cpu ? xpu::mem_type::unknown : xpu::mem_type::host));
+        ASSERT_EQ(prop.type(), (is_cpu ? xpu::mem_type::host : xpu::mem_type::pinned));
+        ASSERT_TRUE(prop.is_host());
         prop = xpu::ptr_prop{bprop.d_ptr()};
         ASSERT_NE(prop.ptr(), nullptr);
         ASSERT_EQ(prop.backend(), active_device.backend());
-        ASSERT_EQ(prop.type(), (is_cpu ? xpu::mem_type::unknown : xpu::mem_type::device));
+        ASSERT_EQ(prop.type(), (is_cpu ? xpu::mem_type::host : xpu::mem_type::device));
+        ASSERT_EQ(prop.is_host(), is_cpu);
     }
 
     {
@@ -44,7 +47,7 @@ TEST(XPUTest, CanGetDeviceFromPointer) {
         prop = xpu::ptr_prop{bprop.d_ptr()};
         ASSERT_NE(prop.ptr(), nullptr);
         ASSERT_EQ(prop.backend(), active_device.backend());
-        ASSERT_EQ(prop.type(), (is_cpu ? xpu::mem_type::unknown : xpu::mem_type::device));
+        ASSERT_EQ(prop.type(), (is_cpu ? xpu::mem_type::host : xpu::mem_type::device));
         ASSERT_EQ(bprop.h_ptr(), nullptr);
     }
 
@@ -54,7 +57,8 @@ TEST(XPUTest, CanGetDeviceFromPointer) {
         prop = xpu::ptr_prop{bprop.h_ptr()};
         ASSERT_NE(prop.ptr(), nullptr);
         ASSERT_EQ(prop.backend(), active_device.backend());
-        ASSERT_EQ(prop.type(), (is_cpu ? xpu::mem_type::unknown : xpu::mem_type::host));
+        ASSERT_EQ(prop.type(), (is_cpu ? xpu::mem_type::host : xpu::mem_type::pinned));
+        ASSERT_TRUE(prop.is_host());
     }
 }
 

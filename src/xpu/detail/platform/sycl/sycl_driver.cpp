@@ -148,17 +148,17 @@ error sycl_driver::get_ptr_prop(const void *ptr, int *device, mem_type *type) {
             *type = mem_device;
             break;
         case sycl::usm::alloc::host:
-            *type = mem_host;
+            *type = mem_pinned;
             break;
         case sycl::usm::alloc::shared:
-            *type = mem_shared;
+            *type = mem_managed;
             break;
         case sycl::usm::alloc::unknown:
-            *type = mem_unknown;
+            *type = mem_host;
             break;
         }
 
-        if (*type == mem_unknown) {
+        if (*type == mem_host) {
             *device = -1;
             return 0;
         }
@@ -167,7 +167,7 @@ error sycl_driver::get_ptr_prop(const void *ptr, int *device, mem_type *type) {
         // XPU_LOG("sycl_driver::pointer_get_device: %s", dev.get_info<sycl::info::device::name>().c_str());
         *device = get_device_id(dev);
     } catch (sycl::exception &e) {
-        *type = mem_unknown;
+        *type = mem_host;
         *device = -1;
     }
     return 0;

@@ -174,6 +174,7 @@ T *malloc_shared(size_t);
  */
 inline void free(void *);
 
+// DEPRECATED, use queue::memcpy and queue::memset instead
 inline void memcpy(void *, const void *, size_t);
 inline void memset(void *, int, size_t);
 
@@ -494,9 +495,9 @@ public:
 enum class mem_type {
     /**
      * Memory allocated on the host by the GPU driver.
-     * Can be accessed by the device. (also known as pinned memory)
+     * Can be accessed by the device.
      */
-    host = detail::mem_host,
+    pinned = detail::mem_pinned,
 
     /**
      * Memory allocated on the device by the GPU driver.
@@ -505,17 +506,15 @@ enum class mem_type {
 
     /**
      * Memory allocated on the host and device by the GPU driver.
-     * GPU driver will synchronise data to the device when needed.
-     * (also known as unified or managed memory)
+     * GPU driver will synchronise data with the device when needed.
      */
-    shared = detail::mem_shared,
+    managed = detail::mem_managed,
 
     /**
-     * Uknown memory type.
-     * Usually memory allocated on the host by libc.
-     * Can't be accessed on the device.
+     * Host memory allocated by the user. Can't be accessed on the device.
+     * By default, all memory not in the previous categories is assumed to be host memory.
      */
-    unknown = detail::mem_unknown,
+    host = detail::mem_host,
 };
 
 /**
@@ -543,6 +542,11 @@ public:
      * @see mem_type
      */
     mem_type type() const { return static_cast<mem_type>(m_prop.type); }
+
+    /**
+     * @returns If the memory is allocated on the host.
+     */
+    bool is_host() const { return m_prop.type == detail::mem_host || m_prop.type == detail::mem_pinned; }
 
     /**
      * @returns The device the memory is allocated on.

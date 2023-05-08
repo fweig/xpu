@@ -31,7 +31,7 @@ inline void xpu::queue::memcpy(void *dst, const void *src,  size_t size_bytes) {
         do_copy(src, dst, size_bytes, &ms);
 
         ptr_prop src_prop{src};
-        detail::direction_t dir = src_prop.type() == xpu::mem_type::host ? detail::dir_h2d : detail::dir_d2h;
+        detail::direction_t dir = src_prop.is_host() ? detail::dir_h2d : detail::dir_d2h;
         detail::add_memcpy_time(ms, dir, size_bytes);
     }
 }

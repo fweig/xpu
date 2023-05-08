@@ -142,7 +142,7 @@ T *malloc_device(size_t elems);
  * @brief Allocate pinned memory on the host that can be accessed by the device.
  * @param size Size of the memory to allocate in bytes.
  */
-void *malloc_host(size_t size);
+void *malloc_pinned(size_t size_bytes);
 
 /**
  * @brief Allocate pinned memory on the host that can be accessed by the device.
@@ -151,13 +151,13 @@ void *malloc_host(size_t size);
  * @note The memory is not initialized.
  */
 template<typename T>
-T *malloc_host(size_t elems);
+T *malloc_host(size_t size);
 
 /**
  * @brief Allocate memory that can be accessed by the device and the host.
  * @param size Size of the memory to allocate in bytes.
  */
-void *malloc_shared(size_t);
+void *malloc_managed(size_t size_bytes);
 
 /**
  * @brief Allocate memory that can be accessed by the device and the host.
@@ -166,17 +166,13 @@ void *malloc_shared(size_t);
  * @note The memory is not initialized.
  */
 template<typename T>
-T *malloc_shared(size_t);
+T *malloc_managed(size_t size);
 
 /**
- * @brief Free memory allocated with malloc_device, malloc_host or malloc_shared.
+ * @brief Free memory allocated with malloc_device, malloc_pinned or malloc_managed.
  * @param ptr Pointer to the memory to free.
  */
 inline void free(void *);
-
-// DEPRECATED, use queue::memcpy and queue::memset instead
-inline void memcpy(void *, const void *, size_t);
-inline void memset(void *, int, size_t);
 
 /**
  * @brief Allocate the stack memory on the device.
@@ -386,13 +382,6 @@ private:
 
 template<typename Kernel>
 const char *get_name();
-
-/**
- * @deprecated
- * Deprecated. Use xpu::queue::launch instead.
- */
-template<typename Kernel, typename... Args>
-void run_kernel(grid params, Args&&... args);
 
 template<typename Func, typename... Args>
 void call(Args&&... args);
@@ -776,12 +765,6 @@ void t_add_bytes(size_t bytes);
  */
 template<typename Kernel>
 void k_add_bytes(size_t bytes);
-
-template<typename T>
-void copy(T *dst, const T *src, size_t entries);
-
-template<typename T>
-void copy(buffer<T> &buf, direction dir);
 
 } // namespace xpu
 

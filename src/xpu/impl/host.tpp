@@ -17,13 +17,13 @@ inline void xpu::preload() {
     detail::runtime::instance().preload_image<I>();
 }
 
-inline void *xpu::malloc_host(size_t bytes) {
+inline void *xpu::malloc_pinned(size_t bytes) {
     return detail::runtime::instance().malloc_host(bytes);
 }
 
 template<typename T>
-T *xpu::malloc_host(size_t count) {
-    return static_cast<T *>(malloc_host(count * sizeof(T)));
+T *xpu::malloc_pinned(size_t count) {
+    return static_cast<T *>(malloc_pinned(count * sizeof(T)));
 }
 
 inline void *xpu::malloc_device(size_t bytes) {
@@ -35,25 +35,17 @@ T *xpu::malloc_device(size_t count) {
     return static_cast<T *>(malloc_device(count * sizeof(T)));
 }
 
-inline void *xpu::malloc_shared(size_t bytes) {
+inline void *xpu::malloc_managed(size_t bytes) {
     return detail::runtime::instance().malloc_shared(bytes);
 }
 
 template<typename T>
-T *xpu::malloc_shared(size_t count) {
-    return static_cast<T *>(malloc_shared(count * sizeof(T)));
+T *xpu::malloc_managed(size_t count) {
+    return static_cast<T *>(malloc_managed(count * sizeof(T)));
 }
 
 void xpu::free(void *ptr) {
     detail::runtime::instance().free(ptr);
-}
-
-void xpu::memcpy(void *dst, const void *src, size_t bytes) {
-    return detail::runtime::instance().memcpy(dst, src, bytes);
-}
-
-void xpu::memset(void *dst, int ch, size_t bytes) {
-    return detail::runtime::instance().memset(dst, ch, bytes);
 }
 
 inline void xpu::stack_alloc(size_t bytes) {
@@ -110,12 +102,6 @@ inline xpu::device_prop::device_prop(xpu::device dev) {
 template<typename Kernel>
 const char *xpu::get_name() {
     return detail::type_name<Kernel>();
-}
-
-template<typename Kernel, typename... Args>
-void xpu::run_kernel(grid params, Args&&... args) {
-    detail::device dev = detail::runtime::instance().active_device();
-    detail::runtime::instance().run_kernel<Kernel>(params, dev.backend, nullptr, std::forward<Args>(args)...);
 }
 
 template<typename Func, typename... Args>
@@ -265,38 +251,4 @@ inline xpu::kernel_timings xpu::timings::kernel(std::string_view name) const {
         return kernel_timings{kt};
     }
     return kernel_timings{*it};
-}
-
-template<typename T>
-void xpu::copy(T *dst, const T *src, size_t entries) {
-    xpu::memcpy(dst, src, sizeof(T) * entries);
-}
-
-template<typename T>
-void xpu::copy(buffer<T> &buf, direction dir) {
-    detail::buffer_data entry = detail::buffer_registry::instance().get(buf.get());
-
-    if (entry.type != detail::buf_io) {
-        throw std::runtime_error("Buffer is not an IO buffer.");
-    }
-
-    if (entry.ptr == entry.host_ptr) {
-        return;
-    }
-
-    void *dst = nullptr;
-    void *src = nullptr;
-
-    switch (dir) {
-        case h2d:
-            dst = entry.ptr;
-            src = entry.host_ptr;
-            break;
-        case d2h:
-            dst = entry.host_ptr;
-            src = entry.ptr;
-            break;
-    }
-
-    xpu::memcpy(dst, src, entry.size);
 }

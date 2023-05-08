@@ -153,12 +153,12 @@ public:
 
     void run() {
         xpu::push_timer(name());
-        xpu::copy(a, xpu::h2d);
-        xpu::copy(b, xpu::h2d);
-
-        xpu::run_kernel<Kernel>(xpu::n_blocks(n_blocks), a.get(), b.get(), elems_per_block, c.get());
-
-        xpu::copy(c, xpu::d2h);
+        xpu::queue q;
+        q.copy(a, xpu::h2d);
+        q.copy(b, xpu::h2d);
+        q.launch<Kernel>(xpu::n_blocks(n_blocks), a.get(), b.get(), elems_per_block, c.get());
+        q.copy(c, xpu::d2h);
+        q.wait();
         m_timings.merge(xpu::pop_timer());
     }
 
@@ -207,9 +207,11 @@ public:
 
     void run() {
         xpu::push_timer(name());
-        xpu::copy(a, xpu::h2d);
-        xpu::run_kernel<Kernel>(xpu::n_blocks(n_blocks), a.get(), elems_per_block, b.get(), dst.get());
-        xpu::copy(dst, xpu::d2h);
+        xpu::queue q;
+        q.copy(a, xpu::h2d);
+        q.launch<Kernel>(xpu::n_blocks(n_blocks), a.get(), elems_per_block, b.get(), dst.get());
+        q.copy(dst, xpu::d2h);
+        q.wait();
         m_timings.merge(xpu::pop_timer());
     }
 

@@ -76,16 +76,21 @@ TEST(XPUTest, HostBufferIsAccessibleFromDevice) {
     xpu::buffer<int> buf{1, xpu::buf_pinned};
     xpu::buffer<int> x{};
     *buf = 69;
-    xpu::run_kernel<buffer_access>(xpu::n_threads(1), x, buf);
+    xpu::queue q;
+    q.launch<buffer_access>(xpu::n_threads(1), x, buf);
+    q.wait();
     ASSERT_EQ(*buf, 42);
 }
 
 TEST(XPUTest, IoBufferIsAccessibleFromDevice) {
     xpu::buffer<int> buf{1, xpu::buf_io};
     xpu::buffer<int> x{};
-    xpu::run_kernel<buffer_access>(xpu::n_threads(1), x, buf);
 
-    xpu::copy(buf, xpu::d2h);
+    xpu::queue q;
+    q.launch<buffer_access>(xpu::n_threads(1), x, buf);
+    q.copy(buf, xpu::d2h);
+    q.wait();
+
     auto bview = xpu::h_view{buf};
     ASSERT_EQ(bview[0], 42);
     xpu::buffer_prop bprop{buf};
@@ -96,9 +101,12 @@ TEST(XPUTest, IoBufferCanCopyToHost) {
     int val = 69;
     xpu::buffer<int> buf{1, xpu::buf_io, &val};
     xpu::buffer<int> x{};
-    xpu::run_kernel<buffer_access>(xpu::n_threads(1), x, buf);
 
-    xpu::copy(buf, xpu::d2h);
+    xpu::queue q;
+    q.launch<buffer_access>(xpu::n_threads(1), x, buf);
+    q.copy(buf, xpu::d2h);
+    q.wait();
+
     ASSERT_EQ(val, 42);
 }
 
@@ -127,10 +135,13 @@ TEST(XPUTest, CanAllocateStackMemory) {
     // Ensure 256 byte alignment
     ASSERT_EQ(reinterpret_cast<uintptr_t>(bprop.d_ptr()) % 256, 0);
 
-    xpu::run_kernel<buffer_access>(xpu::n_threads(1), x, buf);
+    xpu::queue q;
+    q.launch<buffer_access>(xpu::n_threads(1), x, buf);
 
     int result;
-    xpu::copy(&result, buf.get(), 1);
+    q.copy(buf.get(), &result, 1);
+    q.wait();
+
     ASSERT_EQ(result, 42);
 
     // Test if we can push / pop on the stack
@@ -163,13 +174,14 @@ TEST(XPUTest, CanRunVectorAdd) {
     float *dy = xpu::malloc_device<float>(NElems);
     float *dz = xpu::malloc_device<float>(NElems);
 
-    xpu::copy(dx, hx.data(), NElems);
-    xpu::copy(dy, hy.data(), NElems);
-
-    xpu::run_kernel<vector_add>(xpu::n_threads(NElems), dx, dy, dz, NElems);
+    xpu::queue q;
+    q.copy(hx.data(), dx, NElems);
+    q.copy(hy.data(), dy, NElems);
+    q.launch<vector_add>(xpu::n_threads(NElems), dx, dy, dz, NElems);
 
     std::vector<float> hz(NElems);
-    xpu::copy(hz.data(), dz, NElems);
+    q.copy(dz, hz.data(), NElems);
+    q.wait();
 
     for (auto &x: hz) {
         ASSERT_EQ(16, x);
@@ -244,13 +256,15 @@ TEST(XPUTest, CanSortStruct) {
     // std::cout << std::endl;
 
 
-    xpu::copy(ditems, items.data(), NElems);
-
-    xpu::run_kernel<sort_struct>(xpu::n_blocks(1), ditems, NElems, buf, dst);
+    xpu::queue q;
+    q.copy(items.data(), ditems, NElems);
+    q.launch<sort_struct>(xpu::n_blocks(1), ditems, NElems, buf, dst);
 
     key_value_t *hdst = nullptr;
-    xpu::copy(&hdst, dst, 1);
-    xpu::copy(items.data(), hdst, NElems);
+    q.copy(dst, &hdst, 1);
+    q.wait();
+    q.copy(hdst, items.data(), NElems);
+    q.wait();
 
     // for (auto &x : items) {
     //     std::cout << x.key << " ";
@@ -296,13 +310,15 @@ TEST(XPUTest, CanSortFloatsShort) {
     float *buf = xpu::malloc_device<float>(NElems);
     float **dst = xpu::malloc_device<float *>(1);
 
-    xpu::copy(ditems, items.data(), NElems);
-
-    xpu::run_kernel<sort_float>(xpu::n_blocks(1), ditems, NElems, buf, dst);
+    xpu::queue q;
+    q.copy(items.data(), ditems, NElems);
+    q.launch<sort_float>(xpu::n_blocks(1), ditems, NElems, buf, dst);
 
     float *hdst = nullptr;
-    xpu::copy(&hdst, dst, 1);
-    xpu::copy(items.data(), hdst, NElems);
+    q.copy(dst, &hdst, 1);
+    q.wait();
+    q.copy(hdst, items.data(), NElems);
+    q.wait();
 
     // for (auto &x : items) {
     //     std::cout << x << " ";
@@ -342,12 +358,13 @@ void testMergeKernel(size_t M, size_t N) {
     }
     std::sort(&b_h[0], &b_h[0] + b_h.size());
 
-    xpu::copy(a, xpu::h2d);
-    xpu::copy(b, xpu::h2d);
+    xpu::queue q;
 
-    xpu::run_kernel<K>(xpu::n_blocks(1), a.get(), a_h.size(), b.get(), b_h.size(), dst.get());
-
-    xpu::copy(dst, xpu::d2h);
+    q.copy(a, xpu::h2d);
+    q.copy(b, xpu::h2d);
+    q.launch<K>(xpu::n_blocks(1), a.get(), a_h.size(), b.get(), b_h.size(), dst.get());
+    q.copy(dst, xpu::d2h);
+    q.wait();
 
     xpu::h_view h{dst};
     ASSERT_EQ(h.size(), a_h.size() + b_h.size());
@@ -400,10 +417,11 @@ TEST(XPUTest, CanRunBlockScan) {
     xpu::buffer<int> incl{blockSize, xpu::buf_io};
     xpu::buffer<int> excl{blockSize, xpu::buf_io};
 
-    xpu::run_kernel<block_scan>(xpu::n_blocks(1), incl.get(), excl.get());
-
-    xpu::copy(incl, xpu::d2h);
-    xpu::copy(excl, xpu::d2h);
+    xpu::queue q;
+    q.launch<block_scan>(xpu::n_blocks(1), incl.get(), excl.get());
+    q.copy(incl, xpu::d2h);
+    q.copy(excl, xpu::d2h);
+    q.wait();
 
     int inclSum = 1;
     int exclSum = 0;
@@ -450,8 +468,9 @@ TEST(XPUTest, CanSetAndReadCMem) {
 
     xpu::set<test_constant0>(orig);
 
-    xpu::run_kernel<access_cmem_single>(xpu::n_threads(1), out.get());
-    xpu::copy(out, xpu::d2h);
+    xpu::queue q;
+    q.launch<access_cmem_single>(xpu::n_threads(1), out.get());
+    q.copy(out, xpu::d2h);
 
     float3_ result = xpu::h_view(out)[0];
     EXPECT_EQ(orig.x, result.x);
@@ -472,10 +491,13 @@ TEST(XPUTest, CanSetAndReadCMemMultiple) {
     xpu::set<test_constant0>(orig);
     xpu::set<test_constant1>(orig1);
     xpu::set<test_constant2>(orig2);
-    xpu::run_kernel<access_cmem_multiple>(xpu::n_threads(1), out0.get(), out1.get(), out2.get());
-    xpu::copy(out0, xpu::d2h);
-    xpu::copy(out1, xpu::d2h);
-    xpu::copy(out2, xpu::d2h);
+
+    xpu::queue q;
+    q.launch<access_cmem_multiple>(xpu::n_threads(1), out0.get(), out1.get(), out2.get());
+    q.copy(out0, xpu::d2h);
+    q.copy(out1, xpu::d2h);
+    q.copy(out2, xpu::d2h);
+    q.wait();
 
     {
         float3_ result = xpu::h_view(out0)[0];
@@ -508,24 +530,26 @@ void test_thread_position(xpu::dim gpu_block_size, xpu::dim gpu_grid_dim) {
     xpu::buffer<int> grid_dim{nthreads_total * 3, xpu::buf_io};
 
     xpu::grid exec_grid = xpu::n_threads(nthreads);
+    xpu::queue q;
+
     switch (gpu_block_size.ndims()) {
     case 1:
-        xpu::run_kernel<get_thread_idx_1d>(exec_grid, thread_idx.get(), block_dim.get(), block_idx.get(), grid_dim.get());
+        q.launch<get_thread_idx_1d>(exec_grid, thread_idx.get(), block_dim.get(), block_idx.get(), grid_dim.get());
         break;
     case 2:
-        xpu::run_kernel<get_thread_idx_2d>(exec_grid, thread_idx.get(), block_dim.get(), block_idx.get(), grid_dim.get());
+        q.launch<get_thread_idx_2d>(exec_grid, thread_idx.get(), block_dim.get(), block_idx.get(), grid_dim.get());
         break;
     case 3:
-        xpu::run_kernel<get_thread_idx_3d>(exec_grid, thread_idx.get(), block_dim.get(), block_idx.get(), grid_dim.get());
+        q.launch<get_thread_idx_3d>(exec_grid, thread_idx.get(), block_dim.get(), block_idx.get(), grid_dim.get());
         break;
     default:
         FAIL();
         break;
     }
-    xpu::copy(thread_idx, xpu::d2h);
-    xpu::copy(block_dim, xpu::d2h);
-    xpu::copy(block_idx, xpu::d2h);
-    xpu::copy(grid_dim, xpu::d2h);
+    q.copy(thread_idx, xpu::d2h);
+    q.copy(block_dim, xpu::d2h);
+    q.copy(block_idx, xpu::d2h);
+    q.copy(grid_dim, xpu::d2h);
 
     xpu::dim exp_block_dim = (xpu::device::active().backend() == xpu::cpu ? xpu::dim{1, 1, 1} : gpu_block_size);
     xpu::dim exp_grid_dim;
@@ -673,16 +697,20 @@ TEST(XPUTest, CanCallDeviceFuncs) {
 TEST(XPUTest, CanRunTemplatedKernels) {
     xpu::buffer<int> a{1, xpu::buf_io};
 
-    xpu::run_kernel<templated_kernel<0>>(xpu::n_threads(1), a.get());
-    xpu::copy(a, xpu::d2h);
+    xpu::queue q;
+    q.launch<templated_kernel<0>>(xpu::n_threads(1), a.get());
+    q.copy(a, xpu::d2h);
+    q.wait();
     ASSERT_EQ(xpu::h_view{a}[0], 0);
 
-    xpu::run_kernel<templated_kernel<1>>(xpu::n_threads(1), a.get());
-    xpu::copy(a, xpu::d2h);
+    q.launch<templated_kernel<1>>(xpu::n_threads(1), a.get());
+    q.copy(a, xpu::d2h);
+    q.wait();
     ASSERT_EQ(xpu::h_view{a}[0], 1);
 
-    xpu::run_kernel<templated_kernel<42>>(xpu::n_threads(1), a.get());
-    xpu::copy(a, xpu::d2h);
+    q.launch<templated_kernel<42>>(xpu::n_threads(1), a.get());
+    q.copy(a, xpu::d2h);
+    q.wait();
     ASSERT_EQ(xpu::h_view{a}[0], 42);
 }
 

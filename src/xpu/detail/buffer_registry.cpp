@@ -14,7 +14,7 @@ void *buffer_registry::create(size_t size, buffer_type type, void *host_ptr) {
     bool owns_host_ptr = false;
     switch (type) {
     case buf_pinned:
-        ptr = xpu::malloc_host(size);
+        ptr = xpu::malloc_pinned(size);
         if (host_ptr != nullptr) {
             std::memcpy(ptr, host_ptr, size);
         }
@@ -25,7 +25,7 @@ void *buffer_registry::create(size_t size, buffer_type type, void *host_ptr) {
         host_ptr = nullptr;
         break;
     case buf_managed:
-        ptr = xpu::malloc_shared(size);
+        ptr = xpu::malloc_managed(size);
         if (host_ptr != nullptr) {
             std::memcpy(ptr, host_ptr, size);
         }
@@ -33,7 +33,7 @@ void *buffer_registry::create(size_t size, buffer_type type, void *host_ptr) {
         break;
     case buf_io: {
         if (host_ptr == nullptr) {
-            host_ptr = xpu::malloc_host(size);
+            host_ptr = xpu::malloc_pinned(size);
             owns_host_ptr = true;
         }
         xpu::device active_dev = xpu::device::active();

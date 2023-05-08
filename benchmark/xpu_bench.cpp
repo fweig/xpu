@@ -159,7 +159,7 @@ public:
         xpu::run_kernel<Kernel>(xpu::n_blocks(n_blocks), a.get(), b.get(), elems_per_block, c.get());
 
         xpu::copy(c, xpu::d2h);
-        m_timings = xpu::pop_timer();
+        m_timings.merge(xpu::pop_timer());
     }
 
     size_t bytes() { return elems_per_block * n_blocks * 2 * sizeof(float); }
@@ -210,7 +210,7 @@ public:
         xpu::copy(a, xpu::h2d);
         xpu::run_kernel<Kernel>(xpu::n_blocks(n_blocks), a.get(), elems_per_block, b.get(), dst.get());
         xpu::copy(dst, xpu::d2h);
-        m_timings = xpu::pop_timer();
+        m_timings.merge(xpu::pop_timer());
     }
 
     size_t bytes() { return elems_per_block * n_blocks * sizeof(float); }
@@ -222,9 +222,12 @@ template<typename T>
 constexpr size_t sort_bench<T>::elems_per_block;
 
 int main() {
-    setenv("XPU_PROFILE", "1", 1); // always enable profiling in benchmark
+    xpu::settings settings;
+    settings.profile = true;
+    xpu::initialize(settings);
 
-    xpu::initialize();
+    xpu::device_prop props{xpu::device::active()};
+    std::cout << props.name() << std::endl;
 
     benchmark_runner runner;
 

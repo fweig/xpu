@@ -358,12 +358,15 @@ public:
      */
     explicit queue(device);
 
-    void copy(const void *from, void *to, size_t size);
-
     template<typename T>
     void copy(buffer<T>, direction);
 
-    void memset(void *dst, int value, size_t size);
+    template<typename T>
+    void copy(const T *from, T *to, size_t size) { memcpy(to, from, size * sizeof(T)); }
+
+    void memcpy(void *dst, const void *src, size_t size_bytes);
+
+    void memset(void *dst, int value, size_t size_bytes);
 
     template<typename T>
     void memset(buffer<T>, int value);

@@ -13,18 +13,18 @@ inline xpu::queue::queue() : m_handle(std::make_shared<detail::queue_handle>()) 
 inline xpu::queue::queue(xpu::device dev) : m_handle(std::make_shared<detail::queue_handle>(dev.impl())) {
 }
 
-inline void xpu::queue::copy(const void *from, void *to, size_t size_bytes) {
-    if (from == nullptr || to == nullptr) {
-        throw std::runtime_error("xpu::queue::copy: invalid pointer");
+inline void xpu::queue::memcpy(void *dst, const void *src,  size_t size_bytes) {
+    if (dst == nullptr || src == nullptr) {
+        throw std::runtime_error("xpu::queue::memcpy: invalid pointer");
     }
 
     if (!detail::config::profile) {
-        do_copy(from, to, size_bytes, nullptr);
+        do_copy(src, dst, size_bytes, nullptr);
     } else {
         double ms;
-        do_copy(from, to, size_bytes, &ms);
+        do_copy(src, dst, size_bytes, &ms);
 
-        ptr_prop src_prop{from};
+        ptr_prop src_prop{src};
         detail::direction_t dir = src_prop.type() == xpu::mem_type::host ? detail::dir_h2d : detail::dir_d2h;
         detail::add_memcpy_time(ms, dir, size_bytes);
     }

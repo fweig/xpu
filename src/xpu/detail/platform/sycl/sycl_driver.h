@@ -14,7 +14,6 @@ class sycl_driver : public backend_base {
 public:
     virtual ~sycl_driver() {}
 
-    sycl::queue default_queue();
     sycl::queue get_queue(void *);
 
     error setup() override;
@@ -27,15 +26,12 @@ public:
     error destroy_queue(void *) override;
     error synchronize_queue(void *) override;
 
-    error memcpy(void *, const void *, size_t) override;
     error memcpy_async(void *, const void *, size_t, void *, double *) override;
-    error memset(void *, int, size_t) override;
     error memset_async(void *, int, size_t, void *, double *) override;
 
     error num_devices(int *) override;
     error set_device(int) override;
     error get_device(int *) override;
-    error device_synchronize() override;
     error get_properties(device_prop *, int) override;
     error get_ptr_prop(const void *, int *, mem_type *) override;
     error meminfo(size_t *, size_t *) override;
@@ -44,7 +40,9 @@ public:
 
 private:
     sycl::property_list m_prop_list;
-    sycl::queue m_default_queue;
+    sycl::device m_device_obj;
+    sycl::context m_context;
+    // sycl::queue m_default_queue;
     int m_device = -1;
 
     std::vector<std::unique_ptr<sycl::queue>> m_queues;

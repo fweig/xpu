@@ -57,11 +57,6 @@ error cpu_driver::synchronize_queue(void * /*queue*/) {
     return SUCCESS;
 }
 
-error cpu_driver::memcpy(void *dst, const void *src, size_t bytes) {
-    std::memcpy(dst, src, bytes);
-    return SUCCESS;
-}
-
 error cpu_driver::memcpy_async(void *dst, const void *src, size_t bytes, void * /*queue*/, double *ms) {
     if (ms == nullptr) {
         std::memcpy(dst, src, bytes);
@@ -71,11 +66,6 @@ error cpu_driver::memcpy_async(void *dst, const void *src, size_t bytes, void * 
         auto end = std::chrono::high_resolution_clock::now();
         *ms = std::chrono::duration<double, std::milli>(end - start).count();
     }
-    return SUCCESS;
-}
-
-error cpu_driver::memset(void *dst, int ch, size_t bytes) {
-    std::memset(dst, ch, bytes);
     return SUCCESS;
 }
 
@@ -102,10 +92,6 @@ error cpu_driver::set_device(int device) {
 
 error cpu_driver::get_device(int *device) {
     *device = 0;
-    return SUCCESS;
-}
-
-error cpu_driver::device_synchronize() {
     return SUCCESS;
 }
 

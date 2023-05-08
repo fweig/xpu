@@ -83,12 +83,6 @@ public:
         return CUHIP(StreamSynchronize)(static_cast<CUHIP(Stream_t)>(queue));
     }
 
-    error memcpy(void *dst, const void *src, size_t bytes) override {
-        error err = CUHIP(Memcpy)(dst, src, bytes, CUHIP(MemcpyDefault));
-        device_synchronize();
-        return err;
-    }
-
     error memcpy_async(void *dst, const void *src, size_t bytes, void *queue_handle, double *ms) override {
         CUHIP(Stream_t) queue = static_cast<CUHIP(Stream_t)>(queue_handle);
         if (ms == nullptr) {
@@ -101,10 +95,6 @@ public:
             *ms = timer.elapsed();
             return CUHIP(GetLastError)();
         }
-    }
-
-    error memset(void *dst, int ch, size_t bytes) override {
-        return CUHIP(Memset)(dst, ch, bytes);
     }
 
     error memset_async(void *dst, int ch, size_t bytes, void *queue_handle, double *ms) override {
@@ -131,10 +121,6 @@ public:
 
     error get_device(int *device) override {
         return CUHIP(GetDevice)(device);
-    }
-
-    error device_synchronize() override {
-        return CUHIP(DeviceSynchronize)();
     }
 
     error get_properties(device_prop *props, int device) override {

@@ -4,37 +4,33 @@
 
 using namespace xpu::detail;
 
-sycl::queue sycl_driver::default_queue() {
-    return m_default_queue;
-}
-
 error sycl_driver::setup() {
     if (config::profile) {
         m_prop_list = sycl::property_list{sycl::property::queue::enable_profiling(), sycl::property::queue::in_order()};
     } else {
         m_prop_list = sycl::property_list{sycl::property::queue::in_order()};
     }
-    m_default_queue = sycl::queue(sycl::default_selector_v, m_prop_list);
+    m_context = sycl::context{m_device_obj};
     return 0;
 }
 
 error sycl_driver::malloc_device(void **ptr, size_t bytes) {
-    *ptr = sycl::malloc_device(bytes, m_default_queue);
+    *ptr = sycl::malloc_device(bytes, m_device_obj, m_context);
     return 0;
 }
 
 error sycl_driver::malloc_host(void **ptr, size_t bytes) {
-    *ptr = sycl::malloc_host(bytes, m_default_queue);
+    *ptr = sycl::malloc_host(bytes, m_context);
     return 0;
 }
 
 error sycl_driver::malloc_shared(void **ptr, size_t bytes) {
-    *ptr = sycl::malloc_shared(bytes, m_default_queue);
+    *ptr = sycl::malloc_shared(bytes, m_device_obj, m_context);
     return 0;
 }
 
 error sycl_driver::free(void *ptr) {
-    sycl::free(ptr, m_default_queue);
+    sycl::free(ptr, m_context);
     return 0;
 }
 
@@ -60,11 +56,6 @@ error sycl_driver::synchronize_queue(void *handle) {
     return 0;
 }
 
-error sycl_driver::memcpy(void *dst, const void *src, size_t bytes) {
-    m_default_queue.memcpy(dst, src, bytes).wait();
-    return 0;
-}
-
 error sycl_driver::memcpy_async(void *dst, const void *src, size_t bytes, void *handle, double *ms) {
     auto q = get_queue(handle);
     if (ms == nullptr) {
@@ -76,11 +67,6 @@ error sycl_driver::memcpy_async(void *dst, const void *src, size_t bytes, void *
                     ev.get_profiling_info<sycl::info::event_profiling::command_start>();
         *ms = ns / 1000000.0;
     }
-    return 0;
-}
-
-error sycl_driver::memset(void *dst, int ch, size_t bytes) {
-    m_default_queue.memset(dst, ch, bytes).wait();
     return 0;
 }
 
@@ -104,18 +90,14 @@ error sycl_driver::num_devices(int *devices) {
 }
 
 error sycl_driver::set_device(int device) {
-    m_default_queue = sycl::queue(sycl::device::get_devices()[device], m_prop_list);
+    m_device_obj = sycl::device::get_devices()[device];
+    m_context = sycl::context{m_device_obj};
     m_device = device;
     return 0;
 }
 
 error sycl_driver::get_device(int *device) {
     *device = m_device;
-    return 0;
-}
-
-error sycl_driver::device_synchronize() {
-    m_default_queue.wait();
     return 0;
 }
 
@@ -141,7 +123,7 @@ error sycl_driver::get_properties(device_prop *props, int device) {
 
 error sycl_driver::get_ptr_prop(const void *ptr, int *device, mem_type *type) {
     try {
-        sycl::usm::alloc alloc = sycl::get_pointer_type(ptr, m_default_queue.get_context());
+        sycl::usm::alloc alloc = sycl::get_pointer_type(ptr, m_context);
 
         switch (alloc) {
         case sycl::usm::alloc::device:
@@ -163,7 +145,7 @@ error sycl_driver::get_ptr_prop(const void *ptr, int *device, mem_type *type) {
             return 0;
         }
 
-        sycl::device dev = sycl::get_pointer_device(ptr, m_default_queue.get_context());
+        sycl::device dev = sycl::get_pointer_device(ptr, m_context);
         // XPU_LOG("sycl_driver::pointer_get_device: %s", dev.get_info<sycl::info::device::name>().c_str());
         *device = get_device_id(dev);
     } catch (sycl::exception &e) {
@@ -174,7 +156,7 @@ error sycl_driver::get_ptr_prop(const void *ptr, int *device, mem_type *type) {
 }
 
 error sycl_driver::meminfo(size_t *free, size_t *total) {
-    sycl::device device = m_default_queue.get_device();
+    sycl::device device = m_device_obj;
     *free = device.get_info<sycl::info::device::global_mem_size>(); // no way to get available memory afaik yet
     *total = device.get_info<sycl::info::device::global_mem_size>();
     return 0;

@@ -366,7 +366,7 @@ struct xpu::detail::action_runner<xpu::detail::kernel_tag, K, void(K::*)(xpu::ke
         XPU_LOG("Calling kernel '%s' [block_dim = (%d, %d, %d), grid_dim = (%d, %d, %d)] with SYCL driver.", type_name<K>(), block_dim.x, block_dim.y, block_dim.z, grid_dim.x, grid_dim.y, grid_dim.z);
 
         auto *driver = static_cast<sycl_driver *>(backend::get(sycl));
-        sycl::queue queue = (launch_info.queue_handle == nullptr ? driver->default_queue() : driver->get_queue(launch_info.queue_handle));
+        sycl::queue queue = driver->get_queue(launch_info.queue_handle);
 
         sycl::range<3> global_range{size_t(grid_dim.x), size_t(grid_dim.y), size_t(grid_dim.z)};
         sycl::range<3> local_range{size_t(block_dim.x), size_t(block_dim.y), size_t(block_dim.z)};

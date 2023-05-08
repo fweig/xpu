@@ -66,9 +66,6 @@ public:
     void *malloc_shared(size_t);
     void free(void *);
 
-    void memcpy(void *, const void *, size_t);
-    void memset(void *, int, size_t);
-
     std::vector<detail::device> get_devices() { return m_devices; }
     detail::device active_device() const { return m_active_device; }
     detail::device get_device(int id) const { return m_devices.at(id); }

@@ -20,15 +20,12 @@ public:
     error destroy_queue(void *) override;
     error synchronize_queue(void *) override;
 
-    error memcpy(void *, const void *, size_t) override;
     error memcpy_async(void *, const void *, size_t, void *, double *) override;
-    error memset(void *, int, size_t) override;
     error memset_async(void *, int, size_t, void *, double *) override;
 
     error num_devices(int *) override;
     error set_device(int) override;
     error get_device(int *) override;
-    error device_synchronize() override;
     error get_properties(device_prop *, int) override;
     error get_ptr_prop(const void *, int *, mem_type *) override;
 

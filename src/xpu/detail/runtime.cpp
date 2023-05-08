@@ -93,7 +93,6 @@ void runtime::initialize(const settings &settings) {
     xpu::detail::device_prop props;
     DRIVER_CALL(get_properties(&props, m_active_device.device_nr));
     DRIVER_CALL(set_device(m_active_device.device_nr));
-    DRIVER_CALL(device_synchronize());
 
     if (m_active_device.backend != cpu) {
         XPU_LOG("Selected %s(arch = %s) as active device. (id = %d)", props.name.c_str(), props.arch.c_str(), m_active_device.id);
@@ -135,32 +134,6 @@ void *runtime::malloc_shared(size_t bytes) {
 
 void runtime::free(void *ptr) {
     DRIVER_CALL(free(ptr));
-}
-
-void runtime::memcpy(void *dst, const void *src, size_t bytes) {
-    if (logger::instance().active()) {
-        xpu::ptr_prop src_prop{src};
-        xpu::ptr_prop dst_prop{dst};
-
-        device_prop from;
-        DRIVER_CALL_I(src_prop.backend(), get_properties(&from, src_prop.device().device_nr()));
-
-        device_prop to;
-        DRIVER_CALL_I(dst_prop.backend(), get_properties(&to, dst_prop.device().device_nr()));
-
-        XPU_LOG("Copy %lu bytes from %s to %s.", bytes, from.name.c_str(), to.name.c_str());
-    }
-    DRIVER_CALL(memcpy(dst, src, bytes));
-}
-
-void runtime::memset(void *dst, int ch, size_t bytes) {
-    if (logger::instance().active()) {
-        xpu::ptr_prop dst_prop{dst};
-        device_prop dev;
-        DRIVER_CALL_I(dst_prop.backend(), get_properties(&dev, dst_prop.device().device_nr()));
-        XPU_LOG("Setting %lu bytes on %s to %d.", bytes, dev.name.c_str(), ch);
-    }
-    DRIVER_CALL(memset(dst, ch, bytes));
 }
 
 xpu::detail::device_prop runtime::device_properties(int id) {

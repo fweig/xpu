@@ -68,7 +68,7 @@ void xpu::detail::add_kernel_time(std::string_view name, double ms) {
     for (auto &t : T.stack) {
         auto &k = t.ts.kernels;
         auto it = std::find_if(k.begin(), k.end(),
-            [&](const auto &k) { return k.name == name; });
+            [&](const auto &krnl) { return krnl.name == name; });
         if (it == k.end()) {
             k.emplace_back(name, ms);
         } else {
@@ -86,7 +86,7 @@ void xpu::detail::add_bytes_kernel(std::string_view name, size_t bytes) {
     for (auto &t : T.stack) {
         auto &k = t.ts.kernels;
         auto it = std::find_if(k.begin(), k.end(),
-            [&](const auto &k) { return k.name == name; });
+            [&](const auto &krnl) { return krnl.name == name; });
 
         if (it == k.end()) {
             k.emplace_back(name);

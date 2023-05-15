@@ -93,14 +93,14 @@ XPU_D void sort_struct::operator()(context &ctx, key_value_t *items, int N, key_
 XPU_EXPORT(merge);
 XPU_D void merge::operator()(context &ctx, const float *a, size_t size_a, const float *b, size_t size_b, float *dst) {
 #ifndef DONT_TEST_BLOCK_SORT
-    merge_t(ctx.pos(), ctx.smem()).merge(a, size_a, b, size_b, dst, [](float a, float b) { return a < b; });
+    merge_t(ctx.pos(), ctx.smem()).merge(a, size_a, b, size_b, dst, [](float a_, float b_) { return a_ < b_; });
 #endif
 }
 
 XPU_EXPORT(merge_single);
 XPU_D void merge_single::operator()(context &ctx, const float *a, size_t size_a, const float *b, size_t size_b, float *dst) {
 #ifndef DONT_TEST_BLOCK_SORT
-    merge_t(ctx.pos(), ctx.smem()).merge(a, size_a, b, size_b, dst, [](float a, float b) { return a < b; });
+    merge_t(ctx.pos(), ctx.smem()).merge(a, size_a, b, size_b, dst, [](float a_, float b_) { return a_ < b_; });
 #endif
 }
 

@@ -95,8 +95,8 @@ inline xpu::device::device(std::string_view xpuid) {
     m_impl = detail::runtime::instance().get_device(xpuid);
 }
 
-inline xpu::device::device(driver_t backend, int device) {
-    m_impl = detail::runtime::instance().get_device(static_cast<detail::driver_t>(backend), device);
+inline xpu::device::device(driver_t backend, int device_) {
+    m_impl = detail::runtime::instance().get_device(static_cast<detail::driver_t>(backend), device_);
 }
 
 inline xpu::device::device(int id) {

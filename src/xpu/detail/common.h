@@ -125,8 +125,8 @@ struct kernel_timings {
     size_t bytes_input = 0;
 
     kernel_timings() = default;
-    kernel_timings(std::string_view name) : name(name) {}
-    kernel_timings(std::string_view name, double ms) : name(name) { times.emplace_back(ms); }
+    kernel_timings(std::string_view name_) : name(name_) {}
+    kernel_timings(std::string_view name_, double ms) : name(name_) { times.emplace_back(ms); }
 };
 
 struct timings {
@@ -148,7 +148,7 @@ struct timings {
     std::vector<timings> children;
 
     timings() = default;
-    timings(std::string_view name) : name(name) {}
+    timings(std::string_view name_) : name(name_) {}
 
     void merge(const timings &other);
 };

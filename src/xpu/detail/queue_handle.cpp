@@ -7,7 +7,7 @@ using namespace xpu::detail;
 queue_handle::queue_handle() : queue_handle(runtime::instance().active_device()) {
 }
 
-queue_handle::queue_handle(device dev) : dev(dev) {
+queue_handle::queue_handle(device dev_) : dev(dev_) {
     backend::call(dev.backend, &backend_base::create_queue, &handle, dev.device_nr);
 }
 

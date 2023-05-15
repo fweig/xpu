@@ -99,8 +99,8 @@ buffer_data buffer_registry::get(const void *ptr) {
         throw std::runtime_error("Buffer not found");
     }
 
-    for (auto &it : m_stacks) {
-        for (auto &block : it.second->alloced_blocks) {
+    for (auto &stack : m_stacks) {
+        for (auto &block : stack.second->alloced_blocks) {
             if (block.first == ptr) {
                 return buffer_data{
                     const_cast<void *>(ptr),
@@ -161,10 +161,10 @@ void buffer_registry::stack_pop(device dev, void *ptr) {
         return;
     }
 
-    for (auto it = stack->alloced_blocks.begin(); it != stack->alloced_blocks.end(); it++) {
-        if (it->first == ptr) {
+    for (auto blocks = stack->alloced_blocks.begin(); blocks != stack->alloced_blocks.end(); blocks++) {
+        if (blocks->first == ptr) {
             // Erase this block and all blocks after it
-            stack->alloced_blocks.erase(it, stack->alloced_blocks.end());
+            stack->alloced_blocks.erase(blocks, stack->alloced_blocks.end());
             return;
         }
     }

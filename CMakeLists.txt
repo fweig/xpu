@@ -4,7 +4,7 @@ project(xpu)
 
 set(XPU_BUILD_TESTS OFF CACHE BOOL "Build xpu unit tests.")
 set(XPU_BUILD_EXAMPLES OFF CACHE BOOL "Build xpu examples.")
-set(CPU_BUILD_DOCS OFF CACHE BOOL "Generate xpu documentation.")
+set(XPU_BUILD_DOCS OFF CACHE BOOL "Generate xpu documentation.")
 if (APPLE)
     set(XPU_ENABLE_OPENMP OFF CACHE BOOL "Use OpenMP for kernel parallelization.")
 else()

@@ -213,7 +213,9 @@ install(TARGETS xpu
 )
 
 install(DIRECTORY src/ TYPE INCLUDE
-    FILES_MATCHING PATTERN "*.h"
+    FILES_MATCHING
+        PATTERN "*.h"
+        PATTERN "*.tpp"
 )
 
 if (XPU_ENABLE_CUDA)

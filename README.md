@@ -1,4 +1,4 @@
-# Table of Contents
+# xpu
 
 - [Introduction](#introduction)
     - [Example](#example)

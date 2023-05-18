@@ -31,6 +31,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+      - name: Install Dependencies
+         run: sudo apt-get install doxygen graphviz cmake -y
+         shell: bash
+      - name: Configure
+        run: cmake -S . -B build -DXPU_BUILD_DOCS=ON
+        shell: bash
+      - name: Generate Docs
+        run: cmake --build build --target docs
+        shell: bash
       - name: Setup Pages
         uses: actions/configure-pages@v3
       - name: Upload artifact

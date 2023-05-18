@@ -119,6 +119,7 @@ cd docs
 firefox docs/html/index.html
 ```
 
+The API reference is also available online at [https://fweig.github.io/xpu/](https://fweig.github.io/xpu/) for the current master.
 Additionally, there's the [wiki](https://github.com/fweig/xpu/wiki) that contains more detailed guides and examples about the library.
 
 *Note*: Both wiki and doxygen are still incomplete and under construction. If you have any questions, feel free to ask them in the [issues](https://github.com/fweig/xpu/issues/new).

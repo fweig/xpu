@@ -3,6 +3,7 @@ find_package(Doxygen REQUIRED)
 set(DOXYGEN_EXTRACT_ALL YES)
 set(DOXYGEN_SHOW_INCLUDE_FILES NO)
 set(DOXYGEN_SHOW_NAMESPACES YES)
+set(DOXYGEN_HAVE_DOT NO)
 set(DOXYGEN_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 doxygen_add_docs(docs
@@ -10,6 +11,7 @@ doxygen_add_docs(docs
     defines.h
     device.h
     host.h
+    ../../docs/namespace.dox
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/xpu
     COMMENT "Generate documentation"
 )

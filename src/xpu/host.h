@@ -328,7 +328,7 @@ private:
 };
 
 /**
- * @class command queue for a device.
+ * @brief command queue for a device.
  */
 class queue {
 
@@ -369,6 +369,7 @@ template<typename Kernel>
 const char *get_name();
 
 /**
+ * @deprecated
  * Deprecated. Use xpu::queue::launch instead.
  */
 template<typename Kernel, typename... Args>
@@ -376,6 +377,7 @@ void run_kernel(grid params, Args&&... args);
 
 template<typename Func, typename... Args>
 void call(Args&&... args);
+
 
 template<typename C>
 void set(const typename C::data_t &symbol);

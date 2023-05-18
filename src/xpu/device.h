@@ -1,3 +1,13 @@
+/**
+ * @file device.h
+ * @brief Device-side API.
+ *
+ * This file contains the device-side API of xpu.
+ *
+ * Include as `#include <xpu/device.h>`.
+ *
+ * @note This file is safe to include from both host and device code.
+ */
 #ifndef XPU_DEVICE_H
 #define XPU_DEVICE_H
 

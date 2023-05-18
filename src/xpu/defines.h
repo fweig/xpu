@@ -1,3 +1,10 @@
+/**
+ * @file defines.h
+ *
+ * @brief Defines for xpu.
+ *
+ * Include as `#include <xpu/defines.h>`.
+ */
 #ifndef XPU_DEFINES_H
 #define XPU_DEFINES_H
 

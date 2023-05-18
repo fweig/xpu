@@ -1,3 +1,11 @@
+/**
+ * @file host.h
+ * @brief Host API.
+ *
+ * This file contains the host API of xpu.
+ *
+ * Include as `#include <xpu/host.h>`.
+ */
 #ifndef XPU_HOST_H
 #define XPU_HOST_H
 

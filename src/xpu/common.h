@@ -1,3 +1,12 @@
+/**
+ * @file common.h
+ *
+ * @brief Common definitions for xpu.
+ *
+ * This file contains common definitions used by device and host code.
+ *
+ * Include as `#include <xpu/common.h>`.
+ */
 #ifndef XPU_COMMON_H
 #define XPU_COMMON_H
 

@@ -16,6 +16,9 @@
 #include <type_traits>
 #include <vector>
 
+/**
+ * @namespace xpu
+ */
 namespace xpu {
 
 /**
@@ -324,6 +327,9 @@ private:
     detail::device_prop m_prop;
 };
 
+/**
+ * @class command queue for a device.
+ */
 class queue {
 
 public:

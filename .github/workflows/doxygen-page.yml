@@ -32,8 +32,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Install Dependencies
-         run: sudo apt-get install doxygen graphviz cmake -y
-         shell: bash
+        run: sudo apt-get install doxygen graphviz cmake -y
+        shell: bash
       - name: Configure
         run: cmake -S . -B build -DXPU_BUILD_DOCS=ON
         shell: bash

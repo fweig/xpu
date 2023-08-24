@@ -24,7 +24,7 @@ struct cmem_buffer {
 
 template<typename C>
 struct cmem_accessor {
-    using accessor_t = sycl::accessor<typename C::data_t, 0, sycl::access::mode::read, sycl::access::target::constant_buffer>;
+    using accessor_t = sycl::accessor<typename C::data_t, 0, sycl::access::mode::read, sycl::access::target::device>;
     accessor_t m_accessor;
 
     XPU_D cmem_accessor(cmem_buffer<C> &buffer, sycl::handler &handler)

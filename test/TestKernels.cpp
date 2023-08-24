@@ -114,6 +114,30 @@ XPU_D void block_scan::operator()(context &ctx, int *incl, int *excl) {
 #endif
 }
 
+XPU_EXPORT(block_reduce);
+XPU_D void block_reduce::operator()(context &ctx, int *sum, int *any) {
+#ifndef DONT_TEST_BLOCK_FUNCS
+    reduce_t reduce{ctx.pos(), ctx.smem()};
+    int s = reduce.sum(1);
+    if (ctx.thread_idx_x() == 0) {
+        *sum = s;
+    }
+    xpu::barrier(ctx.pos());
+
+    // avoid unused variable warning
+    static_cast<void>(any);
+#if !XPU_IS_SYCL
+    int test = ctx.thread_idx_x() == 0;
+    // printf("tix = %d\n", ctx.thread_idx_x());
+    test = reduce.reduce(test, [](int a, int b) { return int(a || b); });
+    if (ctx.thread_idx_x() == 0) {
+        *any = test;
+    }
+    xpu::barrier(ctx.pos());
+#endif
+#endif
+}
+
 XPU_EXPORT(access_cmem_single);
 XPU_D void access_cmem_single::operator()(context &ctx, float3_ *out) {
     if (ctx.pos().thread_idx_x() > 0) {

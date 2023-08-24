@@ -522,8 +522,24 @@ public:
     XPU_D void inclusive_sum(T input, T &output, T initial_value, ScanOp scan_op);
 };
 
-template<typename Key, typename KeyValueType, int BlockSize, int ItemsPerThread=8, xpu::driver_t Impl=XPU_COMPILATION_TARGET>
-class block_sort {
+template <typename T, int BlockSize, xpu::driver_t Impl = XPU_COMPILATION_TARGET>
+class block_reduce
+{
+
+public:
+    struct storage_t {};
+
+    XPU_D block_reduce(tpos &, storage_t &);
+
+    XPU_D T sum(T input);
+
+    template<typename ReduceOp>
+    XPU_D T reduce(T input, ReduceOp reduce_op);
+};
+
+template <typename Key, typename KeyValueType, int BlockSize, int ItemsPerThread = 8, xpu::driver_t Impl = XPU_COMPILATION_TARGET>
+class block_sort
+{
 
 public:
     struct storage_t {};

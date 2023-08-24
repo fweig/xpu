@@ -181,6 +181,33 @@ private:
 
 };
 
+template<typename T, int BlockSize>
+class xpu::block_reduce<T, BlockSize, xpu::sycl> {
+
+public:
+    struct storage_t {};
+
+    XPU_D block_reduce(tpos &pos, storage_t &) : m_pos(pos) {}
+
+    XPU_D T sum(T input) {
+        detail::tpos_impl &impl = m_pos.impl(detail::internal_fn);
+        return sycl::reduce_over_group(impl.group(), input, sycl::plus<T>{});
+    }
+
+// Disable on SYCL until I figure out how to add a custom reduction operator.
+#if !XPU_IS_SYCL
+    template<typename ReduceOp>
+    XPU_D T reduce(T input, ReduceOp op) {
+        detail::tpos_impl &impl = m_pos.impl(detail::internal_fn);
+        return sycl::reduce_over_group(impl.group(), input, op);
+    }
+#endif
+
+private:
+    tpos &m_pos;
+
+};
+
 template<typename Key, typename T, int BlockSize, int ItemsPerThread>
 class xpu::block_sort<Key, T, BlockSize, ItemsPerThread, xpu::sycl> {
 

@@ -12,11 +12,13 @@
 
 #if XPU_IS_CUDA
 #include <cub/block/block_scan.cuh>
+#include <cub/block/block_reduce.cuh>
 #include <cub/block/block_radix_sort.cuh>
 #elif XPU_IS_HIP
 #include <hip/hip_runtime.h>
 // #include <hipcub/hipcub.hpp> // FIXME: including hibcub main header sometimes crashes HIP clang...
 #include <hipcub/block/block_scan.hpp>
+#include <hipcub/block/block_reduce.hpp>
 #include <hipcub/block/block_radix_sort.hpp>
 #else
 #error "Internal XPU error: This should never happen."
@@ -338,6 +340,40 @@ public:
 
 private:
     block_scan_impl impl;
+
+};
+
+template<typename T, int BlockSize>
+class block_reduce<T, BlockSize, XPU_COMPILATION_TARGET> {
+
+private:
+    using impl_t = detail::cub::BlockReduce<T, BlockSize>;
+
+public:
+    using storage_t = typename impl_t::TempStorage;
+
+    XPU_D block_reduce(tpos &, storage_t &st) : impl(st) {}
+
+    /**
+     * @brief Compute the sum of all values in the block.
+     *
+     * @param input The value to be summed.
+     * @return The sum of all values in the block to thread 0. Return value to other threads is undefined.
+     */
+    XPU_D T sum(T input) { return impl.Sum(input); }
+
+    /**
+     * @brief Compute reduction of all values in the block.
+     *
+     * @param input The value to be reduced.
+     * @param reduce_op The reduction operation.
+     * @return The reduction of all values in the block to thread 0. Return value to other threads is undefined.
+     */
+    template<typename ReduceOp>
+    XPU_D T reduce(T input, ReduceOp reduce_op) { return impl.Reduce(input, reduce_op); }
+
+private:
+    impl_t impl;
 
 };
 

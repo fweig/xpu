@@ -191,6 +191,13 @@ struct block_scan : xpu::kernel<TestKernels> {
     XPU_D void operator()(context &, int *, int *);
 };
 
+struct block_reduce : xpu::kernel<TestKernels> {
+    using reduce_t = xpu::block_reduce<int, block_size::value.x>;
+    using shared_memory = reduce_t::storage_t;
+    using context = xpu::kernel_context<shared_memory>;
+    XPU_D void operator()(context &, int *, int *);
+};
+
 struct access_cmem_single : xpu::kernel<TestKernels> {
     using constants = xpu::cmem<test_constant0>;
     using context = xpu::kernel_context<xpu::no_smem, constants>;

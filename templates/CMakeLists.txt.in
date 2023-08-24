@@ -24,6 +24,8 @@ if ("@DriverType@" STREQUAL "Hip")
         add_definitions(-DNDEBUG)
     endif()
 
+    add_compile_options(-std=c++17)
+
     # Hip sets some clang flags that results in warnings
     add_compile_options(-Qunused-arguments)
     set(GPU_TARGETS "@XPU_HIP_ARCH@")

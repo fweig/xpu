@@ -414,6 +414,32 @@ TEST(XPUTest, CanRunBlockScan) {
     }
 }
 
+TEST(XPUTest, CanRunBlockReduce) {
+#ifdef DONT_TEST_BLOCK_FUNCS
+    GTEST_SKIP();
+#endif
+    // Skip on SYCL backend, because compilation fails with reduction for some reason...
+    if (xpu::device::active().backend() == xpu::sycl) {
+        GTEST_SKIP();
+    }
+    size_t blockSize = xpu::device::active().backend() == xpu::cpu ? 1 : 64;
+
+    xpu::buffer<int> sum{1, xpu::buf_io};
+    xpu::buffer<int> any{1, xpu::buf_io};
+
+    xpu::queue q;
+    q.launch<block_reduce>(xpu::n_blocks(1), sum.get(), any.get());
+    q.copy(sum, xpu::d2h);
+    q.copy(any, xpu::d2h);
+    q.wait();
+
+    xpu::h_view sum_h{sum};
+    xpu::h_view any_h{any};
+
+    ASSERT_EQ(sum_h[0], blockSize);
+    ASSERT_EQ(any_h[0], 1);
+}
+
 TEST(XPUTest, CanSetAndReadCMem) {
     float3_ orig{1, 2, 3};
     xpu::buffer<float3_> out{1, xpu::buf_io};

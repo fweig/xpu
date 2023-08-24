@@ -274,6 +274,21 @@ public:
 
 };
 
+template<typename T, int BlockSize>
+class block_reduce<T, BlockSize, cpu> {
+
+public:
+    struct storage_t {};
+
+    block_reduce(tpos &, storage_t &) {}
+
+    T sum(T input) { return input; }
+
+    template<typename ReduceOp>
+    T reduce(T input, ReduceOp /*reduce_op*/) { return input; }
+
+};
+
 template<typename Key, typename KeyValueType, int BlockSize, int ItemsPerThread>
 class block_sort<Key, KeyValueType, BlockSize, ItemsPerThread, cpu> {
 

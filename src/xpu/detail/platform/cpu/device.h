@@ -260,6 +260,9 @@ class block_scan<T, BlockSize, cpu> {
 public:
     struct storage_t {};
 
+    template <typename ContextT>
+    XPU_D block_scan(ContextT &, storage_t &) {}
+
     XPU_D block_scan(tpos &, storage_t &) {}
 
     XPU_D void exclusive_sum(T /*input*/, T &output) { output = T{0}; }

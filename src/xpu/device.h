@@ -502,12 +502,17 @@ XPU_D float int_as_float(int val);
 
 XPU_D void barrier(tpos &);
 
+template <typename ContextT>
+XPU_D void barrier(ContextT &ctx) { barrier(ctx.pos()); }
 
 template<typename T, int BlockSize, xpu::driver_t Impl=XPU_COMPILATION_TARGET>
 class block_scan {
 
 public:
     struct storage_t {};
+
+    template<typename ContextT>
+    XPU_D block_scan(ContextT &ctx, storage_t &storage);
 
     XPU_D block_scan(tpos &, storage_t &);
 
@@ -528,6 +533,9 @@ class block_reduce
 
 public:
     struct storage_t {};
+
+    template<typename ContextT>
+    XPU_D block_reduce(ContextT &ctx, storage_t &storage);
 
     XPU_D block_reduce(tpos &, storage_t &);
 

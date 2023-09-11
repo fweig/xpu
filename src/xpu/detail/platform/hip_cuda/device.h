@@ -322,6 +322,9 @@ public:
         typename block_scan_impl::TempStorage scanTemp;
     };
 
+    template <typename ContextT>
+    XPU_D block_scan(ContextT &, storage_t &st) : impl(st.scanTemp) {}
+
     XPU_D block_scan(tpos &, storage_t &st) : impl(st.scanTemp) {}
 
     XPU_D void exclusive_sum(T input, T &output) { impl.ExclusiveSum(input, output); }
@@ -351,6 +354,9 @@ private:
 
 public:
     using storage_t = typename impl_t::TempStorage;
+
+    template <typename ContextT>
+    XPU_D block_reduce(ContextT &, storage_t &st) : impl(st) {}
 
     XPU_D block_reduce(tpos &, storage_t &st) : impl(st) {}
 

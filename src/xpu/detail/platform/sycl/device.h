@@ -152,6 +152,9 @@ class xpu::block_scan<T, BlockSize, xpu::sycl> {
 public:
     struct storage_t {};
 
+    template <typename ContextT>
+    XPU_D block_scan(ContextT &ctx, storage_t &) : m_pos(ctx.pos()) {}
+
     XPU_D block_scan(tpos &pos, storage_t &) : m_pos(pos) {}
 
     XPU_D void exclusive_sum(T input, T &output) {
@@ -186,6 +189,9 @@ class xpu::block_reduce<T, BlockSize, xpu::sycl> {
 
 public:
     struct storage_t {};
+
+    template <typename ContextT>
+    XPU_D block_reduce(ContextT &ctx, storage_t &) : m_pos(ctx.pos()) {}
 
     XPU_D block_reduce(tpos &pos, storage_t &) : m_pos(pos) {}
 

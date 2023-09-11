@@ -276,6 +276,15 @@ private:
 
 };
 
+// =================================================================================================
+// Math functions
+//
+// Interface is based on CUDA math functions
+// https://docs.nvidia.com/cuda/cuda-math-api/group__CUDA__MATH__SINGLE.html#group__CUDA__MATH__SINGLE
+//
+// Note: Functions not supported in SYCL or HIP were removed.
+// =================================================================================================
+
 XPU_D constexpr float pi();
 XPU_D constexpr float pi_2();
 XPU_D constexpr float pi_4();
@@ -500,21 +509,53 @@ XPU_D unsigned int atomic_xor_block(unsigned int *addr, unsigned int val);
 XPU_D int float_as_int(float val);
 XPU_D float int_as_float(int val);
 
+
+/**
+ * @brief Sync all threads in a block.
+ */
 XPU_D void barrier(tpos &);
 
+/**
+ * @brief Sync all threads in a block.
+ *
+ * @note This function is a shortcut for `barrier(ctx.pos())`.
+ */
 template <typename ContextT>
 XPU_D void barrier(ContextT &ctx) { barrier(ctx.pos()); }
 
+/**
+ * @brief Parallel scan inside a block.
+ */
 template<typename T, int BlockSize, xpu::driver_t Impl=XPU_COMPILATION_TARGET>
 class block_scan {
 
 public:
+    /**
+     * @brief Temporary storage for the block scan. Should be allocated in shared memory.
+     */
     struct storage_t {};
 
+    /**
+     * @brief Construct a block scan object.
+     *
+     * @param ctx Kernel context.
+     * @param storage Temporary storage for the block scan.
+     *
+     * @note This is a shortcut for `block_scan(ctx.pos(), storage)`.
+     * @see block_scan::storage_t
+     */
     template<typename ContextT>
     XPU_D block_scan(ContextT &ctx, storage_t &storage);
 
-    XPU_D block_scan(tpos &, storage_t &);
+    /**
+     * @brief Construct a block scan object.
+     *
+     * @param pos Thread position.
+     * @param storage Temporary storage for the block scan.
+     *
+     * @see block_scan::storage_t
+     */
+    XPU_D block_scan(tpos &pos, storage_t &storage);
 
     XPU_D void exclusive_sum(T input, T &output);
 

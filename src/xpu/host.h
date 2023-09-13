@@ -125,9 +125,9 @@ void preload();
 
 /**
  * @brief Allocate memory on the device.
- * @param size Size of the memory to allocate in bytes.
+ * @param size_bytes Size of the memory to allocate in bytes.
  */
-void *malloc_device(size_t size);
+void *malloc_device(size_t size_bytes);
 
 /**
  * @brief Allocate memory on the device.
@@ -149,9 +149,18 @@ void *malloc_pinned(size_t size_bytes);
  * @param elems Number of elements to allocate.
  * @tparam T Type of the memory to allocate.
  * @note The memory is not initialized.
+*/
+template<typename T>
+T *malloc_pinned(size_t elems);
+
+/**
+ * @brief Allocate pinned memory on the host that can be accessed by the device.
+ * @param elems Number of elements to allocate.
+ * @tparam T Type of the memory to allocate.
+ * @note The memory is not initialized.
  */
 template<typename T>
-T *malloc_host(size_t size);
+T *malloc_host(size_t elems);
 
 /**
  * @brief Allocate memory that can be accessed by the device and the host.
@@ -166,7 +175,7 @@ void *malloc_managed(size_t size_bytes);
  * @note The memory is not initialized.
  */
 template<typename T>
-T *malloc_managed(size_t size);
+T *malloc_managed(size_t elems);
 
 /**
  * @brief Free memory allocated with malloc_device, malloc_pinned or malloc_managed.

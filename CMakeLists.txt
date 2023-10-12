@@ -125,6 +125,7 @@ function(xpu_create_subproject Library DriverType UnitySrcAbsolute)
             -DCMAKE_CXX_COMPILER=${SubprojectCxx}
             -DCMAKE_C_COMPILER=${SubprojectC}
             -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}
+            -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
         PREFIX "${SrcDir}"
         BUILD_ALWAYS TRUE
         STEP_TARGETS build
@@ -133,7 +134,10 @@ function(xpu_create_subproject Library DriverType UnitySrcAbsolute)
         LOG_BUILD TRUE
         LOG_MERGED_STDOUTERR TRUE
         LOG_OUTPUT_ON_FAILURE TRUE
+        BUILD_BYPRODUCTS "${SubLibraryFullPath}"
     )
+
+    install(FILES "${SubLibraryFullPath}" DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
     ExternalProject_Add_Step(${SubLibraryName} export-include-dirs
         COMMAND ${CMAKE_COMMAND} -E echo "include_directories($<TARGET_PROPERTY:${Library},INCLUDE_DIRECTORIES>)" > "${SubLibraryName}-include-dirs.cmake"
@@ -241,6 +245,7 @@ endif()
 
 get_target_property(DeviceLibDir xpu LIBRARY_OUTPUT_DIRECTORY)
 set_property(TARGET xpu APPEND PROPERTY BUILD_RPATH ${DeviceLibDir})
+set_property(TARGET xpu APPEND PROPERTY INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
 
 if (XPU_BUILD_TESTS)
     enable_testing()
@@ -258,6 +263,9 @@ if (XPU_BUILD_EXAMPLES)
             xpuinfo
     )
 endif()
+
+install(TARGETS xpuinfo RUNTIME)
+set_property(TARGET xpuinfo APPEND PROPERTY INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
 
 if (XPU_BUILD_DOCS)
     add_subdirectory(docs)

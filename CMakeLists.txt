@@ -153,8 +153,6 @@ function(xpu_create_subproject Library DriverType UnitySrcAbsolute)
 endfunction()
 
 function(xpu_attach Library)
-    include(ExternalProject)
-
     set(DeviceSrcs "${ARGN}")
     set(UnitySrc "${Library}_Unity.cpp")
     set(UnitySrcAbsolute "${CMAKE_CURRENT_BINARY_DIR}/${UnitySrc}")

@@ -87,6 +87,8 @@ if (XPU_STANDALONE)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 endif()
 
+include(GNUInstallDirs)
+
 function(xpu_create_subproject Library DriverType UnitySrcAbsolute)
     include(ExternalProject)
 
@@ -165,6 +167,7 @@ function(xpu_attach Library)
 
     get_target_property(DeviceLibDir ${Library} LIBRARY_OUTPUT_DIRECTORY)
     set_property(TARGET ${Library} APPEND PROPERTY BUILD_RPATH ${DeviceLibDir})
+    set_property(TARGET ${Library} APPEND PROPERTY INSTALL_RPATH ${CMAKE_INSTALL_FULL_LIBDIR})
 
     if (XPU_ENABLE_OPENMP)
         find_package(OpenMP)
@@ -245,7 +248,7 @@ endif()
 
 get_target_property(DeviceLibDir xpu LIBRARY_OUTPUT_DIRECTORY)
 set_property(TARGET xpu APPEND PROPERTY BUILD_RPATH ${DeviceLibDir})
-set_property(TARGET xpu APPEND PROPERTY INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
+set_property(TARGET xpu APPEND PROPERTY INSTALL_RPATH ${CMAKE_INSTALL_FULL_LIBDIR})
 
 if (XPU_BUILD_TESTS)
     enable_testing()
@@ -265,7 +268,7 @@ if (XPU_BUILD_EXAMPLES)
 endif()
 
 install(TARGETS xpuinfo RUNTIME)
-set_property(TARGET xpuinfo APPEND PROPERTY INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
+set_property(TARGET xpuinfo APPEND PROPERTY INSTALL_RPATH ${CMAKE_INSTALL_FULL_LIBDIR})
 
 if (XPU_BUILD_DOCS)
     add_subdirectory(docs)

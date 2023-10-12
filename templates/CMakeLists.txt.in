@@ -24,7 +24,17 @@ if ("@DriverType@" STREQUAL "Hip")
         add_definitions(-DNDEBUG)
     endif()
 
-    add_compile_options(-std=c++17)
+    # CMake sometimes doesn't set the c++ standard defined with CMAKE_CXX_STANDARD for amd-clang
+    # Unsure when or why this happens, so just to be on the safe side, set the flag explicitly here...
+    if (CMAKE_CXX_STANDARD EQUAL 17)
+        add_compile_options(-std=c++17)
+    elseif (CMAKE_CXX_STANDARD EQUAL 20)
+        add_compile_options(-std=c++20)
+    elseif (CMAKE_CXX_STANDARD EQUAL 23)
+        add_compile_options(-std=c++23)
+    else ()
+        message(FATAL_ERROR, "Unknown C++ standard: ${CMAKE_CXX_STANDARD}")
+    endif()
 
     # Hip sets some clang flags that results in warnings
     add_compile_options(-Qunused-arguments)

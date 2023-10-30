@@ -62,6 +62,8 @@ jobs:
             exe: clang++-13
           - pkg: clang-14 libomp-14-dev
             exe: clang++-14
+          - pkg: clang-15 libomp-15-dev
+            exe: clang++-15
     steps:
     - uses: actions/checkout@v3
     - name: Install compiler
@@ -115,8 +117,8 @@ jobs:
         compiler:
           - pkg: g++
             cc: g++
-          - pkg: clang libomp-dev
-            cc: clang++
+          - pkg: clang-15 libomp-15-dev
+            cc: clang++-15
         cxx_std: [20]
 
     steps:

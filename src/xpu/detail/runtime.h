@@ -182,6 +182,8 @@ private:
 
     std::optional<std::pair<driver_t, int>> try_parse_device(std::string_view) const;
 
+    std::vector<driver_t> parse_backend_list(std::string_view) const;
+
     std::string complete_file_name(const char *, driver_t) const;
 
     void throw_on_driver_error(driver_t, error) const;

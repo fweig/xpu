@@ -19,7 +19,7 @@
 namespace xpu {
 
 enum driver_t {
-    cpu = detail::driver_t::cpu,
+    cpu = detail::cpu,
     cuda = detail::cuda,
     hip = detail::hip,
     sycl = detail::sycl,

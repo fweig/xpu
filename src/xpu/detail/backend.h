@@ -4,9 +4,12 @@
 #include "backend_base.h"
 #include "common.h"
 
+#include <vector>
+
 namespace xpu::detail::backend {
 
-void load();
+void load(std::vector<driver_t> exclude = {});
+void unload(driver_t);
 bool is_available(driver_t);
 backend_base *get(driver_t, bool = true);
 [[noreturn]] void raise_error(driver_t, error);

@@ -3,7 +3,8 @@
 #include <cstdio>
 
 int main(int argc, char **argv) {
-    xpu::initialize();
+    xpu::settings settings;
+    xpu::initialize(settings);
 
     bool verbose = false;
 

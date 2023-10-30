@@ -94,6 +94,13 @@ struct settings {
      * @see xpu::timings
      */
     bool profile = false;
+
+    /**
+     * @brief Backends that should be excluded.
+     *
+     * @note CPU backend is always enabled and can't be disabled.
+     */
+    std::vector<driver_t> excluded_backends = {};
 };
 
 /**

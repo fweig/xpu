@@ -38,7 +38,22 @@ void runtime::initialize(const settings &settings) {
 
     config::profile = getenv_bool("XPU_PROFILE", settings.profile);
 
-    backend::load();
+    std::vector<driver_t> excluded_backends;
+    std::transform(
+        settings.excluded_backends.begin(),
+        settings.excluded_backends.end(),
+        std::back_inserter(excluded_backends),
+        [](auto backend) { return static_cast<driver_t>(backend); }
+    );
+    std::string excluded_backends_str = getenv_str("XPU_EXCLUDE", "");
+    if (not excluded_backends_str.empty() && not excluded_backends.empty()) {
+        XPU_LOG("settings::excluded_backends set. Ignoring environment variable XPU_EXCLUDE.");
+    } else {
+        XPU_LOG("Parsing environment variable XPU_EXCLUDE: %s.", excluded_backends_str.c_str());
+        excluded_backends = parse_backend_list(excluded_backends_str);
+    }
+
+    backend::load(excluded_backends);
 
     XPU_LOG("Found devices:");
     for (driver_t driver : {cpu, cuda, hip, sycl}) {
@@ -47,7 +62,14 @@ void runtime::initialize(const settings &settings) {
             continue;
         }
         int ndevices = 0;
-        DRIVER_CALL_I(driver, num_devices(&ndevices));
+        try {
+            DRIVER_CALL_I(driver, num_devices(&ndevices));
+        } catch (std::exception &e) {
+            XPU_LOG("  Caught error during initialization: %s", e.what());
+            XPU_LOG("  Disabling %s backend.", driver_to_str(driver));
+            backend::unload(driver);
+            continue;
+        }
         XPU_LOG(" %s (%d)", driver_to_str(driver), ndevices);
         for (int i = 0; i < ndevices; i++) {
             device dev;
@@ -228,6 +250,36 @@ std::optional<std::pair<xpu::detail::driver_t, int>> runtime::try_parse_device(s
     }
 
     return std::make_pair(target_driver, target_device);
+}
+
+std::vector<driver_t> runtime::parse_backend_list(std::string_view list) const {
+    auto to_lower = [](std::string_view str) {
+        std::string lower;
+        lower.reserve(str.size());
+        std::transform(str.begin(), str.end(), std::back_inserter(lower), [](unsigned char c) { return std::tolower(c); });
+        return lower;
+    };
+
+    std::vector<driver_t> backends;
+
+    std::stringstream ss{std::string{list}};
+    std::string backend;
+    while (std::getline(ss, backend, ',')) {
+        backend = to_lower(backend);
+        if (backend == "cpu") {
+            backends.push_back(cpu);
+        } else if (backend == "cuda") {
+            backends.push_back(cuda);
+        } else if (backend == "hip") {
+            backends.push_back(hip);
+        } else if (backend == "sycl") {
+            backends.push_back(sycl);
+        } else {
+            raise_error(format("Unknown backend '%s' in XPU_EXCLUDE environment variable.", backend.c_str()));
+        }
+    }
+
+    return backends;
 }
 
 device runtime::get_device(driver_t d, int device_nr) const {

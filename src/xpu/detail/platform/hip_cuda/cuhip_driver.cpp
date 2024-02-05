@@ -206,7 +206,7 @@ public:
             switch (HIP_PTR_TYPE(ptrattrs)) {
             #if XPU_HIP_VERSION_AT_LEAST(6, 0)
                 case hipMemoryTypeUnregistered:
-                    *type = mem_unknown;
+                    *type = mem_host;
                     *device = -1;
                     break;
             #endif

@@ -97,6 +97,7 @@ function(xpu_create_subproject Library DriverType UnitySrcAbsolute)
     set(SubLibraryFullPath ${OutputDir}/${CMAKE_SHARED_LIBRARY_PREFIX}${SubLibraryName}${CMAKE_SHARED_LIBRARY_SUFFIX})
     set(SrcDir "${CMAKE_CURRENT_BINARY_DIR}/${SubLibraryName}")
     set(HostCxx ${CMAKE_CXX_COMPILER})
+    set(ConfigureStampFile "${SrcDir}/src/${SubLibraryName}-stamp/${SubLibraryName}-configure")
 
     if (DriverType STREQUAL "Hip")
         set(HipClang "${XPU_ROCM_ROOT}/llvm/bin/clang")
@@ -110,6 +111,11 @@ function(xpu_create_subproject Library DriverType UnitySrcAbsolute)
         set(SubprojectC ${CMAKE_C_COMPILER})
     else()
         message(FATAL_ERROR "Unknown driver type ${DriverType}.")
+    endif()
+
+    # Remove the stamp file to force re-configure
+    if (EXISTS "${ConfigureStampFile}")
+        file(REMOVE "${ConfigureStampFile}")
     endif()
 
     file(MAKE_DIRECTORY ${SrcDir})

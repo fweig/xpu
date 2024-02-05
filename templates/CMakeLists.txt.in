@@ -24,6 +24,10 @@ if ("@DriverType@" STREQUAL "Hip")
         add_definitions(-DNDEBUG)
     endif()
 
+    if (NOT DEFINED CMAKE_CXX_STANDARD)
+        message(FATAL_ERROR, "C++ standard not defined!")
+    endif()
+
     # CMake sometimes doesn't set the c++ standard defined with CMAKE_CXX_STANDARD for amd-clang
     # Unsure when or why this happens, so just to be on the safe side, set the flag explicitly here...
     if (CMAKE_CXX_STANDARD EQUAL 17)

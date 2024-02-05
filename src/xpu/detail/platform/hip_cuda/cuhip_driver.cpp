@@ -152,7 +152,9 @@ public:
         if (props->name.empty()) {
         #if XPU_IS_CUDA
             props->name = "Unknown NVIDIA GPU";
-        #else // XPU_IS_HIP
+        #elif XPU_HIP_VERSION_AT_LEAST(6, 0)
+            props->name = "Unknown AMD " + std::string{cuprop.gcnArchName} + " GPU";
+        #else // HIP_VERSION < 6.0
             props->name = "Unknown AMD gfx" + std::to_string(cuprop.gcnArch) + " GPU";
         #endif
         }
@@ -215,7 +217,8 @@ public:
                 return err;
             }
 
-            switch (ptrattrs.memoryType) {
+            switch (HIP_PTR_TYPE(ptrattrs)) {
+            case hipMemoryTypeUnregistered: // TODO: Is this the right way to handle this case?
             case hipMemoryTypeHost:
                 *type = mem_host;
                 *device = ptrattrs.device;
@@ -231,6 +234,8 @@ public:
                 *device = ptrattrs.device;
                 break;
             }
+
+            #undef PTR_TYPE
 
         #endif
 
@@ -259,7 +264,7 @@ public:
         #if XPU_IS_CUDA
             return (ptrattrs.type == cudaMemoryTypeHost);
         #else
-            return (ptrattrs.memoryType == hipMemoryTypeHost);
+            return (HIP_PTR_TYPE(ptrattrs) == hipMemoryTypeHost);
         #endif
     }
 

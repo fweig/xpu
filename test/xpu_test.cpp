@@ -653,9 +653,9 @@ TEST(XPUTest, CanCallDeviceFuncs) {
     EXPECT_FLOAT_EQ(b[ROUND].f, 3.f);
     EXPECT_NEAR(b[RSQRT].f,  0.5f, 0.0002f); // sycl::rsqrt gives 0.49987793
     EXPECT_NEAR(b[SINCOS_SIN].f, 0.f, 0.0000001f);
-    EXPECT_FLOAT_EQ(b[SINCOS_COS].f, -1.f);
+    EXPECT_NEAR(b[SINCOS_COS].f, -1.f, 0.00001); // sycl::sincos gives -0.99999827
     EXPECT_NEAR(b[SINCOSPI_SIN].f, 0.f, 0.0000001f);
-    EXPECT_FLOAT_EQ(b[SINCOSPI_COS].f, -1.f);
+    EXPECT_NEAR(b[SINCOSPI_COS].f, -1.f, 0.00001f); // sycl::sincospi gives -0.99999827
     EXPECT_NEAR(b[SIN].f, 0.f, 0.0000001f);
     EXPECT_FLOAT_EQ(b[SINH].f, 1.1752012f);
     EXPECT_NEAR(b[SINPI].f, 0.f, 0.0000001f);

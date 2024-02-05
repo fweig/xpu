@@ -12,7 +12,9 @@
 #else
     #include <hip/hip_runtime_api.h>
     #define CUHIP(expr) XPU_CONCAT(hip, expr)
-    #define XPU_HIP_VERSION_AT_LEAST(major, minor) ((major) * 100 + (minor) >= HIP_VERSION_MAJOR * 100 + HIP_VERSION_MINOR)
+
+    #define XPU_HIP_VERSION (HIP_VERSION_MAJOR * 100 + HIP_VERSION_MINOR)
+    #define XPU_HIP_VERSION_AT_LEAST(major, minor) (XPU_HIP_VERSION >= (major * 100 + minor))
 
     #if XPU_HIP_VERSION_AT_LEAST(6, 0)
         #define HIP_PTR_TYPE(ptrattr) (ptrattr).type

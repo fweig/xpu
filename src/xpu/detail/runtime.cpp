@@ -318,6 +318,12 @@ void runtime::get_ptr_prop(const void *ptr, ptr_prop *prop) {
             continue;
         }
 
+        // backends should return -1 for invalid devices.
+        // other negative values likely indicate a bug.
+        if (platform_device < -1) {
+            RAISE_INTERNAL_ERROR();
+        }
+
         prop->type = mem_type;
         prop->dev = get_device(driver_type, platform_device);
         return;

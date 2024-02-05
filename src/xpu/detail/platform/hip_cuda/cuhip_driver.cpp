@@ -218,7 +218,12 @@ public:
             }
 
             switch (HIP_PTR_TYPE(ptrattrs)) {
-            case hipMemoryTypeUnregistered: // TODO: Is this the right way to handle this case?
+            #if XPU_HIP_VERSION_AT_LEAST(6, 0)
+                case hipMemoryTypeUnregistered:
+                    *type = mem_unknown;
+                    *device = -1;
+                    break;
+            #endif
             case hipMemoryTypeHost:
                 *type = mem_host;
                 *device = ptrattrs.device;

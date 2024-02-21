@@ -107,6 +107,8 @@ jobs:
       env:
         CTEST_OUTPUT_ON_FAILURE: 1
       run: ctest -j4
+    - name: print something
+      run: echo "Test"
 
   cpp20:
 

@@ -15,6 +15,11 @@
 #include <utility>
 
 #define XPU_DETAIL_ASSERT(x) assert(x)
+#ifdef _OPENMP
+#define XPU_DETAIL_OMP(...) XPU_PRAGMA(omp __VA_ARGS__)
+#else
+#define XPU_DETAIL_OMP(...)
+#endif
 
 
 // math functions
@@ -343,8 +348,19 @@ struct action_runner<kernel_tag, K, void(K::*)(kernel_context<typename K::shared
 
     using shared_memory = typename K::shared_memory;
     using constants = typename K::constants;
-    using context = kernel_context<shared_memory>;
+    using context = kernel_context<shared_memory, constants>;
 
+private:
+    static void kernel_step(int i, int j, int k, Args&&... args) {
+        shared_memory smem;
+        tpos pos{internal_ctor};
+        constants cmem{internal_ctor};
+        context ctx{internal_ctor, pos, smem, cmem};
+        this_thread::block_idx = dim{i, j, k};
+        K{}(ctx, std::forward<Args>(args)...);
+    }
+
+public:
     static int call(kernel_launch_info launch_info, Args... args) {
         dim block_dim{1, 1, 1};
         dim grid_dim{};
@@ -362,21 +378,54 @@ struct action_runner<kernel_tag, K, void(K::*)(kernel_context<typename K::shared
             start = clock::now();
         }
 
-        #ifdef _OPENMP
-        #pragma omp parallel for schedule(static) collapse(3)
-        #endif
-        for (int i = 0; i < grid_dim.x; i++) {
-            for (int j = 0; j < grid_dim.y; j++) {
-                for (int k = 0; k < grid_dim.z; k++) {
-                    shared_memory smem;
-                    tpos pos{internal_ctor};
-                    constants cmem{internal_ctor};
-                    kernel_context ctx{internal_ctor, pos, smem, cmem};
-                    this_thread::block_idx = dim{i, j, k};
-                    this_thread::grid_dim = grid_dim;
-                    K{}(ctx, args...);
+        constexpr schedule_t schedule = K::openmp::schedule;
+        constexpr size_t chunk_size = K::openmp::chunk_size;
+
+        static_assert(schedule == schedule_static || schedule == schedule_dynamic, "Unsupported OpenMP schedule");
+
+        if constexpr (schedule == schedule_static) {
+
+            if constexpr (chunk_size == 0) {
+                XPU_DETAIL_OMP(parallel for schedule(static) collapse(3))
+                for (int i = 0; i < grid_dim.x; i++) {
+                    for (int j = 0; j < grid_dim.y; j++) {
+                        for (int k = 0; k < grid_dim.z; k++) {
+                            kernel_step(i, j, k, std::forward<Args>(args)...);
+                        }
+                    }
+                }
+            } else {
+                XPU_DETAIL_OMP(parallel for schedule(static, chunk_size) collapse(3))
+                for (int i = 0; i < grid_dim.x; i++) {
+                    for (int j = 0; j < grid_dim.y; j++) {
+                        for (int k = 0; k < grid_dim.z; k++) {
+                            kernel_step(i, j, k, std::forward<Args>(args)...);
+                        }
+                    }
                 }
             }
+        } else if constexpr (schedule == schedule_dynamic) {
+            if constexpr (chunk_size == 0) {
+                XPU_DETAIL_OMP(parallel for schedule(dynamic) collapse(3))
+                for (int i = 0; i < grid_dim.x; i++) {
+                    for (int j = 0; j < grid_dim.y; j++) {
+                        for (int k = 0; k < grid_dim.z; k++) {
+                            kernel_step(i, j, k, std::forward<Args>(args)...);
+                        }
+                    }
+                }
+            } else {
+                XPU_DETAIL_OMP(parallel for schedule(dynamic, chunk_size) collapse(3))
+                for (int i = 0; i < grid_dim.x; i++) {
+                    for (int j = 0; j < grid_dim.y; j++) {
+                        for (int k = 0; k < grid_dim.z; k++) {
+                            kernel_step(i, j, k, std::forward<Args>(args)...);
+                        }
+                    }
+                }
+            }
+        } else {
+            // Unreachable
         }
 
         if (measure_time) {

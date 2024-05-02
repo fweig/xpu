@@ -50,6 +50,31 @@ struct block_size {
 
 struct no_smem {};
 
+/**
+ * @brief OpenMP schedule types. Used for specifying the schedule type for kernels.
+ */
+enum schedule_t {
+    schedule_static, // Avoid conflicts with C++ 'static' keyword
+    schedule_dynamic,
+};
+
+/**
+ * @brief OpenMP settings for kernels.
+ */
+template<schedule_t Schedule = schedule_static, size_t ChunkSize = 0>
+struct openmp_settings {
+
+    /**
+     * @brief OpenMP schedule type.
+     */
+    static constexpr schedule_t schedule = Schedule;
+
+    /**
+     * @brief Chunk size. Use 0 for default value from OpenMP.
+     */
+    static constexpr size_t chunk_size = ChunkSize;
+};
+
 class tpos {
 
 public:
@@ -104,6 +129,12 @@ struct kernel : detail::action<Image, detail::kernel_tag> {
     using block_size = xpu::block_size<64>;
     using constants = cmem<>;
     using shared_memory = no_smem;
+
+    /**
+     * @brief OpenMP settings for the kernel.
+     * @details By default kernels will use static scheduling with the default chunk size.
+     */
+    using openmp = openmp_settings<schedule_static, 0>;
 };
 
 template<typename Image>

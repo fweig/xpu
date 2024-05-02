@@ -1,6 +1,8 @@
 #ifndef XPU_DETAIL_MACROS_H
 #define XPU_DETAIL_MACROS_H
 
+#define XPU_PRAGMA(...) _Pragma(#__VA_ARGS__)
+
 #define XPU_CONCAT_I(a, b) a##b
 #define XPU_CONCAT(a, b) XPU_CONCAT_I(a, b)
 

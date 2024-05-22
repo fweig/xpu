@@ -380,13 +380,17 @@ struct xpu::detail::action_runner<xpu::detail::kernel_tag, K, void(K::*)(xpu::ke
             auto cmem_accessors = cmem_traits.make_accessors(cmem_buffers, cgh);
             constants cmem{internal_ctor, cmem_accessors};
 
+            #if defined(__INTEL_LLVM_COMPILER) && __INTEL_LLVM_COMPILER < 20240000
             sycl::stream out{0, 0, cgh};
+            #endif
             cgh.parallel_for<K>(sycl::nd_range<3>{global_range, local_range}, [=](sycl::nd_item<3> item) {
-                // WTF: icpx sometimes optimizes out the kernel call (when using O2)
+                #if defined(__INTEL_LLVM_COMPILER) && __INTEL_LLVM_COMPILER < 20240000
+                // WTF: old versions of icpx sometimes optimizes out the kernel call (when using O2)
                 // if we dont add the print statement
                 if (item.get_global_id(0) == static_cast<size_t>(-1)) {
                     out << "";
                 }
+                #endif
                 shared_memory &smem = shared_memory_acc;
                 tpos pos{internal_ctor, item};
                 context ctx{internal_ctor, pos, smem, cmem};

@@ -581,18 +581,18 @@ void test_thread_position(xpu::dim gpu_block_size, xpu::dim gpu_grid_dim) {
                 xpu::h_view block_dim_h = xpu::h_view(block_dim);
                 xpu::h_view block_idx_h = xpu::h_view(block_idx);
                 xpu::h_view grid_dim_h = xpu::h_view(grid_dim);
-                EXPECT_EQ(thread_idx_h[linear_id + 0], exp_thread_idx.x);
-                EXPECT_EQ(thread_idx_h[linear_id + 1], exp_thread_idx.y);
-                EXPECT_EQ(thread_idx_h[linear_id + 2], exp_thread_idx.z);
-                EXPECT_EQ(block_dim_h[linear_id + 0], exp_block_dim.x);
-                EXPECT_EQ(block_dim_h[linear_id + 1], exp_block_dim.y);
-                EXPECT_EQ(block_dim_h[linear_id + 2], exp_block_dim.z);
-                EXPECT_EQ(block_idx_h[linear_id + 0], exp_block_idx.x);
-                EXPECT_EQ(block_idx_h[linear_id + 1], exp_block_idx.y);
-                EXPECT_EQ(block_idx_h[linear_id + 2], exp_block_idx.z);
-                EXPECT_EQ(grid_dim_h[linear_id + 0], exp_grid_dim.x);
-                EXPECT_EQ(grid_dim_h[linear_id + 1], exp_grid_dim.y);
-                EXPECT_EQ(grid_dim_h[linear_id + 2], exp_grid_dim.z);
+                ASSERT_EQ(thread_idx_h[linear_id + 0], exp_thread_idx.x);
+                ASSERT_EQ(thread_idx_h[linear_id + 1], exp_thread_idx.y);
+                ASSERT_EQ(thread_idx_h[linear_id + 2], exp_thread_idx.z);
+                ASSERT_EQ(block_dim_h[linear_id + 0], exp_block_dim.x);
+                ASSERT_EQ(block_dim_h[linear_id + 1], exp_block_dim.y);
+                ASSERT_EQ(block_dim_h[linear_id + 2], exp_block_dim.z);
+                ASSERT_EQ(block_idx_h[linear_id + 0], exp_block_idx.x);
+                ASSERT_EQ(block_idx_h[linear_id + 1], exp_block_idx.y);
+                ASSERT_EQ(block_idx_h[linear_id + 2], exp_block_idx.z);
+                ASSERT_EQ(grid_dim_h[linear_id + 0], exp_grid_dim.x);
+                ASSERT_EQ(grid_dim_h[linear_id + 1], exp_grid_dim.y);
+                ASSERT_EQ(grid_dim_h[linear_id + 2], exp_grid_dim.z);
             }
         }
     }

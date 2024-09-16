@@ -351,13 +351,13 @@ struct action_runner<kernel_tag, K, void(K::*)(kernel_context<typename K::shared
     using context = kernel_context<shared_memory, constants>;
 
 private:
-    static void kernel_step(const dim &grid_dim, int i, int j, int k, Args&&... args) {
+    static void kernel_step(const dim &grid_dim, const dim &block_idx, Args&&... args) {
         shared_memory smem;
         tpos pos{internal_ctor};
         constants cmem{internal_ctor};
         context ctx{internal_ctor, pos, smem, cmem};
-        this_thread::block_idx = dim{i, j, k};
         this_thread::grid_dim = grid_dim;
+        this_thread::block_idx = block_idx;
         K{}(ctx, std::forward<Args>(args)...);
     }
 
@@ -391,7 +391,7 @@ public:
                 for (int i = 0; i < grid_dim.x; i++) {
                     for (int j = 0; j < grid_dim.y; j++) {
                         for (int k = 0; k < grid_dim.z; k++) {
-                            kernel_step(grid_dim, i, j, k, std::forward<Args>(args)...);
+                            kernel_step(grid_dim, dim(i, j, k), std::forward<Args>(args)...);
                         }
                     }
                 }
@@ -400,7 +400,7 @@ public:
                 for (int i = 0; i < grid_dim.x; i++) {
                     for (int j = 0; j < grid_dim.y; j++) {
                         for (int k = 0; k < grid_dim.z; k++) {
-                            kernel_step(grid_dim, i, j, k, std::forward<Args>(args)...);
+                            kernel_step(grid_dim, dim(i, j, k), std::forward<Args>(args)...);
                         }
                     }
                 }
@@ -411,7 +411,7 @@ public:
                 for (int i = 0; i < grid_dim.x; i++) {
                     for (int j = 0; j < grid_dim.y; j++) {
                         for (int k = 0; k < grid_dim.z; k++) {
-                            kernel_step(grid_dim, i, j, k, std::forward<Args>(args)...);
+                            kernel_step(grid_dim, dim(i, j, k), std::forward<Args>(args)...);
                         }
                     }
                 }
@@ -420,7 +420,7 @@ public:
                 for (int i = 0; i < grid_dim.x; i++) {
                     for (int j = 0; j < grid_dim.y; j++) {
                         for (int k = 0; k < grid_dim.z; k++) {
-                            kernel_step(grid_dim, i, j, k, std::forward<Args>(args)...);
+                            kernel_step(grid_dim, dim(i, j, k), std::forward<Args>(args)...);
                         }
                     }
                 }

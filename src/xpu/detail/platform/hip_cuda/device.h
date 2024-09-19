@@ -611,27 +611,22 @@ struct action_runner<kernel_tag, K, void(K::*)(kernel_context<typename K::shared
         cudaEvent_t start, end;
         int err = 0;
 
+        cudaStream_t stream = static_cast<cudaStream_t>(launch_info.queue_handle);
+
         if (measure_time) {
             SAFE_CALL(cudaEventCreate(&start));
             ON_ERROR_GOTO(err, cudaEventCreate(&end), cleanup_start_event);
         }
 
         if (measure_time) {
-            ON_ERROR_GOTO(err, cudaEventRecord(start), cleanup_events);
+            ON_ERROR_GOTO(err, cudaEventRecord(start, stream), cleanup_events);
         }
 
-        if (launch_info.queue_handle == nullptr) {
-            kernel_entry_bounded<K, K::block_size::value.linear(), Args...><<<grid_dim.as_cuda_grid(), block_dim.as_cuda_grid()>>>(args...);
-        } else {
-            cudaStream_t stream = static_cast<cudaStream_t>(launch_info.queue_handle);
-            kernel_entry_bounded<K, K::block_size::value.linear(), Args...><<<grid_dim.as_cuda_grid(), block_dim.as_cuda_grid(), 0, stream>>>(args...);
-        }
-
+        kernel_entry_bounded<K, K::block_size::value.linear(), Args...><<<grid_dim.as_cuda_grid(), block_dim.as_cuda_grid(), 0, stream>>>(args...);
 
         if (measure_time) {
-            ON_ERROR_GOTO(err, cudaEventRecord(end), cleanup_events);
+            ON_ERROR_GOTO(err, cudaEventRecord(end, stream), cleanup_events);
         }
-        SAFE_CALL(cudaDeviceSynchronize());
 
         if (measure_time) {
             ON_ERROR_GOTO(err, cudaEventSynchronize(end), cleanup_events);
@@ -687,13 +682,14 @@ struct action_runner<kernel_tag, K, void(K::*)(kernel_context<typename K::shared
         }
 
         if (measure_time) {
-            ON_ERROR_GOTO(err, hipEventRecord(start), cleanup_events);
+            ON_ERROR_GOTO(err, hipEventRecord(start, stream), cleanup_events);
         }
+
         hipLaunchKernelGGL(HIP_KERNEL_NAME(kernel_entry_bounded<K, K::block_size::value.linear(), Args...>), grid_dim.as_cuda_grid(), block_dim.as_cuda_grid(), 0, stream, std::forward<Args>(args)...);
+
         if (measure_time) {
-            ON_ERROR_GOTO(err, hipEventRecord(end), cleanup_events);
+            ON_ERROR_GOTO(err, hipEventRecord(end, stream), cleanup_events);
         }
-        SAFE_CALL(hipDeviceSynchronize());
 
         if (measure_time) {
             ON_ERROR_GOTO(err, hipEventSynchronize(end), cleanup_events);

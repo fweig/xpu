@@ -1,6 +1,8 @@
 .vscode/
 build/
 docs/html
+compile_commands.json
+.cache
 
 # Prerequisites
 *.d

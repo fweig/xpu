@@ -11,6 +11,12 @@
 
 #define XPU_DETAIL_ASSERT(x) assert(x)
 
+#if 1
+#define trace(message, ...) printf("sycl_driver::%s:%d: " message "\n", __FUNCTION__, __LINE__, ##__VA_ARGS__)
+#else
+#define trace(...) ((void)(0))
+#endif
+
 // Pull printf into global namespace, to be consistent with other backends.
 using sycl::ext::oneapi::experimental::printf;
 
@@ -361,19 +367,28 @@ struct xpu::detail::action_runner<xpu::detail::kernel_tag, K, void(K::*)(xpu::ke
     static int call(kernel_launch_info launch_info, Args... args) {
         dim block_dim = K::block_size::value;
         dim grid_dim{};
+        bool uses_y_dim = block_dim.y > 0;
+        bool uses_z_dim = block_dim.z > 0;
         launch_info.g.get_compute_grid(block_dim, grid_dim);
 
-        XPU_LOG("Calling kernel '%s' [block_dim = (%d, %d, %d), grid_dim = (%d, %d, %d)] with SYCL driver.", type_name<K>(), block_dim.x, block_dim.y, block_dim.z, grid_dim.x, grid_dim.y, grid_dim.z);
-
         auto *driver = static_cast<sycl_driver *>(backend::get(sycl));
+
         sycl::queue queue = driver->get_queue(launch_info.queue_handle);
+        sycl::device device = queue.get_device();
+        trace("Run kernel '%s' on queue '%p' on '%s'", type_name<K>(), launch_info.queue_handle, device.get_info<sycl::info::device::name>().c_str());
 
         sycl::range<3> global_range{size_t(grid_dim.x), size_t(grid_dim.y), size_t(grid_dim.z)};
-        sycl::range<3> local_range{size_t(block_dim.x), size_t(block_dim.y), size_t(block_dim.z)};
+        sycl::range<3> local_range{size_t(block_dim.x), uses_y_dim ? size_t(block_dim.y) : 0, uses_z_dim ? size_t(block_dim.z) : 0};
         cmem_traits<constants> cmem_traits{};
         auto cmem_buffers = cmem_traits.make_buffers();
 
         global_range = global_range * local_range;
+
+        if (device.is_cpu()) {
+            local_range = sycl::range(1, 1, 1);
+        }
+
+        XPU_LOG("Calling kernel '%s' [local_range = (%d, %d, %d), global_range = (%d, %d, %d)] with SYCL driver.", type_name<K>(), local_range[0], local_range[1], local_range[2], global_range[0], global_range[1], global_range[2]);
 
         sycl::event ev = queue.submit([&](sycl::handler &cgh) {
             sycl::local_accessor<shared_memory, 0> shared_memory_acc{cgh};
@@ -383,7 +398,7 @@ struct xpu::detail::action_runner<xpu::detail::kernel_tag, K, void(K::*)(xpu::ke
             #if defined(__INTEL_LLVM_COMPILER) && __INTEL_LLVM_COMPILER < 20240000
             sycl::stream out{0, 0, cgh};
             #endif
-            cgh.parallel_for<K>(sycl::nd_range<3>{global_range, local_range}, [=](sycl::nd_item<3> item) {
+            cgh.parallel_for<K>(sycl::nd_range<3>(global_range, local_range), [=](sycl::nd_item<3> item) {
                 #if defined(__INTEL_LLVM_COMPILER) && __INTEL_LLVM_COMPILER < 20240000
                 // WTF: old versions of icpx sometimes optimizes out the kernel call (when using O2)
                 // if we dont add the print statement
@@ -391,12 +406,16 @@ struct xpu::detail::action_runner<xpu::detail::kernel_tag, K, void(K::*)(xpu::ke
                     out << "";
                 }
                 #endif
+                sycl::ext::oneapi::experimental::printf("HELLO\n");
+
                 shared_memory &smem = shared_memory_acc;
                 tpos pos{internal_ctor, item};
                 context ctx{internal_ctor, pos, smem, cmem};
                 K{}(ctx, args...);
             });
         });
+
+        queue.wait_and_throw();
 
         if (launch_info.ms != nullptr) {
             ev.wait();

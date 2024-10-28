@@ -4,12 +4,19 @@
 
 using namespace xpu::detail;
 
+#if 0
+#define trace(message, ...) printf("sycl_driver::%s:%d: " message "\n", __FUNCTION__, __LINE__, ##__VA_ARGS__)
+#else
+#define trace(...) ((void)(0))
+#endif
+
 error sycl_driver::setup() {
     if (config::profile) {
         m_prop_list = sycl::property_list{sycl::property::queue::enable_profiling(), sycl::property::queue::in_order()};
     } else {
         m_prop_list = sycl::property_list{sycl::property::queue::in_order()};
     }
+    trace("Create context for device '%s'", m_device_obj.get_info<sycl::info::device::name>().c_str());
     m_context = sycl::context{m_device_obj};
     return 0;
 }
@@ -35,9 +42,13 @@ error sycl_driver::free(void *ptr) {
 }
 
 error sycl_driver::create_queue(void **queue, int device) {
-    auto q = std::make_unique<sycl::queue>(sycl::device::get_devices()[device], m_prop_list);
+    auto odevice = sycl::device::get_devices()[device];
+
+    auto q = std::make_unique<sycl::queue>(odevice, m_prop_list);
     m_queues.emplace_back(std::move(q));
     *queue = m_queues.back().get();
+
+    trace("Create queue '%p' for device '%s'", *queue, odevice.get_info<sycl::info::device::name>().c_str());
     return 0;
 }
 
@@ -57,6 +68,8 @@ error sycl_driver::synchronize_queue(void *handle) {
 }
 
 error sycl_driver::memcpy_async(void *dst, const void *src, size_t bytes, void *handle, double *ms) {
+    trace("Copy %zu bytes in queue '%p'", bytes, handle);
+
     auto q = get_queue(handle);
     if (ms == nullptr) {
         q.memcpy(dst, src, bytes);
@@ -93,6 +106,7 @@ error sycl_driver::set_device(int device) {
     m_device_obj = sycl::device::get_devices()[device];
     m_context = sycl::context{m_device_obj};
     m_device = device;
+    trace("Select device '%s'", m_device_obj.get_info<sycl::info::device::name>().c_str());
     return 0;
 }
 
@@ -140,15 +154,18 @@ error sycl_driver::get_ptr_prop(const void *ptr, int *device, mem_type *type) {
             break;
         }
 
+        XPU_LOG("sycl_driver::get_ptr_prop: %p type is %d", ptr, *type);
+
         if (*type == mem_host) {
             *device = -1;
             return 0;
         }
 
         sycl::device dev = sycl::get_pointer_device(ptr, m_context);
-        // XPU_LOG("sycl_driver::pointer_get_device: %s", dev.get_info<sycl::info::device::name>().c_str());
+        trace("sycl_driver::pointer_get_device: %s\n", dev.get_info<sycl::info::device::name>().c_str());
         *device = get_device_id(dev);
     } catch (sycl::exception &e) {
+        XPU_LOG("sycl_driver::get_ptr_prop: Caught SYCL exception: '%s'", e.what());
         *type = mem_host;
         *device = -1;
     }

@@ -297,6 +297,8 @@ void runtime::get_ptr_prop(const void *ptr, ptr_prop *prop) {
             RAISE_INTERNAL_ERROR();
         }
 
+        XPU_LOG("runtime::get_ptr_prop: For address %p got type %d and platform device %d for driver '%s'", ptr, mem_type, platform_device, driver_to_str(driver_type));
+
         prop->type = mem_type;
         prop->dev = get_device(driver_type, platform_device);
         return;

@@ -1,6 +1,6 @@
 #include <xpu/host.h>
 
-#include <cstdio>
+#include <iostream>
 
 int main(int argc, char **argv) {
     xpu::settings settings;

@@ -3,32 +3,85 @@ name: build
 on: [push, pull_request]
 
 jobs:
-  ubuntu-20:
-    runs-on: ubuntu-20.04
+  ubuntu:
     strategy:
       matrix:
-        compiler:
-          - pkg: g++-7
-            exe: g++-7
-          - pkg: g++-8
-            exe: g++-8
-          - pkg: clang-8 libomp-dev
-            exe: clang++-8
-          - pkg: clang-9 libomp-dev
-            exe: clang++-9
-          - pkg: clang-10 libomp-dev
-            exe: clang++-10
+        include:
+          # Ubuntu 22.04
+          - year: 22
+            pkg: g++-9
+            exe: g++-9
+          - year: 22
+            pkg: g++-10
+            exe: g++-10
+          - year: 22
+            pkg: g++-11
+            exe: g++-11
+          - year: 22
+            pkg: g++-12
+            exe: g++-12
+          - year: 22
+            pkg: clang-11 libomp-11-dev
+            exe: clang++-11
+          - year: 22
+            pkg: clang-12 libomp-12-dev
+            exe: clang++-12
+          - year: 22
+            pkg: clang-13 libomp-13-dev
+            exe: clang++-13
+          - year: 22
+            pkg: clang-14 libomp-14-dev
+            exe: clang++-14
+          - year: 22
+            pkg: clang-15 libomp-15-dev
+            exe: clang++-15
+
+          # Ubuntu 24.04
+          - year: 24
+            pkg: g++-9
+            exe: g++-9
+          - year: 24
+            pkg: g++-10
+            exe: g++-10
+          - year: 24
+            pkg: g++-11
+            exe: g++-11
+          - year: 24
+            pkg: g++-12
+            exe: g++-12
+          - year: 24
+            pkg: g++-13
+            exe: g++-13
+          - year: 24
+            pkg: g++-14
+            exe: g++-14
+          - year: 24
+            pkg: clang-14 libomp-14-dev
+            exe: clang++-14
+          - year: 24
+            pkg: clang-15 libomp-15-dev
+            exe: clang++-15
+          - year: 24
+            pkg: clang-16 libomp-16-dev
+            exe: clang++-16
+          - year: 24
+            pkg: clang-17 libomp-17-dev
+            exe: clang++-17
+          - year: 24
+            pkg: clang-18 libomp-18-dev
+            exe: clang++-18
+
+    runs-on: ubuntu-${{ matrix.include.year }}.04
+
     steps:
     - uses: actions/checkout@v3
     - name: Install compiler
       run: |
         sudo apt update
-        sudo apt install -y ${{ matrix.compiler.pkg }}
+        sudo apt install -y ${{ matrix.include.pkg }}
     - name: Configure CMake
       env:
-        CXX: ${{ matrix.compiler.exe }}
-      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+        CXX: ${{ matrix.include.exe }}
       run: cmake -B ${{github.workspace}}/build -DXPU_BUILD_TESTS=ON -DXPU_BUILD_EXAMPLES=ON
     - name: Build
       # Build your program with the given configuration

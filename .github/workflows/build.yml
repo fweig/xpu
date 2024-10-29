@@ -130,50 +130,27 @@ jobs:
     - name: Configure CMake
       env:
         CXX: ${{ matrix.compiler.cc }}
-      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{ matrix.cxx_std }} -DXPU_BUILD_TESTS=ON -DXPU_BUILD_EXAMPLES=ON
 
     - name: Build
-      # Build your program with the given configuration
       run: cmake --build ${{github.workspace}}/build -j4
 
     - name: Test
       working-directory: ${{github.workspace}}/build
-      # Execute tests defined by the CMake configuration.
-      # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
       env:
         CTEST_OUTPUT_ON_FAILURE: 1
       run: ctest
 
-  macos-11:
-    runs-on: macOS-latest
+  macos:
+    strategy:
+      matrix: [macos-13, macos-14, macos-15]
+
+    runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Setup without OpenMP
-      run: cmake -B ${{github.workspace}}/build -DXPU_BUILD_TESTS=ON -DXPU_BUILD_EXAMPLES=ON
-
-    - name: Build
-      # Build your program with the given configuration
-      run: cmake --build ${{github.workspace}}/build -j4
-
-    - name: Test
-      working-directory: ${{github.workspace}}/build
-      # Execute tests defined by the CMake configuration.
-      # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-      env:
-        CTEST_OUTPUT_ON_FAILURE: 1
-      run: ctest
-
-  macos-12:
-    runs-on: macOS-12
-
-    steps:
-    - uses: actions/checkout@v3
-
-    - name: Setup
       run: cmake -B ${{github.workspace}}/build -DXPU_BUILD_TESTS=ON -DXPU_BUILD_EXAMPLES=ON
 
     - name: Build

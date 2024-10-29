@@ -2,12 +2,9 @@
 #define XPU_DETAIL_DYNAMIC_LOADER_H
 
 #include "../defines.h"
-#include "platform/cpu/this_thread.h"
+#include "../common.h"
 #include "common.h"
-#include "constant_memory.h"
-#include "backend_base.h"
 #include "log.h"
-#include "macros.h"
 #include "type_info.h"
 
 #if XPU_IS_HIP
@@ -16,9 +13,8 @@
 
 #include <dlfcn.h>
 
+#include <algorithm>
 #include <cassert>
-#include <chrono>
-#include <iostream>
 #include <string>
 #include <type_traits>
 #include <unordered_map>

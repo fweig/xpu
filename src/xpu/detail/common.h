@@ -2,7 +2,6 @@
 #define XPU_DETAIL_COMMON_H
 
 #include <array>
-#include <memory>
 #include <string>
 #include <type_traits>
 #include <vector>

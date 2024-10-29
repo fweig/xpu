@@ -4,14 +4,12 @@
 #include "backend.h"
 #include "common.h"
 #include "config.h"
-#include "dl_utils.h"
 #include "dynamic_loader.h"
 #include "timers.h"
 #include "log.h"
 
-#include <array>
-#include <memory>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <vector>

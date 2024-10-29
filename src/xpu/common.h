@@ -14,8 +14,6 @@
 #include "defines.h"
 #include "detail/buffer_registry.h"
 
-#include <string>
-
 namespace xpu {
 
 enum driver_t {

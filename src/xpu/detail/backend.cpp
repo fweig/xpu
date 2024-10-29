@@ -2,6 +2,7 @@
 #include "dl_utils.h"
 #include "log.h"
 #include "platform/cpu/cpu_driver.h"
+#include <algorithm>
 #include <memory>
 #include <stdexcept>
 

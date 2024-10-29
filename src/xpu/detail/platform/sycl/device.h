@@ -388,7 +388,7 @@ struct xpu::detail::action_runner<xpu::detail::kernel_tag, K, void(K::*)(xpu::ke
             local_range = sycl::range(1, 1, 1);
         }
 
-        XPU_LOG("Calling kernel '%s' [local_range = (%d, %d, %d), global_range = (%d, %d, %d)] with SYCL driver.", type_name<K>(), local_range[0], local_range[1], local_range[2], global_range[0], global_range[1], global_range[2]);
+        XPU_LOG("Calling kernel '%s' [local_range = (%zu, %zu, %zu), global_range = (%zu, %zu, %zu)] with SYCL driver.", type_name<K>(), local_range[0], local_range[1], local_range[2], global_range[0], global_range[1], global_range[2]);
 
         sycl::event ev = queue.submit([&](sycl::handler &cgh) {
             sycl::local_accessor<shared_memory, 0> shared_memory_acc{cgh};
@@ -406,7 +406,6 @@ struct xpu::detail::action_runner<xpu::detail::kernel_tag, K, void(K::*)(xpu::ke
                     out << "";
                 }
                 #endif
-                sycl::ext::oneapi::experimental::printf("HELLO\n");
 
                 shared_memory &smem = shared_memory_acc;
                 tpos pos{internal_ctor, item};

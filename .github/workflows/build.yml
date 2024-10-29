@@ -109,18 +109,18 @@ jobs:
         CTEST_OUTPUT_ON_FAILURE: 1
       run: ctest -j4 -E sycl
 
-  cpp20:
+  cpp-future:
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     strategy:
       matrix:
         compiler:
-          - pkg: g++
-            cc: g++
-          - pkg: clang-15 libomp-15-dev
-            cc: clang++-15
-        cxx_std: [20]
+          - pkg: g++-14
+            cc: g++-14
+          - pkg: clang-18 libomp-18-dev
+            cc: clang++-18
+        cxx_std: [20, 23]
 
     steps:
     - uses: actions/checkout@v4
